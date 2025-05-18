@@ -29,12 +29,12 @@ video:focus {
   outline: none;
 }
 
-/* Custom Netflix-style transitions */
+/* Custom transitions */
 .brightness-30 {
   filter: brightness(0.3);
 }
 
-/* Netflix-style hover animations */
+/* Hover animations */
 .scale-up {
   transform: scale(1.05);
   z-index: 20;
