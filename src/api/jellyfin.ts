@@ -423,8 +423,10 @@ class JellyfinApi {
         PlaylistItemId: null,
         LiveStreamId: null,
         PlaySessionId: this.deviceId,
-        AudioStreamIndex: typeof audioStreamIndex === "number" ? audioStreamIndex : 0,
-        SubtitleStreamIndex: typeof subtitleStreamIndex === "number" ? subtitleStreamIndex : 0,
+        AudioStreamIndex:
+          typeof audioStreamIndex === "number" ? audioStreamIndex : 0,
+        SubtitleStreamIndex:
+          typeof subtitleStreamIndex === "number" ? subtitleStreamIndex : 0,
       });
     } catch (e: unknown) {
       console.log(e);
@@ -472,34 +474,104 @@ class JellyfinApi {
     nowPlayingQueue?: { Id: string; PlaylistItemId: string }[];
     canSeek?: boolean;
   }) {
-    await this.makeRequest(
-      "post",
-      "/Sessions/Playing",
+    await this.makeRequest("post", "/Sessions/Playing", {
+      VolumeLevel: volumeLevel,
+      IsMuted: isMuted,
+      IsPaused: isPaused,
+      RepeatMode: repeatMode,
+      ShuffleMode: shuffleMode,
+      MaxStreamingBitrate: maxStreamingBitrate,
+      PositionTicks: positionTicks,
+      PlaybackStartTimeTicks: playbackStartTimeTicks,
+      PlaybackRate: playbackRate,
+      SubtitleStreamIndex: subtitleStreamIndex,
+      SecondarySubtitleStreamIndex: secondarySubtitleStreamIndex,
+      AudioStreamIndex: audioStreamIndex,
+      BufferedRanges: bufferedRanges,
+      PlayMethod: playMethod,
+      PlaySessionId: playSessionId,
+      PlaylistItemId: nowPlayingQueue[0]?.PlaylistItemId ?? "playlistItem0",
+      MediaSourceId: mediaSourceId,
+      CanSeek: canSeek,
+      ItemId: itemId,
+      NowPlayingQueue: nowPlayingQueue.length
+        ? nowPlayingQueue
+        : [{ Id: itemId, PlaylistItemId: "playlistItem0" }],
+    });
+  }
+
+  async getPersonInfo(personId: string): Promise<any> {
+    // Fetch person info from /emby/Items/{personId}
+    return this.makeRequest<any>(
+      "get",
+      `/Users/${this.userId}/Items`,
+      undefined,
       {
-        VolumeLevel: volumeLevel,
-        IsMuted: isMuted,
-        IsPaused: isPaused,
-        RepeatMode: repeatMode,
-        ShuffleMode: shuffleMode,
-        MaxStreamingBitrate: maxStreamingBitrate,
-        PositionTicks: positionTicks,
-        PlaybackStartTimeTicks: playbackStartTimeTicks,
-        PlaybackRate: playbackRate,
-        SubtitleStreamIndex: subtitleStreamIndex,
-        SecondarySubtitleStreamIndex: secondarySubtitleStreamIndex,
-        AudioStreamIndex: audioStreamIndex,
-        BufferedRanges: bufferedRanges,
-        PlayMethod: playMethod,
-        PlaySessionId: playSessionId,
-        PlaylistItemId: nowPlayingQueue[0]?.PlaylistItemId ?? "playlistItem0",
-        MediaSourceId: mediaSourceId,
-        CanSeek: canSeek,
-        ItemId: itemId,
-        NowPlayingQueue: nowPlayingQueue.length
-          ? nowPlayingQueue
-          : [{ Id: itemId, PlaylistItemId: "playlistItem0" }],
+        PersonIds: personId,
+        IncludeItemTypes: "Movie,Series",
+        Recursive: true,
+        Fields:
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,ProductionYear",
+        SortBy: "ProductionYear,SortName",
+        SortOrder: "Descending",
       }
     );
+  }
+
+  /**
+   * Get next up episodes for a specific series.
+   * @param seriesId The series ID.
+   * @param limit Optional limit for number of episodes.
+   */
+  async getSeriesNextUp(
+    seriesId: string,
+    limit: number = 10
+  ): Promise<MediaItem[]> {
+    return this.makeRequest<ItemsResponse>("get", `/Shows/NextUp`, undefined, {
+      SeriesId: seriesId,
+      UserId: this.userId,
+      Fields:
+        "MediaSourceCount,PrimaryImageTag,BackdropImageTags,Overview,Genres",
+      Limit: limit,
+    }).then((response) => response.Items);
+  }
+
+  /**
+   * Get all seasons for a series.
+   * @param seriesId The series ID.
+   */
+  async getSeasons(seriesId: string): Promise<any[]> {
+    const data = await this.makeRequest<any>(
+      "get",
+      `/Shows/${seriesId}/Seasons`,
+      undefined,
+      {
+        UserId: this.userId,
+        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
+      }
+    );
+    return data.Items ?? [];
+  }
+
+  /**
+   * Get all episodes for a given series and season.
+   * @param seriesId The series ID.
+   * @param seasonId The season ID.
+   */
+  async getEpisodes(seriesId: string, seasonId: string): Promise<MediaItem[]> {
+    const data = await this.makeRequest<ItemsResponse>(
+      "get",
+      `/Shows/${seriesId}/Episodes`,
+      undefined,
+      {
+        SeasonId: seasonId,
+        UserId: this.userId,
+        SortBy: "IndexNumber",
+        SortOrder: "Ascending",
+        Fields: "ItemCounts,PrimaryImageAspectRatio,CanDelete,Overview,MediaSourceCount",
+      }
+    );
+    return data.Items ?? [];
   }
 }
 

@@ -95,15 +95,6 @@ const Navbar: React.FC = () => {
             >
               TV Shows
             </Link>
-            <Link
-              to="/latest"
-              className={clsx(
-                "text-sm font-medium hover:text-white transition-colors",
-                location.pathname === "/latest" ? "text-white" : "text-gray-300"
-              )}
-            >
-              New & Popular
-            </Link>
           </nav>
 
           {/* Right Side Actions */}

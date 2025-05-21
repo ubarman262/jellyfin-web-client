@@ -108,6 +108,10 @@ export interface MediaItem {
     Backdrop?: string;
   };
   BackdropImageTags?: string[];
+  ParentBackdropImageTags?: string[];
+  ParentPrimaryImageTag?: string;
+  ParentBackdropItemId?: string;
+  ParentId?: string;
   SeriesName?: string;
   ProductionYear?: number;
   IndexNumber?: number;
@@ -123,6 +127,34 @@ export interface MediaItem {
   SeasonId?: string;
   MediaStreams?: MediaStream[];
   Genres?: string[];
+  CriticRating?: number;
+  People?: Array<People>;
+  Studios?: Array<Studios>;
+}
+
+export interface Studios {
+  Name: string;
+  Id: string;
+}
+
+export interface People {
+  Name: string;
+  Type: string;
+  Id: string;
+  PrimaryImageTag?: string;
+  Role?: string;
+  CharacterName?: string;
+  IsCast: boolean;
+  IsDirector: boolean;
+  IsWriter: boolean;
+  IsProducer: boolean;
+  IsGuestStar: boolean;
+  IsGuestDirector: boolean;
+  IsGuestWriter: boolean;
+  IsGuestProducer: boolean;
+  IsGuest: boolean;
+  IsCrew: boolean;
+  IsGuestCrew: boolean;
 }
 
 export interface MediaStream {

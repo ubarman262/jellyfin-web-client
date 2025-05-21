@@ -20,8 +20,6 @@ const HomePage: React.FC = () => {
     "latest",
     { limit: 20 }
   );
-  const { items: recommendedItems, isLoading: recommendedLoading } =
-    useMediaData("recommended", { limit: 20 });
   const { items: moviesItems, isLoading: moviesLoading } = useMediaData(
     "movies",
     { limit: 20 }

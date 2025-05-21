@@ -61,7 +61,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
   }
 
   return (
-    <button
+    <Link
+      to={`/details/${item.Id}`}
       className={clsx(
         "group relative transition-all duration-300 overflow-hidden rounded-md bg-gray-900",
         featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3]",
@@ -69,6 +70,9 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      tabIndex={0}
+      aria-label={`View details for ${title}`}
+      style={{ display: "block" }}
     >
       {imageUrl ? (
         <img
@@ -149,22 +153,36 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
         </div>
 
         <div className="flex items-center gap-2 mt-3">
-          <Link
-            to={`/play/${item.Id}`}
+          <button
+            type="button"
+            onClick={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.location.href = `/play/${item.Id}`;
+            }}
             className="flex items-center justify-center bg-white text-black rounded-full w-8 h-8 hover:bg-red-600 hover:text-white transition-colors"
+            tabIndex={-1}
+            aria-label={`Play ${title}`}
           >
             <Play size={16} className="ml-0.5" />
-          </Link>
+          </button>
 
-          <Link
-            to={`/details/${item.Id}`}
+          <button
+            type="button"
+            onClick={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.location.href = `/details/${item.Id}`;
+            }}
             className="flex items-center justify-center bg-gray-700 text-white rounded-full w-8 h-8 hover:bg-white hover:text-black transition-colors"
+            tabIndex={-1}
+            aria-label={`More info about ${title}`}
           >
             <Info size={16} />
-          </Link>
+          </button>
         </div>
       </div>
-    </button>
+    </Link>
   );
 };
 
