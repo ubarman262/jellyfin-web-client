@@ -9,6 +9,7 @@ import MoviesPage from "./pages/MoviesPage";
 import PersonDetailsPage from "./pages/PersonDetailsPage";
 import SearchPage from "./pages/SearchPage";
 import ShowsPage from "./pages/ShowsPage";
+import AddServerPage from "./pages/AddServerPage";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 // Protected route component
@@ -34,11 +35,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 
 // App wrapper with AuthProvider
 const AppWrapper: React.FC = () => {
-  // Get the server URL from local storage or use a default
-  const serverUrl = localStorage.getItem("jellyfin_server_url") ?? "";
-
+  // No need to fetch serverUrl here, context will handle it
   return (
-    <AuthProvider serverUrl={serverUrl}>
+    <AuthProvider>
       <App />
     </AuthProvider>
   );
@@ -122,6 +121,8 @@ const App: React.FC = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/add-server" element={<AddServerPage />} />
 
         {/* Redirect all other routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

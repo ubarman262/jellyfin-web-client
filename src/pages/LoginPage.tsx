@@ -1,44 +1,51 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { AtSign, Lock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { AtSign, Lock, AlertCircle } from "lucide-react";
 
 const LoginPage: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const auth = useAuth();
+  const login = auth?.login;
+  const isLoading = auth?.isLoading ?? false;
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [serverUrl, setServerUrl] = useState(localStorage.getItem('jellyfin_server_url') ?? '');
+
+  useEffect(() => {
+    // Redirect to add-server if no server URL is set
+    if (!localStorage.getItem("jellyfin_server_url")) {
+      navigate("/add-server");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!serverUrl) {
-      setError('Please enter a Jellyfin server URL');
-      return;
-    }
-    
-    // Save server URL
-    localStorage.setItem('jellyfin_server_url', serverUrl);
-    
+
     try {
       setError(null);
-      await login({ username, password });
-      navigate('/');
+      
+      if (login) {
+        await login({ username, password });
+        navigate("/");
+      } else {
+        setError("Login function is not available.");
+        console.error("Login function is undefined.");
+      }
     } catch (err) {
-      setError('Invalid username or password. Please try again.');
-      console.error('Login error:', err);
+      setError("Invalid username or password. Please try again.");
+      console.error("Login error:", err);
     }
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen w-full bg-black flex flex-col items-center justify-center text-white p-4"
       style={{
-        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundImage:
+          'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
       <div className="w-full max-w-md">
@@ -46,7 +53,7 @@ const LoginPage: React.FC = () => {
           <h1 className="text-red-600 font-bold text-4xl mb-2">JELLYFLIX</h1>
           <p className="text-gray-400">Sign in to your Jellyfin account</p>
         </div>
-        
+
         <div className="bg-black/80 rounded-md p-8 backdrop-blur-sm">
           {error && (
             <div className="mb-6 p-3 bg-red-900/50 border border-red-700 rounded flex items-start gap-2 text-red-100">
@@ -54,31 +61,15 @@ const LoginPage: React.FC = () => {
               <p>{error}</p>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
+              {/* Username */}
               <div>
-                <label htmlFor="serverUrl" className="block text-sm font-medium text-gray-400 mb-1">
-                  Jellyfin Server URL
-                </label>
-                <div className="relative">
-                  <input
-                    id="serverUrl"
-                    type="url"
-                    placeholder="https://your-jellyfin-server.com"
-                    value={serverUrl}
-                    onChange={(e) => setServerUrl(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Enter the full URL including http:// or https://
-                </p>
-              </div>
-              
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-400 mb-1">
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium text-gray-400 mb-1"
+                >
                   Username
                 </label>
                 <div className="relative">
@@ -96,9 +87,13 @@ const LoginPage: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
+              {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-400 mb-1"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -117,22 +112,22 @@ const LoginPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-70"
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? "Signing In..." : "Sign In"}
             </button>
           </form>
         </div>
-        
+
         <p className="mt-6 text-center text-sm text-gray-500">
-          Don't have a Jellyfin server? Set up your own personal media server at{' '}
-          <a 
-            href="https://jellyfin.org/" 
-            target="_blank" 
+          Don't have a Jellyfin server? Set up your own personal media server at{" "}
+          <a
+            href="https://jellyfin.org/"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-red-600 hover:underline"
           >

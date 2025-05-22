@@ -1,62 +1,101 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import JellyfinApi from '../api/jellyfin';
-import { JellyfinAuthResult, UserLogin } from '../types/jellyfin';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import JellyfinApi from "../api/jellyfin";
+import { JellyfinAuthResult, UserLogin } from "../types/jellyfin";
 
 interface AuthContextType {
+  api: JellyfinApi | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: JellyfinAuthResult | null;
+  user: JellyfinAuthResult["User"] | null;
+  jellyfinClient: JellyfinApi | null;
+  serverUrl: string;
+  setServerUrl: (url: string) => void;
   login: (credentials: UserLogin) => Promise<void>;
   logout: () => Promise<void>;
-  api: JellyfinApi | null;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  isAuthenticated: false,
-  isLoading: true,
-  user: null,
-  login: async () => {},
-  logout: async () => {},
-  api: null,
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => useContext(AuthContext);
-
-interface AuthProviderProps {
-  children: ReactNode;
-  serverUrl: string;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children, serverUrl }) => {
+export function AuthProvider({
+  children,
+}: {
+  readonly children: React.ReactNode;
+}) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<JellyfinAuthResult | null>(null);
-  const [api, setApi] = useState<JellyfinApi | null>(null);
+  const [user, setUser] = useState<JellyfinAuthResult["User"] | null>(null);
+  const [jellyfinClient, setJellyfinClient] = useState<JellyfinApi | null>(
+    null
+  );
+  const [serverUrlState, setServerUrlState] = useState<string>(
+    () => localStorage.getItem("jellyfin_server_url") ?? ""
+  );
+
+  // Keep serverUrl in sync with localStorage
+  const setServerUrl = useCallback((url: string) => {
+    setServerUrlState(url);
+    if (url) {
+      localStorage.setItem("jellyfin_server_url", url);
+    } else {
+      localStorage.removeItem("jellyfin_server_url");
+    }
+  }, []);
 
   useEffect(() => {
-    // Initialize Jellyfin API
-    const jellyfinApi = new JellyfinApi({ serverUrl });
-    setApi(jellyfinApi);
+    // Always fetch latest serverUrl from localStorage on reload
+    const url = localStorage.getItem("jellyfin_server_url") ?? "";
+    setServerUrlState(url);
+  }, []);
 
-    // Check if user is already authenticated
-    if (jellyfinApi.isAuthenticated()) {
-      setIsAuthenticated(true);
-      // We don't have the full user object here, but we know they're authenticated
-    }
-    
-    setIsLoading(false);
-  }, [serverUrl]);
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        if (!serverUrlState) {
+          setIsLoading(false);
+          setJellyfinClient(null);
+          setUser(null);
+          return;
+        }
+
+        const client = new JellyfinApi({ serverUrl: serverUrlState });
+        setJellyfinClient(client);
+
+        // Check if user is already authenticated
+        if (client.isAuthenticated()) {
+          setIsAuthenticated(true);
+          // We don't have the full user object here, but we know they're authenticated
+        }
+
+        const storedUser = localStorage.getItem("jellyfin_user");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, [serverUrlState]);
 
   const login = async (credentials: UserLogin) => {
-    if (!api) throw new Error('API not initialized');
-    
+    if (!jellyfinClient) throw new Error("API not initialized");
+
     setIsLoading(true);
     try {
-      const authResult = await api.login(credentials);
-      setUser(authResult);
+      const authResult = await jellyfinClient.login(credentials);
+      setUser(authResult.User);
       setIsAuthenticated(true);
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -64,21 +103,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, serverUrl 
   };
 
   const logout = async () => {
-    if (!api) return;
-    
+    if (!jellyfinClient) return;
+
     setIsLoading(true);
     try {
-      await api.logout();
+      await jellyfinClient.logout();
     } finally {
       setUser(null);
-      setIsAuthenticated(false);
       setIsLoading(false);
+      setIsAuthenticated(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, login, logout, api }}>
+    <AuthContext.Provider
+      value={{
+        api: jellyfinClient,
+        isAuthenticated,
+        isLoading,
+        user,
+        jellyfinClient,
+        serverUrl: serverUrlState,
+        setServerUrl,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };
