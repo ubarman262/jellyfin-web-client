@@ -14,7 +14,7 @@ const CastList: React.FC<CastListProps> = ({ people }) => {
   if (!people || people.length === 0) return null;
 
   return (
-    <div className="mt-6">
+    <div className="mt-1">
       <h2 className="text-lg font-semibold mb-2">Cast</h2>
       <div className="flex flex-wrap gap-4">
         {people.slice(0, 8).map((person, idx) => {

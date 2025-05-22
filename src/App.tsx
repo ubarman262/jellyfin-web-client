@@ -9,6 +9,7 @@ import MoviesPage from "./pages/MoviesPage";
 import PersonDetailsPage from "./pages/PersonDetailsPage";
 import SearchPage from "./pages/SearchPage";
 import ShowsPage from "./pages/ShowsPage";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({

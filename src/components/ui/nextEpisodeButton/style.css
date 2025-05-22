@@ -1,0 +1,59 @@
+.next-episode {
+  width: 300px;
+  height: 80px;
+  position: relative;
+  border-radius: 15px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dark,
+.light {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  font-size: 30px;
+  overflow: hidden;
+}
+
+.dark span,
+.light span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 300px;
+  height: 80px;
+  gap: 15px;
+}
+
+.dark {
+  background: #a1a1a1;
+  color: white;
+  z-index: 1;
+}
+
+.light {
+  color: black;
+  background: white;
+  z-index: 2;
+  animation-name: slide;
+  animation-duration: 4s;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+}
+
+@keyframes slide {
+  0% {
+    width: 0%;
+  }
+  80% {
+    width: 100%;
+  }
+  100% {
+    width: 100%;
+  }
+}

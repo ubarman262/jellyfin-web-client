@@ -14,17 +14,17 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     setIsScrolled(window.scrollY > 20);
+  //   };
 
-    window.addEventListener("scroll", handleScroll);
+  //   window.addEventListener("scroll", handleScroll);
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("scroll", handleScroll);
+  //   };
+  // }, []);
 
   useEffect(() => {
     // Close menus when location changes
@@ -53,7 +53,7 @@ const Navbar: React.FC = () => {
   return (
     <header
       className={clsx(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        "absolute top-0 left-0 right-0 z-10 transition-all duration-300",
         isScrolled
           ? "bg-black/90 backdrop-blur-sm"
           : "bg-gradient-to-b from-black/80 to-transparent"

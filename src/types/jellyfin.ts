@@ -130,6 +130,20 @@ export interface MediaItem {
   CriticRating?: number;
   People?: Array<People>;
   Studios?: Array<Studios>;
+  RemoteTrailers?: Array<{
+    Url: string;
+  }>;
+  UserData: {
+    PlaybackPositionTicks?: number;
+    Played?: boolean;
+    IsFavorite?: boolean;
+    IsRated?: boolean;
+    PlayCount?: number;
+    Key?: string;
+    KeyType?: string;
+    LastPlayedDate?: string;
+    LastPlayedDateTicks?: number;
+    LastPlayedDateString?: string;
 }
 
 export interface Studios {

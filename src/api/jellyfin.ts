@@ -90,7 +90,7 @@ class JellyfinApi {
   }
 
   private async makeRequest<T>(
-    method: "get" | "post",
+    method: "get" | "post" | "put" | "delete",
     endpoint: string,
     data?: any,
     params?: any
@@ -184,7 +184,8 @@ class JellyfinApi {
       undefined,
       {
         Limit: limit,
-        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags,UserData",
+        Fields:
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,UserData,RemoteTrailers",
       }
     ).then((response) => response.Items);
   }
@@ -196,7 +197,8 @@ class JellyfinApi {
 
     return this.makeRequest<ItemsResponse>("get", `/Shows/NextUp`, undefined, {
       Limit: limit,
-      Fields: "PrimaryImageAspectRatio,DateCreated,Path,MediaSourceCount",
+      Fields:
+        "PrimaryImageAspectRatio,DateCreated,Path,MediaSourceCount,RemoteTrailers",
       UserId: this.userId,
       ImageTypeLimit: 1,
       EnableImageTypes: "Primary,Backdrop,Banner,Thumb",
@@ -219,7 +221,8 @@ class JellyfinApi {
       {
         IncludeItemTypes: mediaType,
         Limit: limit,
-        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
+        Fields:
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
       }
     );
   }
@@ -231,7 +234,8 @@ class JellyfinApi {
       undefined,
       {
         Limit: limit,
-        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
+        Fields:
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
       }
     );
   }
@@ -252,7 +256,8 @@ class JellyfinApi {
         StartIndex: startIndex,
         SortBy: "SortName",
         SortOrder: "Ascending",
-        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
+        Fields:
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
       }
     );
   }
@@ -264,7 +269,7 @@ class JellyfinApi {
       undefined,
       {
         Fields:
-          "Overview,Genres,PrimaryImageTag,BackdropImageTags,MediaStreams",
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,MediaStreams,RemoteTrailers",
       }
     );
   }
@@ -568,10 +573,62 @@ class JellyfinApi {
         UserId: this.userId,
         SortBy: "IndexNumber",
         SortOrder: "Ascending",
-        Fields: "ItemCounts,PrimaryImageAspectRatio,CanDelete,Overview,MediaSourceCount",
+        Fields:
+          "ItemCounts,PrimaryImageAspectRatio,CanDelete,Overview,MediaSourceCount",
       }
     );
     return data.Items ?? [];
+  }
+
+  /**
+   * Mark an item as played for the current user.
+   * @param itemId The item ID to mark as played.
+   * @param datePlayed Optional ISO date string. Defaults to now.
+   */
+  async markItemPlayed(itemId: string, datePlayed?: string): Promise<void> {
+    if (!this.userId) throw new Error("User not authenticated");
+    const date = datePlayed ?? new Date().toISOString();
+    await this.makeRequest(
+      "post",
+      `/Users/${this.userId}/PlayedItems/${itemId}`,
+      undefined,
+      { DatePlayed: date }
+    );
+  }
+
+  /**
+   * Mark an item as unplayed for the current user.
+   * @param itemId The item ID to mark as unplayed.
+   */
+  async markItemUnplayed(itemId: string): Promise<void> {
+    if (!this.userId) throw new Error("User not authenticated");
+    await this.makeRequest(
+      "delete",
+      `/Users/${this.userId}/PlayedItems/${itemId}`
+    );
+  }
+
+  /**
+   * Mark or unmark an item as a favorite for the current user.
+   * @param itemId The item ID to mark as favorite.
+   * @param isFavorite Whether to mark as favorite (true) or remove from favorites (false).
+   */
+  async markAsFavourite(
+    itemId: string,
+    isFavorite: boolean = true
+  ): Promise<void> {
+    if (!this.userId) throw new Error("User not authenticated");
+    if (isFavorite) {
+      await this.makeRequest(
+        "post",
+        `/Users/${this.userId}/FavoriteItems/${itemId}`
+      );
+    } else {
+      await this.makeRequest(
+        "delete",
+        `/Users/${this.userId}/FavoriteItems/${itemId}`
+      );
+    }
   }
 }
 

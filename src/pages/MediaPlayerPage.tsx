@@ -497,43 +497,48 @@ const MediaPlayerPage: React.FC = () => {
         onDoubleClick={toggleFullscreen}
       >
         {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex items-center">
+        <div className="absolute top-0 left-0 right-0 p-4 flex items-center z-20">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white bg-black/40 rounded-full p-2 hover:bg-black/60 transition-colors"
           >
             <ArrowLeft size={20} />
           </button>
-
-          <h1 className="text-xl font-medium text-white">{item.Name}</h1>
+          <h1 className="text-xl font-medium text-white ml-3 truncate">{item.Name}</h1>
         </div>
 
-        {/* Center play/pause button */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <button
-            onClick={() => skip(-10)}
-            className="bg-white/20 hover:bg-white/30 rounded-full p-4 mr-10 transition-colors"
-          >
-            <ChevronsLeft size={24} />
-          </button>
-
-          <button
-            onClick={togglePlay}
-            className="bg-white/20 hover:bg-white/30 rounded-full p-6 transition-colors"
-          >
-            {isPlaying ? <Pause size={32} /> : <Play size={32} />}
-          </button>
-
-          <button
-            onClick={() => skip(10)}
-            className="bg-white/20 hover:bg-white/30 rounded-full p-4 ml-10 transition-colors"
-          >
-            <ChevronsRight size={24} />
-          </button>
+        {/* Center controls - mobile layout */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+          <div className="flex flex-row items-center justify-center gap-8 sm:gap-10 pointer-events-auto">
+            <button
+              onClick={() => skip(-10)}
+              className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
+              style={{ touchAction: "manipulation" }}
+              tabIndex={0}
+            >
+              <ChevronsLeft size={28} />
+            </button>
+            <button
+              onClick={togglePlay}
+              className="bg-white/20 hover:bg-white/30 rounded-full p-6 mx-2 transition-colors"
+              style={{ touchAction: "manipulation" }}
+              tabIndex={0}
+            >
+              {isPlaying ? <Pause size={36} /> : <Play size={36} />}
+            </button>
+            <button
+              onClick={() => skip(10)}
+              className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
+              style={{ touchAction: "manipulation" }}
+              tabIndex={0}
+            >
+              <ChevronsRight size={28} />
+            </button>
+          </div>
         </div>
 
         {/* Bottom controls */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
+        <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2 z-20">
           {/* Progress bar */}
           <div className="flex items-center gap-2">
             <span className="text-sm">{formatTime(currentTime)}</span>
@@ -545,8 +550,6 @@ const MediaPlayerPage: React.FC = () => {
               onChange={handleProgressChange}
               className="video-progress w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer"
               style={{
-                // For Webkit browsers, set --progress as percent
-                // Avoid division by zero
                 ...(duration
                   ? ({
                       "--progress": `${(currentTime / duration) * 100}%`,
@@ -558,29 +561,26 @@ const MediaPlayerPage: React.FC = () => {
           </div>
 
           {/* Controls row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
               <button
                 onClick={togglePlay}
                 className="text-white hover:text-gray-300 transition-colors"
               >
                 {isPlaying ? <Pause size={24} /> : <Play size={24} />}
               </button>
-
               <button
                 onClick={() => skip(-10)}
                 className="text-white hover:text-gray-300 transition-colors"
               >
                 <SkipBack size={24} />
               </button>
-
               <button
                 onClick={() => skip(10)}
                 className="text-white hover:text-gray-300 transition-colors"
               >
                 <SkipForward size={24} />
               </button>
-
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleMute}
@@ -598,7 +598,6 @@ const MediaPlayerPage: React.FC = () => {
                     return volumeIcon;
                   })()}
                 </button>
-
                 <input
                   type="range"
                   min="0"
@@ -617,8 +616,7 @@ const MediaPlayerPage: React.FC = () => {
                 />
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
               <TracksMenu
                 audioTracks={audioTracks}
                 selectedAudioTrack={selectedAudioTrack}

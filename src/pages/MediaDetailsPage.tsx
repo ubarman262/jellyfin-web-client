@@ -3,8 +3,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import rottenTomatoesIcon from "../assets/png/rotten.png";
 import Navbar from "../components/layout/Navbar";
-import EpisodesList from "../components/ui/EpisodesList";
 import CastList from "../components/ui/CastList";
+import EpisodesList from "../components/ui/EpisodesList";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
 import { MediaItem, People, Studios } from "../types/jellyfin";
@@ -489,144 +489,7 @@ const MediaDetailsPage: React.FC = () => {
                 <br />
 
                 {/* --- Next Up and Seasons for Series --- */}
-                {isSeries && (
-                  <div className="mt-10 space-y-8">
-                    {/* Next Up Episode */}
-                    <div>
-                      <h2 className="text-xl font-semibold mb-4">Next Up</h2>
-                      {seriesNextUpLoading ? (
-                        <div className="flex gap-4">
-                          {Array.from({ length: 1 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className="w-32 h-20 bg-gray-800 animate-pulse rounded-md"
-                            ></div>
-                          ))}
-                        </div>
-                      ) : seriesNextUp.length > 0 ? (
-                        <div className="flex flex-wrap gap-4">
-                          {seriesNextUp.map((ep) => (
-                            <button
-                              key={ep.Id}
-                              onClick={() => navigate(`/play/${ep.Id}`)}
-                              className="group flex flex-col items-center w-48 cursor-pointer focus:outline-none"
-                              style={{
-                                border: "none",
-                                background: "none",
-                                padding: 0,
-                              }}
-                              tabIndex={0}
-                              title={ep.Name}
-                            >
-                              <div className="relative w-full aspect-[16/9] rounded-md overflow-hidden bg-gray-900 hover:scale-105 hover:shadow-lg transition-all">
-                                {ep.ImageTags?.Primary ? (
-                                  <img
-                                    src={api.getImageUrl(ep.Id, "Primary", 320)}
-                                    alt={ep.Name}
-                                    className="absolute inset-0 w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-800">
-                                    <span className="text-gray-400">
-                                      {ep.Name}
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 pointer-events-none" />
-                              </div>
-                              <div className="mt-1 text-center w-full">
-                                <div className="text-xs font-semibold text-white truncate">
-                                  {ep.Name}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {ep.ParentIndexNumber !== undefined &&
-                                    ep.IndexNumber !== undefined && (
-                                      <>
-                                        S{ep.ParentIndexNumber}E{ep.IndexNumber}
-                                      </>
-                                    )}
-                                </div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-gray-400">No episodes found.</div>
-                      )}
-                    </div>
-                    {/* Seasons Dropdown and Episodes */}
-                    <div>
-                      <div className="flex items-center gap-4 mb-4">
-                        {/* <h2 className="text-xl font-semibold">Season</h2> */}
-                        {seasonsLoading ? (
-                          <span className="text-gray-400">Loading...</span>
-                        ) : (
-                          <div className="relative">
-                            <select
-                              className="appearance-none bg-gray-800 text-white rounded px-4 py-2 pr-10 font-semibold border border-gray-700 focus:ring-2 focus:ring-red-600 transition-all outline-none cursor-pointer"
-                              value={selectedSeasonId ?? ""}
-                              onChange={handleSeasonChange}
-                              style={{
-                                minWidth: "140px",
-                                boxShadow: "0 2px 8px 0 rgba(0,0,0,0.15)",
-                              }}
-                            >
-                              {seasons.map((season) => (
-                                <option key={season.Id} value={season.Id}>
-                                  {season.Name}
-                                </option>
-                              ))}
-                            </select>
-                            {/* Chevron icon */}
-                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                              <svg
-                                width="18"
-                                height="18"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  d="M6 9l6 6 6-6"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {/* Episodes List */}
-                      {episodesLoading ? (
-                        <div className="flex flex-col gap-4">
-                          {Array.from({ length: 6 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className="flex flex-row gap-4 items-center px-4 py-3 bg-[#181818] rounded-xl animate-pulse"
-                            >
-                              <div className="w-8 h-6 bg-gray-800 rounded" />
-                              <div className="w-32 h-20 bg-gray-800 rounded" />
-                              <div className="flex-1 min-w-0">
-                                <div className="h-4 bg-gray-800 rounded w-1/2 mb-2" />
-                                <div className="h-3 bg-gray-800 rounded w-1/3 mb-1" />
-                                <div className="h-3 bg-gray-800 rounded w-2/3" />
-                              </div>
-                              <div className="flex flex-col gap-2 ml-4">
-                                <div className="w-6 h-6 bg-gray-800 rounded-full" />
-                                <div className="w-6 h-6 bg-gray-800 rounded-full" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : episodes.length > 0 ? (
-                        <EpisodesList episodes={episodes} />
-                      ) : (
-                        <div className="text-gray-400">No episodes found.</div>
-                      )}
-                    </div>
-                  </div>
-                )}
+
                 {/* --- End Next Up and Seasons --- */}
 
                 {/* --- Show episode list for Season --- */}
@@ -673,36 +536,11 @@ const MediaDetailsPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {/* Episodes List */}
-                    {episodesLoading ? (
-                      <div className="flex flex-col gap-4">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="flex flex-row gap-4 items-center px-4 py-3 bg-[#181818] rounded-xl animate-pulse"
-                          >
-                            <div className="w-8 h-6 bg-gray-800 rounded" />
-                            <div className="w-32 h-20 bg-gray-800 rounded" />
-                            <div className="flex-1 min-w-0">
-                              <div className="h-4 bg-gray-800 rounded w-1/2 mb-2" />
-                              <div className="h-3 bg-gray-800 rounded w-1/3 mb-1" />
-                              <div className="h-3 bg-gray-800 rounded w-2/3" />
-                            </div>
-                            <div className="flex flex-col gap-2 ml-4">
-                              <div className="w-6 h-6 bg-gray-800 rounded-full" />
-                              <div className="w-6 h-6 bg-gray-800 rounded-full" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : episodes.length > 0 ? (
-                      <EpisodesList episodes={episodes} />
-                    ) : (
-                      <div className="text-gray-400">No episodes found.</div>
-                    )}
                   </div>
                 )}
-                {/* --- End episode list for Season --- */}
+
+                {/* Episodes List */}
+                <EpisodesList seriesId={item.Id} />
 
                 {/* Cast Info */}
                 {item.People && item.People.length > 0 && (
