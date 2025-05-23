@@ -80,6 +80,15 @@ const Navbar: React.FC = () => {
             >
               TV Shows
             </Link>
+            <Link
+              to="/favourites"
+              className={clsx(
+                "text-sm font-medium hover:text-white transition-colors",
+                location.pathname === "/shows" ? "text-white" : "text-gray-300"
+              )}
+            >
+              Favourites
+            </Link>
           </nav>
 
           {/* Right Side Actions */}

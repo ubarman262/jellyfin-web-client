@@ -7,7 +7,7 @@ import {
   MediaItem,
   MediaSourceResponse,
   MediaStream,
-  UserLogin
+  UserLogin,
 } from "../types/jellyfin";
 
 class JellyfinApi {
@@ -257,6 +257,29 @@ class JellyfinApi {
         StartIndex: startIndex,
         SortBy: "SortName",
         SortOrder: "Ascending",
+        Fields:
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
+      }
+    );
+  }
+
+  async getFavourites(
+    limit: number = 20,
+    startIndex: number = 0,
+    mediaType?: string
+  ): Promise<ItemsResponse> {
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Users/${this.userId}/Items`,
+      undefined,
+      {
+        IncludeItemTypes: mediaType,
+        Recursive: true,
+        Limit: limit,
+        StartIndex: startIndex,
+        SortBy: "SortName",
+        SortOrder: "Ascending",
+        Filters: "IsFavorite",
         Fields:
           "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
       }

@@ -11,6 +11,7 @@ import SearchPage from "./pages/SearchPage";
 import ShowsPage from "./pages/ShowsPage";
 import AddServerPage from "./pages/AddServerPage";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import FavouritesPage from "./pages/FavouritesPage";
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -73,6 +74,15 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <ShowsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/favourites"
+          element={
+            <ProtectedRoute>
+              <FavouritesPage />
             </ProtectedRoute>
           }
         />
