@@ -504,7 +504,7 @@ const MediaPlayerPage: React.FC = () => {
         onClick={togglePlay}
       >
         <track
-          kind="subtitles"
+          kind="captions"
           srcLang="en"
           label="English"
           src="/subtitles/english.vtt"
