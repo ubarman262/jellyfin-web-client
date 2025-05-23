@@ -134,7 +134,7 @@ export const useMediaItem = (itemId: string | undefined) => {
   return { item, isLoading, error };
 };
 
-export const useSearch = (searchTerm: string, limit: number = 20) => {
+export const useSearch = (searchTerm: string, limit: number = 100) => {
   const { api, isAuthenticated } = useAuth();
   const [results, setResults] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);

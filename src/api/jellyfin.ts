@@ -1,11 +1,13 @@
 import axios from "axios";
 import {
+  Items,
   ItemsResponse,
   JellyfinAuthResult,
   JellyfinConfig,
-  JellyfinSubtitleStream,
   MediaItem,
-  UserLogin,
+  MediaSourceResponse,
+  MediaStream,
+  UserLogin
 } from "../types/jellyfin";
 
 class JellyfinApi {
@@ -20,8 +22,7 @@ class JellyfinApi {
 
   constructor(config: JellyfinConfig) {
     // Ensure server URL is properly formatted
-    this.serverUrl =
-      this.normalizeServerUrl(config.serverUrl) || "http://192.168.0.140:8096";
+    this.serverUrl = this.normalizeServerUrl(config.serverUrl);
     this.apiKey = config.apiKey;
     this.userId = config.userId;
 
@@ -92,8 +93,8 @@ class JellyfinApi {
   private async makeRequest<T>(
     method: "get" | "post" | "put" | "delete",
     endpoint: string,
-    data?: any,
-    params?: any
+    data?: unknown,
+    params?: unknown
   ): Promise<T> {
     try {
       const url = `${this.serverUrl}/emby${endpoint}`;
@@ -301,7 +302,10 @@ class JellyfinApi {
     });
   }
 
-  async search(searchTerm: string, limit: number = 20): Promise<ItemsResponse> {
+  async search(
+    searchTerm: string,
+    limit: number = 100
+  ): Promise<ItemsResponse> {
     return this.makeRequest<ItemsResponse>(
       "get",
       `/Users/${this.userId}/Items`,
@@ -310,8 +314,10 @@ class JellyfinApi {
         SearchTerm: searchTerm,
         Recursive: true,
         Limit: limit,
-        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
-        IncludeItemTypes: "Movie,Series,Episode",
+        Fields: "PrimaryImageAspectRatio,CanDelete,MediaSourceCount",
+        IncludeItemTypes: "Movie,Series",
+        ImageTypeLimit: 1,
+        EnableTotalRecordCount: false,
       }
     );
   }
@@ -376,10 +382,8 @@ class JellyfinApi {
     return `${this.serverUrl}/videos/${itemId}/main.m3u8?${params.toString()}`;
   }
 
-  async fetchSubtitleTracks(
-    item: MediaItem
-  ): Promise<JellyfinSubtitleStream[]> {
-    const response = await this.makeRequest<unknown>(
+  async fetchSubtitleTracks(item: MediaItem): Promise<MediaStream[]> {
+    const response = await this.makeRequest<MediaSourceResponse>(
       "post",
       `/Items/${item.Id}/PlaybackInfo?api_key=${this.accessToken}`,
       JSON.stringify({
@@ -387,10 +391,13 @@ class JellyfinApi {
         DeviceId: this.deviceId,
       })
     );
-    // response is already parsed JSON from makeRequest
-    const subtitles = response?.MediaSources?.[0]?.MediaStreams?.filter(
-      (stream: MediaStream) => stream.Type === "Subtitle"
-    );
+
+    // Safely access MediaStreams and filter by Type === 'Subtitle'
+    const subtitles =
+      response?.MediaSources?.[0]?.MediaStreams?.filter(
+        (stream) => stream.Type === "Subtitle"
+      ) ?? []; // fallback to empty array if undefined
+
     return subtitles;
   }
 
@@ -505,9 +512,9 @@ class JellyfinApi {
     });
   }
 
-  async getPersonInfo(personId: string): Promise<any> {
+  async getPersonMedia(personId: string): Promise<Items> {
     // Fetch person info from /emby/Items/{personId}
-    return this.makeRequest<any>(
+    return this.makeRequest<Items>(
       "get",
       `/Users/${this.userId}/Items`,
       undefined,
@@ -545,8 +552,8 @@ class JellyfinApi {
    * Get all seasons for a series.
    * @param seriesId The series ID.
    */
-  async getSeasons(seriesId: string): Promise<any[]> {
-    const data = await this.makeRequest<any>(
+  async getSeasons(seriesId: string): Promise<MediaItem[]> {
+    const data = await this.makeRequest<ItemsResponse>(
       "get",
       `/Shows/${seriesId}/Seasons`,
       undefined,
@@ -629,6 +636,17 @@ class JellyfinApi {
         `/Users/${this.userId}/FavoriteItems/${itemId}`
       );
     }
+  }
+
+  async getRemoteTrailers(itemId: string): Promise<MediaItem> {
+    return this.makeRequest<MediaItem>(
+      "get",
+      `/Users/${this.userId}/Items/${itemId}`,
+      undefined,
+      {
+        Fields: "RemoteTrailers",
+      }
+    );
   }
 }
 

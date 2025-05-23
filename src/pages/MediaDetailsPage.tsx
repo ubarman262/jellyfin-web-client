@@ -1,6 +1,6 @@
 import { Calendar, Clock, Play, Star } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import rottenTomatoesIcon from "../assets/png/rotten.png";
 import Navbar from "../components/layout/Navbar";
 import CastList from "../components/ui/CastList";
@@ -8,9 +8,9 @@ import EpisodesList from "../components/ui/EpisodesList";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
 import { MediaItem, People, Studios } from "../types/jellyfin";
+import { typeEpisode, typeSeries } from "../utils/items";
 
 const MediaDetailsPage: React.FC = () => {
-  const navigate = useNavigate();
   // Always call hooks at the top level, before any early returns or conditionals
   const { itemId } = useParams<{ itemId: string }>();
   const { item, isLoading, error } = useMediaItem(itemId);
@@ -19,15 +19,10 @@ const MediaDetailsPage: React.FC = () => {
   const [seasonsLoading, setSeasonsLoading] = useState(false);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [seriesNextUp, setSeriesNextUp] = useState<MediaItem[]>([]);
-  const [seriesNextUpLoading, setSeriesNextUpLoading] = useState(false);
-  const [episodes, setEpisodes] = useState<MediaItem[]>([]);
-  const [episodesLoading, setEpisodesLoading] = useState(false);
-  const [episodesTransitionKey, setEpisodesTransitionKey] = useState(0);
 
   // Only use item after all hooks
-  const isSeries = item?.Type === "Series";
-  const isEpisode = item?.Type === "Episode";
+  const isSeries = typeSeries(item);
+  const isEpisode = typeEpisode(item);
 
   useEffect(() => {
     // Reset image loaded state when item changes
@@ -86,54 +81,9 @@ const MediaDetailsPage: React.FC = () => {
   // Fetch next up for this series using getSeriesNextUp
   useEffect(() => {
     if (!isSeries || !api || !item?.Id) {
-      setSeriesNextUp([]);
-      setSeriesNextUpLoading(false);
       return;
     }
-    setSeriesNextUpLoading(true);
-    api
-      .getSeriesNextUp(item.Id, 6)
-      .then((items) => setSeriesNextUp(items || []))
-      .catch(() => setSeriesNextUp([]))
-      .finally(() => setSeriesNextUpLoading(false));
   }, [isSeries, api, item?.Id]);
-
-  // Fetch episodes for selected season (for Series, Season, or Episode)
-  useEffect(() => {
-    let seriesId: string | undefined;
-    let seasonId: string | undefined;
-
-    if (isSeries && selectedSeasonId && api && item?.Id) {
-      seriesId = item.Id;
-      seasonId = selectedSeasonId;
-    } else if (item?.Type === "Season" && api && item.Id && item.SeriesId) {
-      seriesId = item.SeriesId;
-      seasonId = item.Id;
-    } else if (isEpisode && api && item?.SeriesId && selectedSeasonId) {
-      seriesId = item.SeriesId;
-      seasonId = selectedSeasonId;
-    }
-
-    if (seriesId && seasonId) {
-      setEpisodesLoading(true);
-      api
-        .getEpisodes(seriesId, seasonId)
-        .then((eps) => setEpisodes(eps || []))
-        .catch(() => setEpisodes([]))
-        .finally(() => setEpisodesLoading(false));
-    } else {
-      setEpisodes([]);
-      setEpisodesLoading(false);
-    }
-  }, [
-    isSeries,
-    isEpisode,
-    selectedSeasonId,
-    item?.Type,
-    item?.Id,
-    item?.SeriesId,
-    api,
-  ]);
 
   if (isLoading) {
     return (
@@ -200,48 +150,6 @@ const MediaDetailsPage: React.FC = () => {
   // Add a handler to update the transition key when season changes
   const handleSeasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSeasonId(e.target.value);
-    setEpisodesTransitionKey((k) => k + 1);
-  };
-
-  const isSeasonEpisodeList = (episodes: MediaItem[]) => {
-    return (
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Episodes</h2>
-        {episodesLoading ? (
-          <div className="flex flex-col gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex flex-row gap-4 items-center px-4 py-3 bg-[#181818] rounded-xl animate-pulse"
-              >
-                <div className="w-8 h-6 bg-gray-800 rounded" />
-                <div className="w-32 h-20 bg-gray-800 rounded" />
-                <div className="flex-1 min-w-0">
-                  <div className="h-4 bg-gray-800 rounded w-1/2 mb-2" />
-                  <div className="h-3 bg-gray-800 rounded w-1/3 mb-1" />
-                  <div className="h-3 bg-gray-800 rounded w-2/3" />
-                </div>
-                <div className="flex flex-col gap-2 ml-4">
-                  <div className="w-6 h-6 bg-gray-800 rounded-full" />
-                  <div className="w-6 h-6 bg-gray-800 rounded-full" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          // Add transition wrapper here
-          <div
-            key={episodesTransitionKey}
-            className="transition-all duration-500 ease-in-out animate-fadein"
-            style={{
-              animation: "fadein 0.5s",
-            }}
-          >
-            <EpisodesList episodes={episodes} />
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -449,10 +357,8 @@ const MediaDetailsPage: React.FC = () => {
                 <div className="flex flex-col flex-wrap gap-4 text-gray-300 text-sm mb-2">
                   {/* Director */}
                   {Array.isArray(item.People) &&
-                    item.People.filter(
-                      (p: { Type: string; Name: string }) =>
-                        p.Type === "Director"
-                    ).length > 0 && (
+                    item.People.filter((p) => p.Type === "Director").length >
+                      0 && (
                       <div>
                         <span className="font-semibold text-white">
                           Director:

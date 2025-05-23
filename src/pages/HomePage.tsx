@@ -6,7 +6,7 @@ import { useMediaData } from "../hooks/useMediaData";
 import { MediaItem } from "../types/jellyfin";
 
 const HomePage: React.FC = () => {
-  const [featuredItem, setFeaturedItem] = useState<MediaItem | null>(null);
+  const [featuredItems, setFeaturedItems] = useState<MediaItem[] | null>(null);
 
   const { items: resumeItems, isLoading: resumeLoading } = useMediaData(
     "resume",
@@ -33,24 +33,14 @@ const HomePage: React.FC = () => {
     // Select a featured item from latest or movies
     if (latestItems.length > 0) {
       // Find an item with backdrop image
-      const itemWithBackdrop = latestItems.find(
+      const itemsWithBackdrop = latestItems.filter(
         (item) => item.BackdropImageTags && item.BackdropImageTags.length > 0
       );
 
-      if (itemWithBackdrop) {
-        setFeaturedItem(itemWithBackdrop);
+      if (itemsWithBackdrop) {
+        setFeaturedItems(itemsWithBackdrop);
       } else {
-        setFeaturedItem(latestItems[0]);
-      }
-    } else if (moviesItems.length > 0) {
-      const itemWithBackdrop = moviesItems.find(
-        (item) => item.BackdropImageTags && item.BackdropImageTags.length > 0
-      );
-
-      if (itemWithBackdrop) {
-        setFeaturedItem(itemWithBackdrop);
-      } else {
-        setFeaturedItem(moviesItems[0]);
+        setFeaturedItems(latestItems);
       }
     }
   }, [latestItems, moviesItems]);
@@ -60,8 +50,8 @@ const HomePage: React.FC = () => {
       <Navbar />
 
       {/* Hero Section */}
-      {featuredItem ? (
-        <HeroBanner item={featuredItem} />
+      {featuredItems ? (
+        <HeroBanner items={featuredItems} />
       ) : (
         <div className="w-full h-[70vh] bg-neutral-800 animate-pulse"></div>
       )}

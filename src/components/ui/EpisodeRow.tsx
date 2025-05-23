@@ -2,7 +2,6 @@ import clsx from "clsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { MediaItem } from "../../types/jellyfin";
-import { useAuth } from "../../context/AuthContext";
 import MediaCard from "./MediaCard";
 
 interface EpisodeRowProps {
@@ -17,7 +16,6 @@ const EpisodeRow: React.FC<EpisodeRowProps> = ({
   isLoading = false,
 }) => {
   const rowRef = useRef<HTMLDivElement>(null);
-  const { api } = useAuth();
 
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -86,68 +84,6 @@ const EpisodeRow: React.FC<EpisodeRowProps> = ({
           className="flex overflow-x-scroll scrollbar-hide gap-4 pb-4"
           onScroll={checkArrows}
         >
-          {/* {episodes.map((ep) => (
-            <button
-              key={ep.Id}
-              onClick={() => (window.location.href = `/play/${ep.Id}`)}
-              className="group flex flex-col items-center w-48 cursor-pointer focus:outline-none"
-              style={{
-                border: "none",
-                background: "none",
-                padding: 0,
-              }}
-              tabIndex={0}
-              title={ep.Name}
-            >
-              <div className="relative w-full aspect-[16/9] rounded-md overflow-hidden bg-gray-900 hover:scale-105 hover:shadow-lg transition-all">
-                {ep.ImageTags?.Primary ? (
-                  <>
-                    <img
-                      src={api.getImageUrl(ep.Id, "Primary", 320)}
-                      alt={ep.Name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    {ep.UserData?.Played && (
-                      <div className="absolute top-2 right-2 bg-blue-600 rounded-full w-7 h-7 flex items-center justify-center">
-                        <svg
-                          width="18"
-                          height="18"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke="#fff"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-800">
-                    <span className="text-gray-400">{ep.Name}</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 pointer-events-none" />
-              </div>
-              <div className="mt-1 text-center w-full">
-                <div className="text-xs font-semibold text-white truncate">
-                  {ep.Name}
-                </div>
-                <div className="text-xs text-gray-400">
-                  {ep.ParentIndexNumber !== undefined &&
-                    ep.IndexNumber !== undefined && (
-                      <>
-                        S{ep.ParentIndexNumber}E{ep.IndexNumber}
-                      </>
-                    )}
-                </div>
-              </div>
-            </button>
-          ))} */}
           {episodes.map((item) => (
             <div
               key={item.Id}

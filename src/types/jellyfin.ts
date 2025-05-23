@@ -9,7 +9,7 @@ export interface UserLogin {
   password: string;
 }
 
-export interface JellyfinUser {
+export interface User {
   Id: string;
   Name: string;
   ServerId: string;
@@ -39,7 +39,6 @@ export interface JellyfinUser {
     MaxParentalRating: number;
     BlockedTags: string[];
     EnableUserPreferenceAccess: boolean;
-    AccessSchedules: any[];
     BlockUnratedItems: string[];
     EnableRemoteControlOfOtherUsers: boolean;
     EnableSharedDeviceControl: boolean;
@@ -70,7 +69,7 @@ export interface JellyfinUser {
 }
 
 export interface JellyfinAuthResult {
-  User: JellyfinUser;
+  User: User;
   SessionInfo: {
     PlayState: {
       CanSeek: boolean;
@@ -129,6 +128,7 @@ export interface MediaItem {
   Genres?: string[];
   CriticRating?: number;
   People?: Array<People>;
+  Profession?: string;
   Studios?: Array<Studios>;
   RemoteTrailers?: Array<{
     Url: string;
@@ -144,39 +144,57 @@ export interface MediaItem {
     LastPlayedDate?: string;
     LastPlayedDateTicks?: number;
     LastPlayedDateString?: string;
+  };
+  ProductionLocations?: string[];
+  ProviderIds?: ProviderIds;
 }
-
 export interface Studios {
   Name: string;
   Id: string;
 }
 
+type PeopleType = "Actor" | "Director" | "Producer" | "Writer";
+
 export interface People {
   Name: string;
-  Type: string;
   Id: string;
-  PrimaryImageTag?: string;
   Role?: string;
-  CharacterName?: string;
-  IsCast: boolean;
-  IsDirector: boolean;
-  IsWriter: boolean;
-  IsProducer: boolean;
-  IsGuestStar: boolean;
-  IsGuestDirector: boolean;
-  IsGuestWriter: boolean;
-  IsGuestProducer: boolean;
-  IsGuest: boolean;
-  IsCrew: boolean;
-  IsGuestCrew: boolean;
+  Type?: PeopleType;
+  PrimaryImageTag?: string;
+  ImageBlurHashes?: {
+    Primary?: {
+      [size: string]: string;
+    };
+  };
+  SortName?: string;
+  Path?: string;
+  ProductionYear?: number;
+  Overview?: string;
+  IndexNumber?: number;
+  ParentIndexNumber?: number;
+  PremiereDate?: string;
+  BirthDate?: string;
+  DeathDate?: string;
+  IsFavorite?: boolean;
+  ExternalUrls?: {
+    Name: string;
+    Url: string;
+  }[];
+  ServerId?: string;
+  ImageTags?: ImageTags;
+  Profession?: string;
+  ProductionLocations?: string[];
+  ProviderIds?: ProviderIds;
 }
 
-export interface MediaStream {
-  Codec: string;
-  Language: string;
-  Type: string;
-  Index: number;
-  DisplayTitle: string;
+export interface ProviderIds {
+  Imdb: string;
+}
+
+export interface ImageTags {
+  Primary: string;
+  Logo: string;
+  Thumbnail: string;
 }
 
 export interface Genre {
@@ -224,4 +242,88 @@ export interface JellyfinSubtitleStream {
   IsTextSubtitleStream: boolean;
   SupportsExternalStream: boolean;
   Level: number;
+}
+
+export interface Items {
+  Items: MediaItem[];
+}
+
+export interface MediaSource {
+  Id: string;
+  Path?: string;
+  Protocol: "File" | "Http" | "Rtsp" | "Rtmp" | "Udp" | "Rtp" | "Ftp" | "Mms";
+  Type?: "Default" | "Group";
+  Container?: string;
+  Size?: number;
+  Name?: string;
+  RunTimeTicks?: number;
+  ReadAtNativeFramerate?: boolean;
+  IsRemote?: boolean;
+  ETag?: string;
+  IgnoreDts?: boolean;
+  IgnoreIndex?: boolean;
+  SupportsTranscoding?: boolean;
+  SupportsDirectStream?: boolean;
+  SupportsDirectPlay?: boolean;
+  IsInfiniteStream?: boolean;
+  RequiresOpening?: boolean;
+  OpenToken?: string;
+  RequiresClosing?: boolean;
+  LiveStreamId?: string;
+  BufferMs?: number;
+  RequiresLooping?: boolean;
+  SupportsProbing?: boolean;
+  MediaStreams?: MediaStream[];
+  MediaAttachments?: MediaAttachment[];
+  Formats?: string[];
+  Bitrate?: number;
+  Timestamp?: string;
+  RequiredHttpHeaders?: Record<string, string>;
+  DirectStreamUrl?: string;
+  TranscodingUrl?: string;
+  EncoderPath?: string;
+  EncoderProtocol?: string;
+  DefaultAudioStreamIndex?: number;
+  DefaultSubtitleStreamIndex?: number;
+}
+
+export interface MediaStream {
+  Index: number;
+  Codec: string;
+  CodecTag?: string;
+  Language?: string;
+  LanguageCode?: string;
+  IsInterlaced?: boolean;
+  IsDefault?: boolean;
+  IsForced?: boolean;
+  Type: "Video" | "Audio" | "Subtitle";
+  AspectRatio?: string;
+  Channels?: number;
+  SampleRate?: number;
+  BitRate?: number;
+  BitDepth?: number;
+  Width?: number;
+  Height?: number;
+  AverageFrameRate?: number;
+  RealFrameRate?: number;
+  Profile?: string;
+  Level?: number;
+  IsExternal?: boolean;
+  DisplayTitle?: string;
+  DisplayLanguage?: string;
+  NalLengthSize?: string;
+}
+
+export interface MediaAttachment {
+  Codec: string;
+  CodecTag?: string;
+  Comment?: string;
+  Index: number;
+  FileName?: string;
+  MimeType?: string;
+}
+
+export interface MediaSourceResponse {
+  MediaSources: MediaSource[];
+  PlaySessionId: string;
 }

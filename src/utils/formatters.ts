@@ -1,11 +1,9 @@
 // Format runtime from ticks to minutes
 export const formatRuntime = (ticks?: number) => {
-  if (!ticks) return '';
-  
+  if (!ticks) return "";
   const totalMinutes = Math.floor(ticks / (10000 * 1000 * 60));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
@@ -14,7 +12,7 @@ export const formatRuntime = (ticks?: number) => {
 
 // Format date to year only
 export const formatYear = (dateString?: string) => {
-  if (!dateString) return '';
+  if (!dateString) return "";
   return new Date(dateString).getFullYear();
 };
 
@@ -22,5 +20,5 @@ export const formatYear = (dateString?: string) => {
 export const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
 };

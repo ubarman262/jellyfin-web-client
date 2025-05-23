@@ -1,30 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Film, Tv, Search, Menu, X, LogOut, ChevronDown } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
+import { ChevronDown, Film, LogOut, Menu, Search, Tv, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout, user } = useAuth();
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     setIsScrolled(window.scrollY > 20);
-  //   };
-
-  //   window.addEventListener("scroll", handleScroll);
-
-  //   return () => {
-  //     window.removeEventListener("scroll", handleScroll);
-  //   };
-  // }, []);
 
   useEffect(() => {
     // Close menus when location changes
@@ -47,16 +34,14 @@ const Navbar: React.FC = () => {
   };
 
   const getUserInitial = () => {
-    return user?.User?.Name ? user.User.Name.charAt(0).toUpperCase() : "U";
+    return user?.Name ? user.Name.charAt(0).toUpperCase() : "U";
   };
 
   return (
     <header
       className={clsx(
-        "absolute top-0 left-0 right-0 z-10 transition-all duration-300",
-        isScrolled
-          ? "bg-black/90 backdrop-blur-sm"
-          : "bg-gradient-to-b from-black/80 to-transparent"
+        "absolute top-0 left-0 right-0 z-20 transition-all duration-300",
+        "bg-gradient-to-b from-black/80 to-transparent"
       )}
     >
       <div className="container mx-auto px-4">
@@ -151,9 +136,7 @@ const Navbar: React.FC = () => {
                 {showUserMenu && (
                   <div className="absolute right-0 top-12 w-48 bg-gray-900 rounded-md shadow-lg overflow-hidden z-50">
                     <div className="p-3 border-b border-gray-800">
-                      <p className="text-white font-medium">
-                        {user?.User?.Name}
-                      </p>
+                      <p className="text-white font-medium">{user?.Name}</p>
                     </div>
                     <button
                       onClick={handleLogout}

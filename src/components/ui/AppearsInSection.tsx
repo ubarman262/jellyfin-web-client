@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { MediaItem } from "../../types/jellyfin";
+import { Items, MediaItem } from "../../types/jellyfin";
 import MediaRow from "./MediaRow";
 
 const AppearsInSection: React.FC<{ personId: string }> = ({ personId }) => {
@@ -13,8 +13,8 @@ const AppearsInSection: React.FC<{ personId: string }> = ({ personId }) => {
     setLoading(true);
 
     api
-      .getPersonInfo(personId)
-      .then((res: any) => {
+      .getPersonMedia(personId)
+      .then((res: Items) => {
         setMedia(res.Items ?? []);
       })
       .catch(() => setMedia([]))

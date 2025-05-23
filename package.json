@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "@jellyfin/sdk": "^0.11.0",
     "axios": "^1.6.2",
     "clsx": "^2.0.0",
     "dompurify": "^3.2.5",
@@ -28,6 +29,7 @@
     "react-dom": "^18.3.1",
     "react-fontawesome": "^1.7.1",
     "react-horizontal-scrolling-menu": "^8.2.0",
+    "react-modal-sheet": "^4.4.0",
     "react-router-dom": "^6.22.0",
     "react-youtube": "^10.1.0",
     "video.js": "^8.22.0",

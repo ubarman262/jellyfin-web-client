@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from "react";
 import clsx from "clsx";
-import { Headphones, Captions, Check, Settings } from "lucide-react";
+import { Check, Settings } from "lucide-react";
+import React, { useEffect, useRef } from "react";
 import { JellyfinSubtitleStream } from "../../types/jellyfin";
 
 type AudioTrack = {

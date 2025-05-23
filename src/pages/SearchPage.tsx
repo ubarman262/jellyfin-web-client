@@ -8,14 +8,15 @@ import { Search as SearchIcon } from "lucide-react";
 const SearchPage: React.FC = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const initialQuery = searchParams.get("q") || "";
+  const initialQuery = searchParams.get("q") ?? "";
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const { results, isLoading, totalResults } = useSearch(searchQuery);
 
   useEffect(() => {
     // Update query when URL changes
-    const newQuery = searchParams.get("q") || "";
+    const params = new URLSearchParams(location.search);
+    const newQuery = params.get("q") ?? "";
     setSearchQuery(newQuery);
   }, [location.search]);
 
@@ -57,51 +58,64 @@ const SearchPage: React.FC = () => {
         </div>
 
         {/* Results */}
-        <div className="space-y-8">
-          {searchQuery && (
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-medium">
-                {isLoading ? "Searching..." : `Results for "${searchQuery}"`}
-              </h2>
-              {!isLoading && totalResults > 0 && (
-                <p className="text-gray-400">{totalResults} results found</p>
+        {(() => {
+          let resultsContent;
+          if (isLoading) {
+            resultsContent = (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
+                  ></div>
+                ))}
+              </div>
+            );
+          } else if (results.length > 0) {
+            resultsContent = (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {results.map((item) => (
+                  <MediaCard key={item.Id} item={item} />
+                ))}
+              </div>
+            );
+          } else if (searchQuery) {
+            resultsContent = (
+              <div className="text-center py-12">
+                <p className="text-gray-400">
+                  No results found for "{searchQuery}"
+                </p>
+                <p className="text-sm mt-2">
+                  Try a different search term or browse categories
+                </p>
+              </div>
+            );
+          } else {
+            resultsContent = (
+              <div className="text-center py-12">
+                <SearchIcon size={48} className="mx-auto text-gray-600 mb-4" />
+                <p className="text-gray-400">
+                  Enter a search term to find movies, TV shows, and more
+                </p>
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-8">
+              {searchQuery && (
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-medium">
+                    {isLoading ? "Searching..." : `Results for "${searchQuery}"`}
+                  </h2>
+                  {!isLoading && totalResults > 0 && (
+                    <p className="text-gray-400">{totalResults} results found</p>
+                  )}
+                </div>
               )}
+              {resultsContent}
             </div>
-          )}
-
-          {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
-                ></div>
-              ))}
-            </div>
-          ) : results.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {results.map((item) => (
-                <MediaCard key={item.Id} item={item} />
-              ))}
-            </div>
-          ) : searchQuery ? (
-            <div className="text-center py-12">
-              <p className="text-gray-400">
-                No results found for "{searchQuery}"
-              </p>
-              <p className="text-sm mt-2">
-                Try a different search term or browse categories
-              </p>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <SearchIcon size={48} className="mx-auto text-gray-600 mb-4" />
-              <p className="text-gray-400">
-                Enter a search term to find movies, TV shows, and more
-              </p>
-            </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
     </div>
   );

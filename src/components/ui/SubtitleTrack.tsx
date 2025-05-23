@@ -1,11 +1,11 @@
-import { useMemo, useEffect, useState } from "react";
 import DOMPurify from "dompurify";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { JellyfinSubtitleStream } from "../../types/jellyfin";
+import { MediaStream } from "../../types/jellyfin";
 
 // Props: subtitleTracks, selectedSubtitleIndex, itemId, api, currentTime
 type SubtitleTrackProps = {
-  subtitleTracks: JellyfinSubtitleStream[];
+  subtitleTracks: MediaStream[];
   selectedSubtitleIndex: number | null;
   itemId: string;
   currentTime: number;

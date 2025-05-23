@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import React, { useEffect } from "react";
 
 type RevealModalProps = {
@@ -27,7 +28,7 @@ const RevealModal: React.FC<RevealModalProps> = ({
     >
       {/* Overlay */}
       <div
-        className={`absolute inset-0 bg-black transition-opacity duration-500 ${
+        className={`absolute inset-0 bg-white transition-opacity duration-500 ${
           isOpen ? "opacity-60" : "opacity-0"
         }`}
         onClick={onClose}
@@ -40,10 +41,21 @@ const RevealModal: React.FC<RevealModalProps> = ({
         }`}
       >
         {children ?? (
-          <>
-            <h2 className="text-xl font-bold mb-2">I'm a Modal</h2>
-            <p className="text-gray-600">Sliding up from the bottom.</p>
-          </>
+          <div
+            className="relative bg-neutral-900 rounded-t-xl shadow-2xl w-full max-w-4xl mx-auto overflow-y-auto scrollbar-hide"
+            style={{ maxHeight: 700, marginBottom: 0 }}
+          >
+            <button
+              className="absolute top-4 right-4 z-30 bg-black/60 rounded-full p-2 hover:bg-black/80 transition-colors"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <X size={24} />
+            </button>
+            <div className="relative w-full aspect-[16/8] bg-black rounded-t-lg overflow-hidden">
+              Hello
+            </div>
+          </div>
         )}
       </div>
     </div>

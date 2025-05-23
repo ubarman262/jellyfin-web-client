@@ -20,7 +20,11 @@ import SubtitleTrack from "../components/ui/SubtitleTrack";
 import TracksMenu from "../components/ui/TracksMenu";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
-import { JellyfinSubtitleStream } from "../types/jellyfin";
+import { MediaStream } from "../types/jellyfin";
+
+interface VideoElementWithHls extends HTMLVideoElement {
+  __hlsInstance?: Hls | null;
+}
 
 const MediaPlayerPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
@@ -28,7 +32,7 @@ const MediaPlayerPage: React.FC = () => {
   const { api } = useAuth();
   const navigate = useNavigate();
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<VideoElementWithHls>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -39,9 +43,7 @@ const MediaPlayerPage: React.FC = () => {
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [subtitleTracks, setSubtitleTracks] = useState<
-    JellyfinSubtitleStream[]
-  >([]);
+  const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
 
   // Audio tracks state
@@ -49,8 +51,11 @@ const MediaPlayerPage: React.FC = () => {
     { id: number; label: string; language: string }[]
   >([]);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
-  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<number | null>(null);
-  const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
+  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<
+    number | null
+  >(null);
+  const [hasInitializedSelections, setHasInitializedSelections] =
+    useState(false);
 
   // Add loader state for audio switching
   const [isSwitchingAudio, setIsSwitchingAudio] = useState(false);
@@ -61,14 +66,16 @@ const MediaPlayerPage: React.FC = () => {
   // Helper functions for cookies
   function setCookie(name: string, value: string, days: number) {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    document.cookie = `${name}=${encodeURIComponent(
+      value
+    )}; expires=${expires}; path=/`;
   }
   function getCookie(name: string): string | null {
     return (
       document.cookie
         .split("; ")
         .find((row) => row.startsWith(name + "="))
-        ?.split("=")[1] || null
+        ?.split("=")[1] ?? null
     );
   }
 
@@ -99,9 +106,9 @@ const MediaPlayerPage: React.FC = () => {
     setIsSwitchingAudio(true);
 
     // Clean up previous HLS instance if any
-    if ((videoEl as any).__hlsInstance) {
-      (videoEl as any).__hlsInstance.destroy();
-      (videoEl as any).__hlsInstance = null;
+    if (videoEl.__hlsInstance) {
+      videoEl.__hlsInstance.destroy();
+      videoEl.__hlsInstance = null;
     }
 
     // Remove all event listeners for loadedmetadata
@@ -113,12 +120,14 @@ const MediaPlayerPage: React.FC = () => {
       if (prevTime > 0 && Math.abs(videoEl.currentTime - prevTime) > 0.5) {
         try {
           videoEl.currentTime = prevTime;
-        } catch {}
+        } catch (err) {
+          console.log(err);
+        }
       }
       setHasRestoredPosition(true);
       if (wasPlaying) {
         setTimeout(() => {
-          videoEl.play().catch(() => {});
+          videoEl.play();
           setIsSwitchingAudio(false);
         }, 0);
       } else {
@@ -129,7 +138,7 @@ const MediaPlayerPage: React.FC = () => {
     const playbackUrl = api.getPlaybackUrl(item.Id, selectedAudioTrack);
 
     // --- Report "playing" to Jellyfin when a new video is loaded ---
-    const playSessionId = `${api['deviceId']}-${Date.now()}`;
+    const playSessionId = `${api["deviceId"]}-${Date.now()}`;
     api.reportPlaying?.({
       itemId: item.Id,
       mediaSourceId: item.Id,
@@ -166,7 +175,7 @@ const MediaPlayerPage: React.FC = () => {
 
     if (Hls.isSupported()) {
       hls = new Hls();
-      (videoEl as any).__hlsInstance = hls;
+      videoEl.__hlsInstance = hls;
       hls.loadSource(playbackUrl);
       hls.attachMedia(videoEl);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -194,9 +203,9 @@ const MediaPlayerPage: React.FC = () => {
       videoEl.removeEventListener("pause", handlePause);
       videoEl.removeEventListener("loadedmetadata", restoreTimeAndPlay);
       videoEl.removeEventListener("error", () => setIsSwitchingAudio(false));
-      if ((videoEl as any).__hlsInstance) {
-        (videoEl as any).__hlsInstance.destroy();
-        (videoEl as any).__hlsInstance = null;
+      if (videoEl.__hlsInstance) {
+        videoEl.__hlsInstance.destroy();
+        videoEl.__hlsInstance = null;
       }
       if (hls) {
         hls.destroy();
@@ -238,7 +247,14 @@ const MediaPlayerPage: React.FC = () => {
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [api, item, isPlaying, duration, selectedAudioTrack, selectedSubtitleIndex]);
+  }, [
+    api,
+    item,
+    isPlaying,
+    duration,
+    selectedAudioTrack,
+    selectedSubtitleIndex,
+  ]);
 
   // Auto-hide controls
   useEffect(() => {
@@ -408,8 +424,8 @@ const MediaPlayerPage: React.FC = () => {
     const tracks =
       item.MediaStreams?.filter((s) => s.Type === "Audio")?.map((s, idx) => ({
         id: s.Index,
-        label: s.DisplayTitle || `Track ${idx + 1}`,
-        language: s.Language || "",
+        label: s.DisplayTitle ?? `Track ${idx + 1}`,
+        language: s.Language ?? "",
       })) || [];
     setAudioTracks(tracks);
 
@@ -421,13 +437,18 @@ const MediaPlayerPage: React.FC = () => {
       if (cookie) {
         try {
           const parsed = JSON.parse(decodeURIComponent(cookie));
-          if (typeof parsed.audio === "number" && tracks.some((t) => t.id === parsed.audio)) {
+          if (
+            typeof parsed.audio === "number" &&
+            tracks.some((t) => t.id === parsed.audio)
+          ) {
             audioId = parsed.audio;
           }
           if (parsed.subtitle === null || typeof parsed.subtitle === "number") {
             subtitleIdx = parsed.subtitle;
           }
-        } catch {}
+        } catch (err) {
+          console.log(err);
+        }
       }
       setSelectedAudioTrack(audioId);
       setSelectedSubtitleIndex(subtitleIdx);
@@ -438,13 +459,20 @@ const MediaPlayerPage: React.FC = () => {
   // Store selected audio track and subtitle index in a single cookie as JSON
   useEffect(() => {
     if (!item || !hasInitializedSelections) return;
-    console.log(selectedAudioTrack)
     setCookie(
       `jellyfin_media_${item.Id}`,
-      JSON.stringify({ audio: selectedAudioTrack, subtitle: selectedSubtitleIndex }),
+      JSON.stringify({
+        audio: selectedAudioTrack,
+        subtitle: selectedSubtitleIndex,
+      }),
       7
     );
-  }, [item, selectedAudioTrack, selectedSubtitleIndex, hasInitializedSelections]);
+  }, [
+    item,
+    selectedAudioTrack,
+    selectedSubtitleIndex,
+    hasInitializedSelections,
+  ]);
 
   if (isLoading || !item || !api) {
     return (
@@ -474,7 +502,15 @@ const MediaPlayerPage: React.FC = () => {
         className="w-full h-full"
         autoPlay
         onClick={togglePlay}
-      />
+      >
+        <track
+          kind="subtitles"
+          srcLang="en"
+          label="English"
+          src="/subtitles/english.vtt"
+          default
+        />
+      </video>
 
       {/* SubtitleTrack now handles fetching and displaying the active subtitle */}
       {selectedSubtitleIndex !== null && (
@@ -504,7 +540,9 @@ const MediaPlayerPage: React.FC = () => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-medium text-white ml-3 truncate">{item.Name}</h1>
+          <h1 className="text-xl font-medium text-white ml-3 truncate">
+            {item.Name}
+          </h1>
         </div>
 
         {/* Center controls - mobile layout */}

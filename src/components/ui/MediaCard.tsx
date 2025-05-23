@@ -2,11 +2,10 @@ import clsx from "clsx";
 import { Info, Play } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import JellyfinApi from "../../api/jellyfin";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
-import MediaDetailsModal from "./MediaDetailsModal";
-import JellyfinApi from "../../api/jellyfin";
-import RevealModal from "./modals/RevealModal";
+import MediaDetailsModal from "./MediaDetailsDrawer";
 
 interface MediaCardProps {
   item: MediaItem;
@@ -268,18 +267,20 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
           />
         </div>
       </div>
-      {/* <MediaDetailsModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        itemId={item.Id}
-      /> */}
-      <RevealModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
+      {/* <Sheets isOpen={modalOpen} onClose={() => setModalOpen(false)}>
         <MediaDetailsModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           itemId={item.Id}
         />
-      </RevealModal>
+      </Sheets> */}
+      {/* <RevealModal isOpen={modalOpen} onClose={() => setModalOpen(false)}> */}
+      <MediaDetailsModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        itemId={item.Id}
+      />
+      {/* </RevealModal> */}
     </>
   );
 };

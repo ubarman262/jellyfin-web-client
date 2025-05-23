@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useCallback,
@@ -6,13 +7,13 @@ import React, {
   useState,
 } from "react";
 import JellyfinApi from "../api/jellyfin";
-import { JellyfinAuthResult, UserLogin } from "../types/jellyfin";
+import { User, UserLogin } from "../types/jellyfin";
 
 interface AuthContextType {
   api: JellyfinApi | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: JellyfinAuthResult["User"] | null;
+  user: User | null;
   jellyfinClient: JellyfinApi | null;
   serverUrl: string;
   setServerUrl: (url: string) => void;
@@ -20,7 +21,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 export function AuthProvider({
   children,
@@ -29,7 +32,7 @@ export function AuthProvider({
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<JellyfinAuthResult["User"] | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [jellyfinClient, setJellyfinClient] = useState<JellyfinApi | null>(
     null
   );
