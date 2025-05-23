@@ -100,12 +100,7 @@ export interface MediaItem {
   Name: string;
   Id: string;
   Type: string;
-  ImageTags?: {
-    Primary?: string;
-    Thumb?: string;
-    Logo?: string;
-    Backdrop?: string;
-  };
+  ImageTags?: ImageTags;
   BackdropImageTags?: string[];
   ParentBackdropImageTags?: string[];
   ParentPrimaryImageTag?: string;
@@ -192,9 +187,10 @@ export interface ProviderIds {
 }
 
 export interface ImageTags {
-  Primary: string;
-  Logo: string;
-  Thumbnail: string;
+  Primary?: string;
+  Thumb?: string;
+  Logo?: string;
+  Backdrop?: string;
 }
 
 export interface Genre {
@@ -312,6 +308,7 @@ export interface MediaStream {
   DisplayTitle?: string;
   DisplayLanguage?: string;
   NalLengthSize?: string;
+  Title?: string;
 }
 
 export interface MediaAttachment {

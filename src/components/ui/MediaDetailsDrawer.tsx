@@ -22,6 +22,7 @@ import MarkWatchedButton from "./MarkWatchedButton";
 import MuteButton from "./MuteButton";
 import PlayButton from "./playButton";
 import ReplayButton from "./ReplayButton";
+import ImageWithFallback from "./ImageWithFallback";
 
 interface MediaDetailsDrawerProps {
   open: boolean;
@@ -131,7 +132,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
             <div className="relative w-full aspect-[16/8] bg-black rounded-t-xl overflow-hidden">
               {/* Backdrop image base */}
               {backdropUrl && (
-                <img
+                <ImageWithFallback
                   src={backdropUrl}
                   alt={item.Name}
                   className={clsx(
@@ -220,8 +221,8 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                 <PlayButton
                   itemId={item.Id}
                   type={item.Type}
-                  width={150}
-                  height={45}
+                  width={200}
+                  height={50}
                 />
                 {/* Watched checkmark with transition */}
                 <MarkWatchedButton

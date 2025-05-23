@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { Check, Settings } from "lucide-react";
 import React, { useEffect, useRef } from "react";
-import { JellyfinSubtitleStream } from "../../types/jellyfin";
+import { MediaStream } from "../../types/jellyfin";
 
 type AudioTrack = {
   id: number;
@@ -13,7 +13,7 @@ interface TracksMenuProps {
   audioTracks: AudioTrack[];
   selectedAudioTrack: number;
   setSelectedAudioTrack: (id: number) => void;
-  subtitleTracks: JellyfinSubtitleStream[];
+  subtitleTracks: MediaStream[];
   selectedSubtitleIndex: number | null;
   setSelectedSubtitleIndex: (index: number | null) => void;
   isOpen: boolean;
