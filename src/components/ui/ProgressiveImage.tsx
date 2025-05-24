@@ -4,10 +4,13 @@ import "react-lazy-load-image-component/src/effects/blur.css";
 
 type ProgressiveImageProps = {
   src: string;
+  onLoad: () => void;
 };
 
-const ProgressiveImage: React.FC<ProgressiveImageProps> = ({ src }) => {
-  return <LazyLoadImage alt="trailer" effect="blur" src={src} />;
+const ProgressiveImage: React.FC<ProgressiveImageProps> = ({ src, onLoad }) => {
+  return (
+    <LazyLoadImage alt="trailer" effect="blur" src={src} onLoad={onLoad} />
+  );
 };
 
 export default ProgressiveImage;
