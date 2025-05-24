@@ -1,5 +1,6 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { BrowserView, isBrowser, MobileView } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
 import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
@@ -9,7 +10,7 @@ import {
   getStudios,
   getWriters,
   typeEpisode,
-  typeSeries
+  typeSeries,
 } from "../../utils/items";
 import CastList from "./CastList";
 import EpisodesList from "./EpisodesList";
@@ -104,86 +105,92 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                 <YouTubeWithProgressiveFallback item={item} />
 
                 {/* Play button over video, bottom left */}
-                <div className="absolute bottom-2 left-4 z-30 flex items-center gap-2 ml-4">
-                  <PlayButton
-                    itemId={item.Id}
-                    type={item.Type}
-                    width={200}
-                    height={50}
-                  />
-                  {/* Watched checkmark with transition */}
-                  <MarkWatchedButton
-                    item={item}
-                    isWatched={isWatched}
-                    setIsWatched={setIsWatched}
-                  />
-                  {/* Favourite button with transition */}
-                  <span
-                    className="relative bg-white/10 rounded-full p-2 ml-2 border-2 border-white flex items-center justify-center cursor-pointer"
-                    title={
-                      isFavourite ? "Remove from favorites" : "Add to favorites"
-                    }
-                    style={{
-                      lineHeight: 0,
-                      width: 37.2,
-                      height: 37.2,
-                      transition: "background 0.2s",
-                    }}
-                    onClick={async () => {
-                      try {
-                        await api.markAsFavourite(item.Id, !isFavourite);
-                        setIsFavourite((prev) => !prev);
-                      } catch (err) {
-                        console.error("Error toggling favorite:", err);
+                {isBrowser && (
+                  <div className="absolute bottom-2 left-4 z-30 flex items-center gap-2 ml-4">
+                    <PlayButton
+                      itemId={item.Id}
+                      type={item.Type}
+                      width={200}
+                      height={50}
+                    />
+                    {/* Watched checkmark with transition */}
+                    <MarkWatchedButton
+                      item={item}
+                      isWatched={isWatched}
+                      setIsWatched={setIsWatched}
+                    />
+                    {/* Favourite button with transition */}
+                    <span
+                      className="relative bg-white/10 rounded-full p-2 ml-2 border-2 border-white flex items-center justify-center cursor-pointer"
+                      title={
+                        isFavourite
+                          ? "Remove from favorites"
+                          : "Add to favorites"
                       }
-                    }}
-                  >
-                    {/* Outlined Heart icon */}
-                    <span
                       style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        opacity: isFavourite ? 0 : 1,
-                        transform: isFavourite ? "scale(0.7)" : "scale(1)",
-                        transition: "opacity 0.25s, transform 0.25s",
-                        // color: "#facc15",
-                        pointerEvents: isFavourite ? "none" : "auto",
+                        lineHeight: 0,
+                        width: 37.2,
+                        height: 37.2,
+                        transition: "background 0.2s",
+                      }}
+                      onClick={async () => {
+                        try {
+                          await api.markAsFavourite(item.Id, !isFavourite);
+                          setIsFavourite((prev) => !prev);
+                        } catch (err) {
+                          console.error("Error toggling favorite:", err);
+                        }
                       }}
                     >
-                      <Heart size={18} />
+                      {/* Outlined Heart icon */}
+                      <span
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          opacity: isFavourite ? 0 : 1,
+                          transform: isFavourite ? "scale(0.7)" : "scale(1)",
+                          transition: "opacity 0.25s, transform 0.25s",
+                          // color: "#facc15",
+                          pointerEvents: isFavourite ? "none" : "auto",
+                        }}
+                      >
+                        <Heart size={18} />
+                      </span>
+                      {/* Filled Heart icon */}
+                      <span
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          opacity: isFavourite ? 1 : 0,
+                          transform: isFavourite ? "scale(1)" : "scale(0.7)",
+                          transition: "opacity 0.25s, transform 0.25s",
+                          // color: "#facc15",
+                          pointerEvents: isFavourite ? "auto" : "none",
+                        }}
+                      >
+                        <Heart size={18} fill="#fff" />
+                      </span>
                     </span>
-                    {/* Filled Heart icon */}
-                    <span
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        opacity: isFavourite ? 1 : 0,
-                        transform: isFavourite ? "scale(1)" : "scale(0.7)",
-                        transition: "opacity 0.25s, transform 0.25s",
-                        // color: "#facc15",
-                        pointerEvents: isFavourite ? "auto" : "none",
-                      }}
-                    >
-                      <Heart size={18} fill="#fff" />
-                    </span>
-                  </span>
-                </div>
+                  </div>
+                )}
 
                 {/* Fade overlay between video and details */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-                  style={{
-                    background:
-                      "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
-                    zIndex: 10,
-                  }}
-                />
+                <BrowserView>
+                  <div
+                    className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                      zIndex: 10,
+                    }}
+                  />
+                </BrowserView>
               </div>
 
               {/* Details */}
@@ -214,7 +221,86 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                         {item.Name}
                       </h2>
                     )}
-
+                    <MobileView>
+                      <div className="mt-5 mb-5">
+                        <PlayButton
+                          itemId={item.Id}
+                          type={item.Type}
+                          width="100%"
+                          height={50}
+                        />
+                      </div>
+                      <div className="flex gap-4 mb-4 ml-[-8px]">
+                        {/* Watched checkmark with transition */}
+                        <MarkWatchedButton
+                          item={item}
+                          isWatched={isWatched}
+                          setIsWatched={setIsWatched}
+                        />
+                        {/* Favourite button with transition */}
+                        <span
+                          className="relative bg-white/10 rounded-full p-2 border-2 border-white flex items-center justify-center cursor-pointer"
+                          title={
+                            isFavourite
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                          style={{
+                            lineHeight: 0,
+                            width: 37.2,
+                            height: 37.2,
+                            transition: "background 0.2s",
+                          }}
+                          onClick={async () => {
+                            try {
+                              await api.markAsFavourite(item.Id, !isFavourite);
+                              setIsFavourite((prev) => !prev);
+                            } catch (err) {
+                              console.error("Error toggling favorite:", err);
+                            }
+                          }}
+                        >
+                          {/* Outlined Heart icon */}
+                          <span
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              opacity: isFavourite ? 0 : 1,
+                              transform: isFavourite
+                                ? "scale(0.7)"
+                                : "scale(1)",
+                              transition: "opacity 0.25s, transform 0.25s",
+                              // color: "#facc15",
+                              pointerEvents: isFavourite ? "none" : "auto",
+                            }}
+                          >
+                            <Heart size={18} />
+                          </span>
+                          {/* Filled Heart icon */}
+                          <span
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              opacity: isFavourite ? 1 : 0,
+                              transform: isFavourite
+                                ? "scale(1)"
+                                : "scale(0.7)",
+                              transition: "opacity 0.25s, transform 0.25s",
+                              // color: "#facc15",
+                              pointerEvents: isFavourite ? "auto" : "none",
+                            }}
+                          >
+                            <Heart size={18} fill="#fff" />
+                          </span>
+                        </span>
+                      </div>
+                    </MobileView>
                     {/* Meta info */}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 mb-2">
                       {isEpisode && item.PremiereDate && (
@@ -271,6 +357,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                         ))}
                       </div>
                     )}
+
                     <p className="text-gray-200 mb-4">{item.Overview}</p>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-2">
                       {directors && directors.length > 0 && (
