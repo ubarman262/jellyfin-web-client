@@ -1,6 +1,11 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { BrowserView, isBrowser, MobileView } from "react-device-detect";
+import {
+  BrowserView,
+  isBrowser,
+  isMobile,
+  MobileView,
+} from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
 import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
@@ -230,76 +235,6 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                           height={50}
                         />
                       </div>
-                      <div className="flex gap-4 mb-4 ml-[-8px]">
-                        {/* Watched checkmark with transition */}
-                        <MarkWatchedButton
-                          item={item}
-                          isWatched={isWatched}
-                          setIsWatched={setIsWatched}
-                        />
-                        {/* Favourite button with transition */}
-                        <span
-                          className="relative bg-white/10 rounded-full p-2 border-2 border-white flex items-center justify-center cursor-pointer"
-                          title={
-                            isFavourite
-                              ? "Remove from favorites"
-                              : "Add to favorites"
-                          }
-                          style={{
-                            lineHeight: 0,
-                            width: 37.2,
-                            height: 37.2,
-                            transition: "background 0.2s",
-                          }}
-                          onClick={async () => {
-                            try {
-                              await api.markAsFavourite(item.Id, !isFavourite);
-                              setIsFavourite((prev) => !prev);
-                            } catch (err) {
-                              console.error("Error toggling favorite:", err);
-                            }
-                          }}
-                        >
-                          {/* Outlined Heart icon */}
-                          <span
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: isFavourite ? 0 : 1,
-                              transform: isFavourite
-                                ? "scale(0.7)"
-                                : "scale(1)",
-                              transition: "opacity 0.25s, transform 0.25s",
-                              // color: "#facc15",
-                              pointerEvents: isFavourite ? "none" : "auto",
-                            }}
-                          >
-                            <Heart size={18} />
-                          </span>
-                          {/* Filled Heart icon */}
-                          <span
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: isFavourite ? 1 : 0,
-                              transform: isFavourite
-                                ? "scale(1)"
-                                : "scale(0.7)",
-                              transition: "opacity 0.25s, transform 0.25s",
-                              // color: "#facc15",
-                              pointerEvents: isFavourite ? "auto" : "none",
-                            }}
-                          >
-                            <Heart size={18} fill="#fff" />
-                          </span>
-                        </span>
-                      </div>
                     </MobileView>
                     {/* Meta info */}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 mb-2">
@@ -386,8 +321,87 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                       )}
                     </div>
                   </div>
+
+                  <MobileView>
+                    <div className="flex gap-6 ml-[-8px]">
+                      {/* Watched checkmark with transition */}
+                      <div className="flex flex-col gap-2 items-center">
+                        <MarkWatchedButton
+                          item={item}
+                          isWatched={isWatched}
+                          setIsWatched={setIsWatched}
+                        />
+                        <span className="text-sm">Watched</span>
+                      </div>
+                      {/* Favourite button with transition */}
+                      <div className="flex flex-col gap-2 items-center">
+                        <span
+                          className="relative bg-white/10 rounded-full p-2 border-2 border-white flex items-center justify-center cursor-pointer"
+                          title={
+                            isFavourite
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                          style={{
+                            lineHeight: 0,
+                            width: 37.2,
+                            height: 37.2,
+                            transition: "background 0.2s",
+                          }}
+                          onClick={async () => {
+                            try {
+                              await api.markAsFavourite(item.Id, !isFavourite);
+                              setIsFavourite((prev) => !prev);
+                            } catch (err) {
+                              console.error("Error toggling favorite:", err);
+                            }
+                          }}
+                        >
+                          {/* Outlined Heart icon */}
+                          <span
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              opacity: isFavourite ? 0 : 1,
+                              transform: isFavourite
+                                ? "scale(0.7)"
+                                : "scale(1)",
+                              transition: "opacity 0.25s, transform 0.25s",
+                              // color: "#facc15",
+                              pointerEvents: isFavourite ? "none" : "auto",
+                            }}
+                          >
+                            <Heart size={18} />
+                          </span>
+                          {/* Filled Heart icon */}
+                          <span
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              opacity: isFavourite ? 1 : 0,
+                              transform: isFavourite
+                                ? "scale(1)"
+                                : "scale(0.7)",
+                              transition: "opacity 0.25s, transform 0.25s",
+                              // color: "#facc15",
+                              pointerEvents: isFavourite ? "auto" : "none",
+                            }}
+                          >
+                            <Heart size={18} fill="#fff" />
+                          </span>
+                        </span>
+                        <span className="text-sm">Favourite</span>
+                      </div>
+                    </div>
+                  </MobileView>
                   {/* Right column: CastList */}
-                  {item.People && item.People.length > 0 && (
+                  {item.People && item.People.length > 0 && isBrowser && (
                     <div className="md:w-1/3 w-full mb-4 md:mb-0">
                       <CastList key={itemId} people={item.People} />
                     </div>
@@ -403,6 +417,12 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                 {isEpisode && item.SeasonId && (
                   <div className="mt-8">
                     <EpisodesList seriesId={item.SeriesId ?? item.SeasonId} />
+                  </div>
+                )}
+
+                {item.People && item.People.length > 0 && isMobile && (
+                  <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">
+                    <CastList key={itemId} people={item.People} />
                   </div>
                 )}
               </div>
