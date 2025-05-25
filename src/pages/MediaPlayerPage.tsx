@@ -8,11 +8,9 @@ import {
   Minimize,
   Pause,
   Play,
-  SkipBack,
-  SkipForward,
   Volume1,
   Volume2,
-  VolumeX,
+  VolumeX
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -474,6 +472,11 @@ const MediaPlayerPage: React.FC = () => {
     hasInitializedSelections,
   ]);
 
+  const handleBack = () => {
+    navigate(-1);
+    document.body.style.overflow = "visible";
+  }
+
   if (isLoading || !item || !api) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -535,7 +538,7 @@ const MediaPlayerPage: React.FC = () => {
         {/* Top bar */}
         <div className="absolute top-0 left-0 right-0 p-4 flex items-center z-20">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => handleBack()}
             className="flex items-center gap-2 text-white bg-black/40 rounded-full p-2 hover:bg-black/60 transition-colors"
           >
             <ArrowLeft size={20} />
@@ -602,22 +605,22 @@ const MediaPlayerPage: React.FC = () => {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
               <button
-                onClick={togglePlay}
-                className="text-white hover:text-gray-300 transition-colors"
-              >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-              </button>
-              <button
                 onClick={() => skip(-10)}
                 className="text-white hover:text-gray-300 transition-colors"
               >
-                <SkipBack size={24} />
+                <ChevronsLeft size={26} />
+              </button>
+              <button
+                onClick={togglePlay}
+                className="text-white hover:text-gray-300 transition-colors"
+              >
+                {isPlaying ? <Pause size={22} /> : <Play size={22} />}
               </button>
               <button
                 onClick={() => skip(10)}
                 className="text-white hover:text-gray-300 transition-colors"
               >
-                <SkipForward size={24} />
+                <ChevronsRight size={24} />
               </button>
               <div className="flex items-center gap-2">
                 <button
