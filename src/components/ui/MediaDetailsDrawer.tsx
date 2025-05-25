@@ -69,14 +69,6 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
       initialSnap={0}
       disableDrag={false}
       tweenConfig={{ ease: "easeOut", duration: 0.3 }}
-      onOpenStart={() => {
-        document.body.style.overflow = "hidden";
-      }}
-      onCloseStart={() => {
-        setTimeout(() => {
-          document.body.style.overflow = "visible";
-        }, 300);
-      }}
     >
       <Sheet.Container
         className="!bg-neutral-900 !rounded-t-xl"
@@ -107,6 +99,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
               {/* Trailer/Backdrop area */}
               <div className="relative w-full aspect-[16/8] bg-black rounded-t-xl overflow-hidden">
                 {/* Trailer video, only show if not ended */}
+
                 <YouTubeWithProgressiveFallback item={item} />
 
                 {/* Play button over video, bottom left */}
@@ -211,7 +204,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                         </div>
                         <div className="text-base font-semibold text-white mt-1 mb-2">
                           {item.ParentIndexNumber !== undefined &&
-                          item.IndexNumber !== undefined ? (
+                            item.IndexNumber !== undefined ? (
                             <>
                               Season {item.ParentIndexNumber} -{" "}
                               {item.IndexNumber}. {item.Name}

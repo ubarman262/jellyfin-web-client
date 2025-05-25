@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Sheet } from "react-modal-sheet";
 
 type SheetsProps = {
@@ -8,18 +8,6 @@ type SheetsProps = {
 };
 
 const Sheets: React.FC<SheetsProps> = ({ isOpen, onClose, children }) => {
-  useEffect(() => {
-    if (isOpen) {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        setTimeout(() => {
-          document.body.style.overflow = original;
-        }, 300);
-      };
-    }
-  }, [isOpen]);
-
   return (
     <Sheet
       isOpen={isOpen}

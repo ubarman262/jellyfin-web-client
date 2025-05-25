@@ -121,7 +121,7 @@ const YouTubeWithProgressiveFallback = ({
           }}
           onPlay={() => {
             setTrailerStarted(true);
-            setTrailerEnded(false);
+            setTrailerEnded(false);document
           }}
           onEnd={() => {
             setTrailerEnded(true);

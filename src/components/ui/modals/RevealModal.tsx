@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import React, { useEffect } from "react";
+import React from "react";
 
 type RevealModalProps = {
   isOpen: boolean;
@@ -12,14 +12,6 @@ const RevealModal: React.FC<RevealModalProps> = ({
   onClose,
   children,
 }) => {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-  }, [isOpen]);
-
   return (
     <div
       className={`fixed inset-0 z-50 flex items-end justify-center transition-all duration-500 ${

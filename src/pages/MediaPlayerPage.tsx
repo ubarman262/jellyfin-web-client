@@ -474,7 +474,6 @@ const MediaPlayerPage: React.FC = () => {
 
   const handleBack = () => {
     navigate(-1);
-    document.body.style.overflow = "visible";
   }
 
   if (isLoading || !item || !api) {
