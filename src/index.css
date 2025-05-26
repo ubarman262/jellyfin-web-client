@@ -24,6 +24,41 @@ body {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Netflix-like custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #232323;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  min-height: 40px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-netflix {
+  scrollbar-color: #232323 transparent;
+  scrollbar-width: thin;
+}
+
+/* Firefox */
+.scrollbar-netflix {
+  scrollbar-color: #232323 transparent;
+  scrollbar-width: thin;
+}
+
 /* Custom styling for video player */
 video:focus {
   outline: none;

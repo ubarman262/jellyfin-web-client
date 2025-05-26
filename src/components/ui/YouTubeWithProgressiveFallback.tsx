@@ -103,7 +103,6 @@ const YouTubeWithProgressiveFallback = ({
               iv_load_policy: 3,
               playsinline: 1,
               start: 6,
-              mute: isMuted ? 1 : 0,
             },
           }}
           className="w-full h-full"

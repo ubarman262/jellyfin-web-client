@@ -26,6 +26,7 @@ import MarkWatchedButton from "./MarkWatchedButton";
 import PlayButton from "./playButton";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
 import MoreLikeThisSection from "./MoreLikeThisSection";
+import Rotten from "../../assets/png/rotten.png";
 
 const MediaDetailsDrawer = () => {
   const { api } = useAuth();
@@ -149,12 +150,25 @@ const MediaDetailsDrawer = () => {
             <div>
               {/* Close button */}
               <button
-                className="absolute top-4 right-4 z-30 bg-black/30 border-2 rounded-full p-2 hover:bg-black/50 transition-colors"
-                style={{ borderColor: "rgb(255 255 255 / 32%)" }}
+                className={`absolute top-4 right-4 z-30 bg-black/30 border-2 rounded-full p-2 hover:bg-black/50 transition-colors ${
+                  isMobile ? "p-1" : "p-2"
+                }`}
+                style={{
+                  borderColor: "rgb(255 255 255 / 32%)",
+                  width: isMobile ? 32 : 40,
+                  height: isMobile ? 32 : 40,
+                  minWidth: isMobile ? 32 : 40,
+                  minHeight: isMobile ? 32 : 40,
+                }}
                 onClick={onClose}
                 aria-label="Close"
               >
-                <X size={18} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
+                <X
+                  size={isMobile ? 16 : 18}
+                  strokeWidth={2}
+                  color="rgb(255 255 255 / 60%)"
+                  style={isMobile ? { marginLeft: 2 } : undefined}
+                />
               </button>
 
               {/* Trailer/Backdrop area */}
@@ -285,12 +299,13 @@ const MediaDetailsDrawer = () => {
                         </div>
                       </>
                     ) : (
-                      <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                      <h2 className="text-2xl md:text-4xl font-bold mb-2">
                         {item.Name}
                       </h2>
                     )}
                     <MobileView>
-                      <div className="mt-5 mb-5">
+                      <div className="mt-5 mb-5 text-lg">
+                        {/* Added text-lg for larger font on mobile */}
                         <PlayButton
                           itemId={item.Id}
                           type={item.Type}
@@ -342,6 +357,12 @@ const MediaDetailsDrawer = () => {
                           {item.CommunityRating.toFixed(1)}
                         </span>
                       )}
+                      {item.CriticRating && (
+                        <span className="flex items-center gap-1">
+                          <img src={Rotten} alt="Rotten Tomato" width={16} />
+                          {item.CriticRating}%
+                        </span>
+                      )}
                     </div>
                     {item.Genres && item.Genres.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
@@ -384,9 +405,9 @@ const MediaDetailsDrawer = () => {
                       )}
                     </div>
                   </div>
-
                   <MobileView>
-                    <div className="flex gap-6 ml-[-8px]">
+                    <div className="flex gap-6 ml-[-8px] text-base">
+                      {/* Added text-base for larger font on mobile */}
                       {/* Watched checkmark with transition */}
                       <div className="flex flex-col gap-2 items-center">
                         <MarkWatchedButton
@@ -394,7 +415,7 @@ const MediaDetailsDrawer = () => {
                           isWatched={isWatched}
                           setIsWatched={setIsWatched}
                         />
-                        <span className="text-sm">Watched</span>
+                        <span className="text-sm md:text-base">Watched</span>
                       </div>
                       {/* Favourite button with transition */}
                       <div className="flex flex-col gap-2 items-center">
@@ -431,7 +452,10 @@ const MediaDetailsDrawer = () => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
                               try {
-                                await api.markAsFavourite(item.Id, !isFavourite);
+                                await api.markAsFavourite(
+                                  item.Id,
+                                  !isFavourite
+                                );
                                 setIsFavourite((prev) => !prev);
                               } catch (err) {
                                 console.error("Error toggling favorite:", err);
@@ -476,7 +500,7 @@ const MediaDetailsDrawer = () => {
                             <Heart size={18} fill="#fff" />
                           </span>
                         </button>
-                        <span className="text-sm">Favourite</span>
+                        <span className="text-sm md:text-base">Favourite</span>
                       </div>
                     </div>
                   </MobileView>
@@ -500,18 +524,16 @@ const MediaDetailsDrawer = () => {
                   </div>
                 )}
 
-                {/* More like this for movies */}
-                {/* {item.Type === "Movie" && ( */}
-                  <div className="mt-10">
-                    <MoreLikeThisSection item={item} />
-                  </div>
-                {/* )} */}
-
                 {item.People && item.People.length > 0 && isMobile && (
                   <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">
                     <CastList people={item.People} />
                   </div>
                 )}
+
+                {/* More like this for movies */}
+                <div className="mt-10">
+                  <MoreLikeThisSection item={item} />
+                </div>
               </div>
             </div>
           </Sheet.Scroller>
