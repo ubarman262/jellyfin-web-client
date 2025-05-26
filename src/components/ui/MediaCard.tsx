@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import JellyfinApi from "../../api/jellyfin";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
-import MediaDetailsModal from "./MediaDetailsDrawer";
+import MediaDetailsDrawer from "./MediaDetailsDrawer";
 
 interface MediaCardProps {
   item: MediaItem;
@@ -267,20 +267,11 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
           />
         </div>
       </div>
-      {/* <Sheets isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-        <MediaDetailsModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          itemId={item.Id}
-        />
-      </Sheets> */}
-      {/* <RevealModal isOpen={modalOpen} onClose={() => setModalOpen(false)}> */}
-      <MediaDetailsModal
+      <MediaDetailsDrawer
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         itemId={item.Id}
       />
-      {/* </RevealModal> */}
     </>
   );
 };
