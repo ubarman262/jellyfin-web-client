@@ -150,15 +150,12 @@ const MediaDetailsDrawer = () => {
             <div>
               {/* Close button */}
               <button
-                className={`absolute top-4 right-4 z-30 bg-black/30 border-2 rounded-full p-2 hover:bg-black/50 transition-colors ${
+                className={`absolute top-4 right-4 z-30 bg-black/30 border-2 rounded-full p-2 hover:bg-black/50 transition-colors flex items-center justify-center ${
                   isMobile ? "p-1" : "p-2"
                 }`}
                 style={{
                   borderColor: "rgb(255 255 255 / 32%)",
-                  width: isMobile ? 32 : 40,
-                  height: isMobile ? 32 : 40,
-                  minWidth: isMobile ? 32 : 40,
-                  minHeight: isMobile ? 32 : 40,
+                  display: "inline-flex",
                 }}
                 onClick={onClose}
                 aria-label="Close"
@@ -167,7 +164,6 @@ const MediaDetailsDrawer = () => {
                   size={isMobile ? 16 : 18}
                   strokeWidth={2}
                   color="rgb(255 255 255 / 60%)"
-                  style={isMobile ? { marginLeft: 2 } : undefined}
                 />
               </button>
 
