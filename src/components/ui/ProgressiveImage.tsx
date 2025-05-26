@@ -13,4 +13,4 @@ const ProgressiveImage: React.FC<ProgressiveImageProps> = ({ src, onLoad }) => {
   );
 };
 
-export default ProgressiveImage;  
+export default ProgressiveImage;

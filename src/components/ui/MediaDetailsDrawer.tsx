@@ -1,5 +1,5 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserView,
   isBrowser,
@@ -7,8 +7,11 @@ import {
   MobileView,
 } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
+import activeItem from "../../states/atoms/ActiveItem";
+import isDrawerOpen from "../../states/atoms/DrawerOpen";
 import { formatRuntime } from "../../utils/formatters";
 import {
   getDirectors,
@@ -22,21 +25,16 @@ import EpisodesList from "./EpisodesList";
 import MarkWatchedButton from "./MarkWatchedButton";
 import PlayButton from "./playButton";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
-import { useRecoilState, useRecoilValue } from "recoil";
-import activeItem from "../../states/atoms/ActiveItem";
-import isDrawerOpen from "../../states/atoms/DrawerOpen";
+import MoreLikeThisSection from "./MoreLikeThisSection";
 
-interface MediaDetailsDrawerProps {
-
-}
-
-const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
+const MediaDetailsDrawer = () => {
   const { api } = useAuth();
 
   const activeItemId = useRecoilValue(activeItem);
   const [open, isOpen] = useRecoilState(isDrawerOpen);
+  const { item } = useMediaItem(activeItemId);
 
-  const { item } = useMediaItem(activeItemId); const [isWatched, setIsWatched] = useState<boolean>(false);
+  const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
 
   const isEpisode = typeEpisode(item);
@@ -46,9 +44,68 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
     // Sync local watched state with item.UserData?.Played when item changes
     setIsWatched(!!item?.UserData?.Played);
     setIsFavourite(!!item?.UserData?.IsFavorite);
-  }, [activeItemId]);
+  }, [activeItemId, item]);
 
-  if (!item || !api) return null;
+  if (!activeItemId) return null;
+  // Only render content when the loaded item's ID matches the activeItemId
+  const isCorrectItem = !!item && !!activeItemId && item.Id === activeItemId;
+
+  if (!item || !api || !isCorrectItem) {
+    // Show a skeleton structure while waiting for the correct item
+    return open ? (
+      <Sheet
+        key={activeItemId}
+        className="w-full max-w-4xl mx-auto"
+        isOpen={open}
+        onClose={() => isOpen(false)}
+        snapPoints={[1, 0]}
+        initialSnap={0}
+        disableDrag={false}
+        tweenConfig={{ ease: "easeOut", duration: 0.3 }}
+      >
+        <Sheet.Container className="!bg-neutral-900 !rounded-t-xl">
+          <Sheet.Content className="!rounded-t-xl">
+            <Sheet.Scroller className="rounded-t-xl scrollbar-hide">
+              <div>
+                {/* Skeleton for backdrop */}
+                <div className="relative w-full aspect-[16/8] bg-gray-800 rounded-t-xl overflow-hidden animate-pulse">
+                  <div className="absolute bottom-6 left-8 flex items-center gap-4">
+                    {/* Skeleton play button */}
+                    <div className="w-16 h-16 bg-gray-700 rounded-full" />
+                    {/* Skeleton for watched/fav buttons */}
+                    <div className="w-10 h-10 bg-gray-700 rounded-full" />
+                    <div className="w-10 h-10 bg-gray-700 rounded-full" />
+                  </div>
+                </div>
+                {/* Skeleton for details */}
+                <div className="p-8 pt-6">
+                  <div className="h-8 w-2/3 bg-gray-700 rounded mb-4 animate-pulse" />
+                  <div className="h-4 w-1/3 bg-gray-700 rounded mb-2 animate-pulse" />
+                  <div className="h-4 w-1/2 bg-gray-700 rounded mb-2 animate-pulse" />
+                  <div className="h-4 w-1/4 bg-gray-700 rounded mb-6 animate-pulse" />
+                  <div className="flex gap-2 mb-4">
+                    <div className="h-6 w-16 bg-gray-800 rounded" />
+                    <div className="h-6 w-16 bg-gray-800 rounded" />
+                    <div className="h-6 w-16 bg-gray-800 rounded" />
+                  </div>
+                  <div className="h-4 w-full bg-gray-800 rounded mb-2 animate-pulse" />
+                  <div className="h-4 w-5/6 bg-gray-800 rounded mb-2 animate-pulse" />
+                  <div className="h-4 w-2/3 bg-gray-800 rounded mb-2 animate-pulse" />
+                  <div className="h-4 w-1/2 bg-gray-800 rounded mb-2 animate-pulse" />
+                </div>
+              </div>
+            </Sheet.Scroller>
+          </Sheet.Content>
+        </Sheet.Container>
+        <Sheet.Backdrop
+          onTap={() => isOpen(false)}
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.55)",
+          }}
+        />
+      </Sheet>
+    ) : null;
+  }
 
   // Get director(s)
   const directors = getDirectors(item);
@@ -61,7 +118,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
 
   const onClose = () => {
     isOpen(false);
-  }
+  };
 
   return (
     <Sheet
@@ -69,7 +126,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
       className="w-full max-w-4xl mx-auto"
       isOpen={open}
       onClose={onClose}
-      snapPoints={[1, 0]} // 600px height when opened
+      snapPoints={[1, 0]}
       initialSnap={0}
       disableDrag={false}
       tweenConfig={{ ease: "easeOut", duration: 0.3 }}
@@ -104,7 +161,10 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
               <div className="relative w-full aspect-[16/8] bg-black rounded-t-xl overflow-hidden">
                 {/* Trailer video, only show if not ended */}
 
-                <YouTubeWithProgressiveFallback key={activeItemId} item={item} />
+                <YouTubeWithProgressiveFallback
+                  key={activeItemId}
+                  item={item}
+                />
 
                 {/* Play button over video, bottom left */}
                 {isBrowser && (
@@ -122,9 +182,16 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                       setIsWatched={setIsWatched}
                     />
                     {/* Favourite button with transition */}
-                    <span
+                    <button
+                      type="button"
                       className="relative bg-white/10 rounded-full p-2 ml-2 border-2 border-white flex items-center justify-center cursor-pointer"
                       title={
+                        isFavourite
+                          ? "Remove from favorites"
+                          : "Add to favorites"
+                      }
+                      aria-pressed={isFavourite}
+                      aria-label={
                         isFavourite
                           ? "Remove from favorites"
                           : "Add to favorites"
@@ -143,6 +210,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                           console.error("Error toggling favorite:", err);
                         }
                       }}
+                      tabIndex={0}
                     >
                       {/* Outlined Heart icon */}
                       <span
@@ -155,7 +223,6 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                           opacity: isFavourite ? 0 : 1,
                           transform: isFavourite ? "scale(0.7)" : "scale(1)",
                           transition: "opacity 0.25s, transform 0.25s",
-                          // color: "#facc15",
                           pointerEvents: isFavourite ? "none" : "auto",
                         }}
                       >
@@ -172,13 +239,12 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                           opacity: isFavourite ? 1 : 0,
                           transform: isFavourite ? "scale(1)" : "scale(0.7)",
                           transition: "opacity 0.25s, transform 0.25s",
-                          // color: "#facc15",
                           pointerEvents: isFavourite ? "auto" : "none",
                         }}
                       >
                         <Heart size={18} fill="#fff" />
                       </span>
-                    </span>
+                    </button>
                   </div>
                 )}
 
@@ -208,7 +274,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                         </div>
                         <div className="text-base font-semibold text-white mt-1 mb-2">
                           {item.ParentIndexNumber !== undefined &&
-                            item.IndexNumber !== undefined ? (
+                          item.IndexNumber !== undefined ? (
                             <>
                               Season {item.ParentIndexNumber} -{" "}
                               {item.IndexNumber}. {item.Name}
@@ -279,9 +345,9 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                     </div>
                     {item.Genres && item.Genres.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {item.Genres.slice(0, 4).map((genre, idx) => (
+                        {item.Genres.slice(0, 4).map((genre) => (
                           <span
-                            key={idx}
+                            key={genre}
                             className="px-2 py-1 bg-gray-800 text-gray-300 text-xs rounded"
                           >
                             {genre}
@@ -332,9 +398,16 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                       </div>
                       {/* Favourite button with transition */}
                       <div className="flex flex-col gap-2 items-center">
-                        <span
+                        <button
+                          type="button"
                           className="relative bg-white/10 rounded-full p-2 border-2 border-white flex items-center justify-center cursor-pointer"
                           title={
+                            isFavourite
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                          aria-pressed={isFavourite}
+                          aria-label={
                             isFavourite
                               ? "Remove from favorites"
                               : "Add to favorites"
@@ -353,6 +426,18 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                               console.error("Error toggling favorite:", err);
                             }
                           }}
+                          tabIndex={0}
+                          onKeyDown={async (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              try {
+                                await api.markAsFavourite(item.Id, !isFavourite);
+                                setIsFavourite((prev) => !prev);
+                              } catch (err) {
+                                console.error("Error toggling favorite:", err);
+                              }
+                            }
+                          }}
                         >
                           {/* Outlined Heart icon */}
                           <span
@@ -367,7 +452,6 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                                 ? "scale(0.7)"
                                 : "scale(1)",
                               transition: "opacity 0.25s, transform 0.25s",
-                              // color: "#facc15",
                               pointerEvents: isFavourite ? "none" : "auto",
                             }}
                           >
@@ -386,13 +470,12 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                                 ? "scale(1)"
                                 : "scale(0.7)",
                               transition: "opacity 0.25s, transform 0.25s",
-                              // color: "#facc15",
                               pointerEvents: isFavourite ? "auto" : "none",
                             }}
                           >
                             <Heart size={18} fill="#fff" />
                           </span>
-                        </span>
+                        </button>
                         <span className="text-sm">Favourite</span>
                       </div>
                     </div>
@@ -416,6 +499,13 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
                     <EpisodesList seriesId={item.SeriesId ?? item.SeasonId} />
                   </div>
                 )}
+
+                {/* More like this for movies */}
+                {/* {item.Type === "Movie" && ( */}
+                  <div className="mt-10">
+                    <MoreLikeThisSection item={item} />
+                  </div>
+                {/* )} */}
 
                 {item.People && item.People.length > 0 && isMobile && (
                   <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">

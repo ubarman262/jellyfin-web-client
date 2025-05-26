@@ -28,7 +28,7 @@ const YouTubeWithProgressiveFallback = ({
   const [player, setPlayer] = useState<YouTubePlayer>(null);
   const [backdropUrl, setBackdropUrl] = useState("");
   const [backdropLoaded, setBackdropLoaded] = useState(false);
-
+  
   useEffect(() => {
     const fetchAndSetTrailer = async () => {
       setTrailerUrl(null);
@@ -55,12 +55,6 @@ const YouTubeWithProgressiveFallback = ({
   if (!item || !api) return null;
 
   const youtubeId = getYouTubeId(trailerUrl);
-  
-  console.log("YouTube ID:", youtubeId);
-  
-
-  // Use series backdrop for episodes, otherwise use item's own backdrop
-  //   const backdropUrl = await getBackdropUrl(api, item);
 
   const handleBackdropLoad = () => {
     setBackdropLoaded(true);
@@ -109,6 +103,7 @@ const YouTubeWithProgressiveFallback = ({
               iv_load_policy: 3,
               playsinline: 1,
               start: 6,
+              mute: isMuted ? 1 : 0,
             },
           }}
           className="w-full h-full"
@@ -124,7 +119,7 @@ const YouTubeWithProgressiveFallback = ({
           }}
           onPlay={() => {
             setTrailerStarted(true);
-            setTrailerEnded(false);document
+            setTrailerEnded(false);
           }}
           onEnd={() => {
             setTrailerEnded(true);

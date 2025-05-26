@@ -671,6 +671,24 @@ class JellyfinApi {
       }
     );
   }
+
+  /**
+   * Get similar items for a given item.
+   * @param itemId The item ID to find similar items for.
+   * @param limit Number of similar items to fetch.
+   */
+  async getSimilarItems(itemId: string, limit: number = 12): Promise<ItemsResponse> {
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Items/${itemId}/Similar`,
+      undefined,
+      {
+        userId: this.userId,
+        limit,
+        fields: "PrimaryImageAspectRatio,CanDelete",
+      }
+    );
+  }
 }
 
 export default JellyfinApi;
