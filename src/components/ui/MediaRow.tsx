@@ -1,8 +1,8 @@
+import clsx from "clsx";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { MediaItem } from "../../types/jellyfin";
 import MediaCard from "./MediaCard";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import clsx from "clsx";
 
 interface MediaRowProps {
   title: string;
@@ -19,6 +19,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [isScrolling, setIsScrolling] = useState(false);
+
 
   const checkArrows = () => {
     if (!rowRef.current) return;
@@ -73,7 +74,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
     return null;
   }
 
-  return (
+  return (<>
     <div className="mb-8 group/row">
       <h2 className="text-xl font-medium text-white mb-2">{title}</h2>
 
@@ -88,7 +89,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
               key={item.Id}
               className="flex-none w-[160px] sm:w-[180px] md:w-[200px] transition-transform"
             >
-              <MediaCard item={item} />
+              <MediaCard key={item.Id} item={item} />
             </div>
           ))}
         </div>
@@ -127,6 +128,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
         )}
       </div>
     </div>
+  </>
   );
 };
 

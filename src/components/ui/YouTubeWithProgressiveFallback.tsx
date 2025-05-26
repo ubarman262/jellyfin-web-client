@@ -55,6 +55,9 @@ const YouTubeWithProgressiveFallback = ({
   if (!item || !api) return null;
 
   const youtubeId = getYouTubeId(trailerUrl);
+  
+  console.log("YouTube ID:", youtubeId);
+  
 
   // Use series backdrop for episodes, otherwise use item's own backdrop
   //   const backdropUrl = await getBackdropUrl(api, item);

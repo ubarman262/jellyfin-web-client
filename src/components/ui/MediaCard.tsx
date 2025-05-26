@@ -5,7 +5,9 @@ import { useNavigate } from "react-router-dom";
 import JellyfinApi from "../../api/jellyfin";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
-import MediaDetailsDrawer from "./MediaDetailsDrawer";
+import { useSetRecoilState } from "recoil";
+import isDrawerOpen from "../../states/atoms/DrawerOpen";
+import activeItem from "../../states/atoms/ActiveItem";
 
 interface MediaCardProps {
   item: MediaItem;
@@ -75,7 +77,7 @@ interface CardContentProps {
   rating?: string;
   title: string;
   navigate: ReturnType<typeof useNavigate>;
-  setModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  onCardClick: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const CardContent: React.FC<CardContentProps> = ({
@@ -91,7 +93,7 @@ const CardContent: React.FC<CardContentProps> = ({
   title,
   nextUoId,
   navigate,
-  setModalOpen,
+  onCardClick,
 }) => {
   let titleContent;
   if (isEpisode) {
@@ -149,7 +151,7 @@ const CardContent: React.FC<CardContentProps> = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            setModalOpen(true);
+            onCardClick(item.Id);
           }}
           className="flex items-center justify-center bg-gray-700 text-white rounded-full w-8 h-8 hover:bg-white hover:text-black transition-colors"
           tabIndex={-1}
@@ -166,9 +168,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
   const { api } = useAuth();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
   const [targetId, setTargetId] = useState<string>(item.Id);
-
+  
   const isEpisode = item.Type === "Episode";
   const isMovie = item.Type === "Movie";
   const isSeries = item.Type === "Series";
@@ -180,6 +181,9 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
   const rating = item.OfficialRating;
   const title = item.Name;
   const progressPercent = getProgressPercent(item);
+
+  const setIsDrawerOpen  = useSetRecoilState(isDrawerOpen);
+  const setActiveTiemId = useSetRecoilState(activeItem);
 
   useEffect(() => {
     async function resolveTargetId() {
@@ -203,6 +207,11 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
     resolveTargetId();
   }, [isSeries, api, item]);
 
+  const handleCardClick = (id: string) => {
+    setActiveTiemId(id);
+    setIsDrawerOpen(true);
+  }
+
   return (
     <>
       <div
@@ -216,7 +225,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
         tabIndex={0}
         aria-label={`View details for ${title}`}
         style={{ display: "block" }}
-        onClick={() => setModalOpen(true)}
+        onClick={() => handleCardClick(item.Id)}
         role="button"
       >
         {imageUrl ? (
@@ -263,15 +272,11 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
             rating={rating}
             title={title}
             navigate={navigate}
-            setModalOpen={setModalOpen}
+            onCardClick={() => handleCardClick(item.Id)}
           />
         </div>
       </div>
-      <MediaDetailsDrawer
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        itemId={item.Id}
-      />
+
     </>
   );
 };

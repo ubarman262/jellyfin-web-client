@@ -2,9 +2,11 @@ import clsx from "clsx";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
-import MediaDetailsDrawer from "./MediaDetailsDrawer";
 import MoreInfoButton from "./moreInfoButton";
 import PlayButton from "./playButton";
+import { useRecoilState, useSetRecoilState } from "recoil";
+import drawerState from "../../states/atoms/DrawerOpen";
+import activeItem from "../../states/atoms/ActiveItem";
 
 interface HeroBannerProps {
   items: MediaItem[];
@@ -18,7 +20,9 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
   const { api } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+
+  const [isDrawerOpen, setIsDrawerOpen] = useRecoilState(drawerState);
+  const setActiveTiemId = useSetRecoilState(activeItem);
 
   useEffect(() => {
     if (!api) return;
@@ -48,14 +52,14 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
       img.src = api.getImageUrl(currentItem.Id, "Backdrop", 1920);
     }
 
-    if (autoSlideInterval > 0 && !modalOpen) {
+    if (autoSlideInterval > 0 && !isDrawerOpen) {
       timeoutRef.current = setTimeout(goToNext, autoSlideInterval);
     }
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [currentIndex, api, autoSlideInterval, modalOpen, goToNext, items]);
+  }, [currentIndex, api, autoSlideInterval, isDrawerOpen, goToNext, items]);
 
   if (!api || !items) return null;
 
@@ -164,7 +168,9 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                       <MoreInfoButton
                         width={150}
                         height={50}
-                        onClick={() => setModalOpen(true)}
+                        onClick={() => {
+                          setActiveTiemId(item.Id);
+                          setIsDrawerOpen(true)}}
                       />
                     </div>
                   </div>
@@ -190,12 +196,6 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
           </div>
         )}
       </div>
-
-      <MediaDetailsDrawer
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        itemId={items[currentIndex].Id}
-      />
     </>
   );
 };

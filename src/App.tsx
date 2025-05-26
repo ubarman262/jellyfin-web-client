@@ -12,6 +12,8 @@ import ShowsPage from "./pages/ShowsPage";
 import AddServerPage from "./pages/AddServerPage";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import FavouritesPage from "./pages/FavouritesPage";
+import { RecoilRoot } from "recoil";
+import MediaDetailsDrawer from "./components/ui/MediaDetailsDrawer";
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -38,9 +40,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 const AppWrapper: React.FC = () => {
   // No need to fetch serverUrl here, context will handle it
   return (
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <RecoilRoot>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </RecoilRoot>
   );
 };
 
@@ -48,6 +52,9 @@ const AppWrapper: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
+    
+      <MediaDetailsDrawer />
+
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 

@@ -22,21 +22,21 @@ import EpisodesList from "./EpisodesList";
 import MarkWatchedButton from "./MarkWatchedButton";
 import PlayButton from "./playButton";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
+import { useRecoilState, useRecoilValue } from "recoil";
+import activeItem from "../../states/atoms/ActiveItem";
+import isDrawerOpen from "../../states/atoms/DrawerOpen";
 
 interface MediaDetailsDrawerProps {
-  open: boolean;
-  onClose: () => void;
-  itemId: string;
+
 }
 
-const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
-  open,
-  onClose,
-  itemId,
-}) => {
+const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({}) => {
   const { api } = useAuth();
-  const { item } = useMediaItem(itemId);
-  const [isWatched, setIsWatched] = useState<boolean>(false);
+
+  const activeItemId = useRecoilValue(activeItem);
+  const [open, isOpen] = useRecoilState(isDrawerOpen);
+
+  const { item } = useMediaItem(activeItemId); const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
 
   const isEpisode = typeEpisode(item);
@@ -46,7 +46,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
     // Sync local watched state with item.UserData?.Played when item changes
     setIsWatched(!!item?.UserData?.Played);
     setIsFavourite(!!item?.UserData?.IsFavorite);
-  }, [item]);
+  }, [activeItemId]);
 
   if (!item || !api) return null;
 
@@ -59,9 +59,13 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
   // Get studios
   const studios = getStudios(item);
 
+  const onClose = () => {
+    isOpen(false);
+  }
+
   return (
     <Sheet
-      key={itemId}
+      key={activeItemId}
       className="w-full max-w-4xl mx-auto"
       isOpen={open}
       onClose={onClose}
@@ -100,7 +104,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
               <div className="relative w-full aspect-[16/8] bg-black rounded-t-xl overflow-hidden">
                 {/* Trailer video, only show if not ended */}
 
-                <YouTubeWithProgressiveFallback item={item} />
+                <YouTubeWithProgressiveFallback key={activeItemId} item={item} />
 
                 {/* Play button over video, bottom left */}
                 {isBrowser && (
@@ -396,7 +400,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
                   {/* Right column: CastList */}
                   {item.People && item.People.length > 0 && isBrowser && (
                     <div className="md:w-1/3 w-full mb-4 md:mb-0">
-                      <CastList key={itemId} people={item.People} />
+                      <CastList key={activeItemId} people={item.People} />
                     </div>
                   )}
                 </div>
@@ -415,7 +419,7 @@ const MediaDetailsDrawer: React.FC<MediaDetailsDrawerProps> = ({
 
                 {item.People && item.People.length > 0 && isMobile && (
                   <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">
-                    <CastList key={itemId} people={item.People} />
+                    <CastList people={item.People} />
                   </div>
                 )}
               </div>
