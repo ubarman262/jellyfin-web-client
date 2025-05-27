@@ -52,7 +52,7 @@ export function AuthProvider({
 
   useEffect(() => {
     // Always fetch latest serverUrl from localStorage on reload
-    const url = localStorage.getItem("jellyfin_server_url") ?? "";
+    //const url = localStorage.getItem("jellyfin_server_url") ?? "";
     setServerUrlState(import.meta.env.VITE_SERVER_URL);
   }, []);
 

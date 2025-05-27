@@ -41,6 +41,8 @@ const MediaDetailsDrawer = () => {
   const isEpisode = typeEpisode(item);
   const isSeries = typeSeries(item);
 
+  const jellyserr = import.meta.env.VITE_JELLYSEERR;
+
   useEffect(() => {
     // Sync local watched state with item.UserData?.Played when item changes
     setIsWatched(!!item?.UserData?.Played);
@@ -512,19 +514,27 @@ const MediaDetailsDrawer = () => {
                 {isSeries && (
                   <div className="mt-8">
                     <EpisodesList seriesId={item.Id} />
+                    {jellyserr && (
+                            <span className="text-gray-400">Missing episodes or season? Request more <a className="text-white" href={jellyserr}>here</a>!</span>
+                        )
+                    }
                   </div>
                 )}
                 {isEpisode && item.SeasonId && (
                   <div className="mt-8">
                     <EpisodesList seriesId={item.SeriesId ?? item.SeasonId} />
-                  </div>
+                    {jellyserr && (
+                        <span className="text-gray-400">Missing episodes or season? Request more <a className="text-white" href={jellyserr}>here</a>!</span>
+                    )
+                    }
+                    </div>
                 )}
-
                 {item.People && item.People.length > 0 && isMobile && (
                   <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">
                     <CastList people={item.People} />
                   </div>
                 )}
+
 
                 {/* More like this for movies */}
                 <div className="mt-10">
