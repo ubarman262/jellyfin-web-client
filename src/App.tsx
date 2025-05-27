@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, matchPath } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
@@ -42,7 +42,9 @@ const AppWrapper: React.FC = () => {
   return (
     <RecoilRoot>
       <AuthProvider>
-        <App />
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
       </AuthProvider>
     </RecoilRoot>
   );
@@ -50,10 +52,12 @@ const AppWrapper: React.FC = () => {
 
 // Main App component
 const App: React.FC = () => {
+  const location = useLocation();
+  const isPlayerPage = !!matchPath("/play/:itemId", location.pathname);
+
   return (
-    <BrowserRouter>
-    
-      <MediaDetailsDrawer />
+    <>
+      {!isPlayerPage && <MediaDetailsDrawer />}
 
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -141,10 +145,19 @@ const App: React.FC = () => {
 
         <Route path="/add-server" element={<AddServerPage />} />
 
+        <Route
+          path="/browse"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Redirect all other routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 };
 
