@@ -124,15 +124,7 @@ const LoginPage: React.FC = () => {
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Don't have a Jellyfin server? Set up your own personal media server at{" "}
-          <a
-            href="https://jellyfin.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-red-600 hover:underline"
-          >
-            jellyfin.org
-          </a>
+          Magnusson Plus | Stream movies and shows
         </p>
       </div>
     </div>

@@ -11,7 +11,7 @@ import {
 } from "../types/jellyfin";
 
 class JellyfinApi {
-    private readonly serverUrl: string;
+    private readonly serverUrl: string = import.meta.env.VITE_SERVER_URL;
     private readonly apiKey?: string;
     private userId?: string;
     private accessToken?: string;
@@ -19,9 +19,6 @@ class JellyfinApi {
     private readonly deviceName: string;
     private readonly clientName: string;
     private readonly clientVersion: string;
-
-    private MaxWidth: number = -1;
-    private MaxHeight: number = -1;
 
     constructor(config: JellyfinConfig) {
         // Ensure server URL is properly formatted
