@@ -149,7 +149,7 @@ const MediaPlayerPage: React.FC = () => {
             }
         };
 
-        const playbackUrl = api.getPlaybackUrl(item.Id, selectedAudioTrack, bitrates, getMaxRes());
+        const playbackUrl = api.getPlaybackUrl(item.Id, selectedAudioTrack, bitrates, subtitleTracks, selectedSubtitleIndex);
 
         // --- Report "playing" to Jellyfin when a new video is loaded ---
         const playSessionId = `${api["deviceId"]}-${Date.now()}`;
@@ -226,7 +226,7 @@ const MediaPlayerPage: React.FC = () => {
             }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api, item, selectedAudioTrack, bitrates]);
+    }, [api, item, selectedAudioTrack, bitrates, selectedSubtitleIndex]);
 
     useEffect(() => {
         if (!item || !hasInitializedSelections) return;

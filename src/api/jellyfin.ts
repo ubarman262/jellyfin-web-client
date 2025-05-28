@@ -397,7 +397,7 @@ class JellyfinApi {
         return [res.maxBitrate.toString(), res.resolution.split("x")[0], res.resolution.split("x")[1]];
     }
 
-    getPlaybackUrl(itemId: string, audioStreamIndex: number = 0, bitrate: number | undefined = undefined, maxRes: number | undefined): string {
+    getPlaybackUrl(itemId: string, audioStreamIndex: number = 0, bitrate: number | undefined = undefined, subtitle:  MediaStream[], selectedSubtitleIndex: number | null): string {
         let res = undefined;
         let bitra = undefined;
 
@@ -444,9 +444,27 @@ class JellyfinApi {
             params.set("VideoBitrate", bitra);
             params.set("maxWidth", res[2]);
             params.set("maxHeight", res[1]);
-
         } else {
             params.append("VideoBitrate", "139616000")
+        }
+        console.log(selectedSubtitleIndex, subtitle.length)
+        if(selectedSubtitleIndex && subtitle.length > 0) {
+            console.log("TEST!");
+            console.log(subtitle)
+            const sub = subtitle.find(x => x.Index === selectedSubtitleIndex);
+            if(sub) {
+                console.log(sub);
+                const delivery = sub.IsTextSubtitleStream;
+                console.log("TESTION", delivery)
+                if(!delivery) {
+                    params.set("SubtitleStreamIndex", String(selectedSubtitleIndex));
+                    params.set("SubtitleMethod", "Encode");
+                        params.set("TranscodeReasons",
+                            params.get("TranscodeReasons") + ", SubtitleCodecNotSupported")
+                }
+            }
+
+
         }
 
 
@@ -464,9 +482,6 @@ class JellyfinApi {
                 DeviceId: this.deviceId,
             })
         );
-
-
-        console.log(response);
 
         // Safely access MediaStreams and filter by Type === 'Subtitle'
         const subtitles =

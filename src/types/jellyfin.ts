@@ -305,6 +305,7 @@ export interface MediaStream {
   Profile?: string;
   Level?: number;
   IsExternal?: boolean;
+  DeliveryMethod?: string;
   DisplayTitle?: string;
   DisplayLanguage?: string;
   NalLengthSize?: string;
