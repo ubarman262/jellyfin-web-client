@@ -303,8 +303,10 @@ export interface MediaStream {
   AverageFrameRate?: number;
   RealFrameRate?: number;
   Profile?: string;
+  IsTextSubtitleStream?: string;
   Level?: number;
   IsExternal?: boolean;
+  DeliveryMethod?: string;
   DisplayTitle?: string;
   DisplayLanguage?: string;
   NalLengthSize?: string;

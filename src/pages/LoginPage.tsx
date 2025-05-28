@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
       className="min-h-screen w-full bg-black flex flex-col items-center justify-center text-white p-4"
       style={{
         backgroundImage:
-          'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260")',
+          'linear-gradient(rgba(33, 35, 45, 0.7), rgba(0, 0, 0, 0.7))',
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
       <div className="w-full max-w-md">
         <div className="mb-10 text-center">
           <h1 className="text-red-600 font-bold text-4xl mb-2">JELLYFLIX</h1>
-          <p className="text-gray-400">Sign in to your Jellyfin account</p>
+          <p className="text-gray-400">Sign in to your account</p>
         </div>
 
         <div className="bg-black/80 rounded-md p-8 backdrop-blur-sm">
@@ -124,15 +124,7 @@ const LoginPage: React.FC = () => {
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Don't have a Jellyfin server? Set up your own personal media server at{" "}
-          <a
-            href="https://jellyfin.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-red-600 hover:underline"
-          >
-            jellyfin.org
-          </a>
+          Magnusson Plus | Stream movies and shows
         </p>
       </div>
     </div>

@@ -1,0 +1,18 @@
+services:
+  web:
+    build: .
+    ports:
+      - "4173:4173"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - yams_default
+
+
+networks:
+  yams_default:
+    external: true
+
