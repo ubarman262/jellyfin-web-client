@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import {Check, Settings} from "lucide-react";
+import {Captions, Check, Settings} from "lucide-react";
 import React, {useEffect, useRef} from "react";
 import {MediaStream} from "../../types/jellyfin";
 
@@ -90,7 +90,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                 title="Tracks"
             >
         <span className="flex items-center gap-1">
-          <Settings size={24}/>
+          <Captions size={24}/>
         </span>
             </button>
             {isOpen && (
