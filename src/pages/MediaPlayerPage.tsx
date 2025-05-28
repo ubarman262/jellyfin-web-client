@@ -45,6 +45,7 @@ const MediaPlayerPage: React.FC = () => {
     const [bitrates, setBitrates] = useState<number | undefined>(undefined);
     const [selectedBitIndex, setSelectedBitIndex] = useState<number>(0);
     const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
+    const [directPlay, setDirectPlay] = useState(false);
 
     // Audio tracks state
     const [audioTracks, setAudioTracks] = useState<
@@ -91,6 +92,67 @@ const MediaPlayerPage: React.FC = () => {
         return video[0].Height;
     }
 
+    function buildCodecString(videoInfo: MediaStream) {
+        const {Codec, Profile, Level} = videoInfo;
+
+        switch (Codec.toLowerCase()) {
+            case 'h264':
+            case 'avc1': {
+                const profileMap = {
+                    'Baseline': '42',
+                    'Main': '4D',
+                    'High': '64',
+                    'High 10': '6E',
+                    'High 4:2:2': '7A',
+                    'High 4:4:4': 'F4',
+                };
+                const profileHex = profileMap[Profile] || '64'; // Default to High
+                const levelInt = Math.round(Level * 10);        // e.g., 4.1 -> 41
+                const levelHex = levelInt.toString(16).padStart(2, '0'); // -> "29"
+                return `video/mp4; codecs="avc1.${profileHex}00${levelHex}"`;
+            }
+
+            case 'hevc':
+            case 'h265':
+                return 'video/mp4; codecs="hvc1.1.6.L93.B0"'; // Basic HEVC string
+
+            case 'vp8':
+                return 'video/webm; codecs="vp8"';
+
+            case 'vp9':
+                return 'video/webm; codecs="vp9"';
+
+            case 'av1':
+                return 'video/mp4; codecs="av01.0.05M.08"'; // Conservative AV1 profile
+
+            case 'theora':
+                return 'video/ogg; codecs="theora"';
+
+            default:
+                return null; // Unknown codec
+        }
+    }
+
+    function isSupportedCodecVideo() {
+        const sources = item?.MediaStreams;
+        const videoSrc = sources?.filter(x => x.Type == "Video");
+        if (videoSrc == undefined) {
+            setDirectPlay(false);
+            return;
+        }
+        const mime = buildCodecString(videoSrc[0]);
+
+        if (!mime) {
+            console.warn(`Unsupported codec: ${videoSrc[0].Codec}`);
+            return false;
+        }
+        const video = document.createElement('video');
+        const result = video.canPlayType(mime);
+        video.remove();
+        setDirectPlay(result === 'probably' || result === 'maybe');
+        console.log('Direct play, ', result === 'probably' || result === 'maybe')
+    }
+
     // Get playback URL and restore position
     useEffect(() => {
         let hls: Hls | null = null;
@@ -106,7 +168,6 @@ const MediaPlayerPage: React.FC = () => {
                 resumeTime = Math.floor(item.UserData.PlaybackPositionTicks / 10000000);
             }
         }
-
 
 
         // Save current time and play state before switching audio track
@@ -149,7 +210,13 @@ const MediaPlayerPage: React.FC = () => {
             }
         };
 
-        const playbackUrl = api.getPlaybackUrl(item.Id, selectedAudioTrack, bitrates, subtitleTracks, selectedSubtitleIndex);
+
+        getSubtitles();
+
+        isSupportedCodecVideo();
+
+
+        const playbackUrl = api.getPlaybackUrl(item.Id, selectedAudioTrack, subtitleTracks, selectedSubtitleIndex, directPlay, bitrates);
 
         // --- Report "playing" to Jellyfin when a new video is loaded ---
         const playSessionId = `${api["deviceId"]}-${Date.now()}`;
@@ -208,7 +275,6 @@ const MediaPlayerPage: React.FC = () => {
             });
         }
 
-        getSubtitles();
 
         return () => {
             videoEl.removeEventListener("timeupdate", handleTimeUpdate);
@@ -234,8 +300,10 @@ const MediaPlayerPage: React.FC = () => {
         if (settings) {
             try {
                 const parsed = JSON.parse(decodeURIComponent(settings));
-                if (parsed.video.bitrate != undefined && parsed.video.bitrate <= item.MediaStreams[0].Height) {
-                    handleUpdateBitrate(parsed.video.bitrate);
+                if (item.MediaStreams !== undefined) {
+                    if (parsed.video.bitrate != undefined && item.MediaStreams[0].Height !== undefined && parsed.video.bitrate <= item.MediaStreams[0].Height) {
+                        handleUpdateBitrate(parsed.video.bitrate);
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -488,8 +556,6 @@ const MediaPlayerPage: React.FC = () => {
     }, [item, hasInitializedSelections]);
 
 
-
-
     // Store selected audio track and subtitle index in a single cookie as JSON
     useEffect(() => {
         if (!item || !hasInitializedSelections) return;
@@ -559,10 +625,10 @@ const MediaPlayerPage: React.FC = () => {
                     objSettings = parsed;
                 } catch (err) {
                     console.error("Error parsing settings:", err);
-                    objSettings = { video: { bitrate } };
+                    objSettings = {video: {bitrate}};
                 }
             } else {
-                objSettings = { video: { bitrate } };
+                objSettings = {video: {bitrate}};
             }
 
             setCookie("settings", JSON.stringify(objSettings), 7);

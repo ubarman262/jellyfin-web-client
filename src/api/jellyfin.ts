@@ -397,15 +397,16 @@ class JellyfinApi {
         return [res.maxBitrate.toString(), res.resolution.split("x")[0], res.resolution.split("x")[1]];
     }
 
-    getPlaybackUrl(itemId: string, audioStreamIndex: number = 0, bitrate: number | undefined = undefined, subtitle:  MediaStream[], selectedSubtitleIndex: number | null): string {
-        let res = undefined;
-        let bitra = undefined;
-
-        if (bitrate) {
-            res = this.getBitrateFromResolution(bitrate)
-            bitra = bitrate ? res[0] : "139616000";
-        }
-
+    getPlaybackUrl(
+        itemId: string,
+        audioStreamIndex: number = 0,
+        subtitle: MediaStream[],
+        selectedSubtitleIndex: number | null,
+        directPlay: boolean,
+        bitrate?: number
+    ): string {
+        const res = bitrate ? this.getBitrateFromResolution(bitrate) : undefined;
+        const videoBitrate = bitrate && res ? res[0] : "139616000";
 
         const params = new URLSearchParams({
             DeviceId: this.deviceId,
@@ -426,6 +427,8 @@ class JellyfinApi {
             "h264-level": "40",
             "h264-videobitdepth": "8",
             "h264-profile": "high",
+            "h264-rangetype": "SDR",
+            "h264-deinterlace": "true",
             "av1-profile": "main",
             "av1-rangetype": "SDR,HDR10,HLG",
             "av1-level": "19",
@@ -434,40 +437,35 @@ class JellyfinApi {
             "hevc-rangetype": "SDR,HDR10,HLG",
             "hevc-level": "183",
             "hevc-deinterlace": "true",
-            "h264-rangetype": "SDR",
-            "h264-deinterlace": "true",
-            TranscodeReasons: "ContainerNotSupported, AudioCodecNotSupported",
             TranscodingProtocol: "hls",
             TranscodingContainer: "ts",
+            VideoBitrate: videoBitrate
         });
-        if (bitra) {
-            params.set("VideoBitrate", bitra);
+
+        if (res) {
             params.set("maxWidth", res[2]);
             params.set("maxHeight", res[1]);
-        } else {
-            params.append("VideoBitrate", "139616000")
         }
-        console.log(selectedSubtitleIndex, subtitle.length)
-        if(selectedSubtitleIndex && subtitle.length > 0) {
-            console.log("TEST!");
-            console.log(subtitle)
-            const sub = subtitle.find(x => x.Index === selectedSubtitleIndex);
-            if(sub) {
-                console.log(sub);
-                const delivery = sub.IsTextSubtitleStream;
-                console.log("TESTION", delivery)
-                if(!delivery) {
-                    params.set("SubtitleStreamIndex", String(selectedSubtitleIndex));
-                    params.set("SubtitleMethod", "Encode");
-                        params.set("TranscodeReasons",
-                            params.get("TranscodeReasons") + ", SubtitleCodecNotSupported")
-                }
+
+        if (!directPlay) {
+            params.set("TranscodeReasons", "ContainerNotSupported, AudioCodecNotSupported");
+        }
+
+        if (selectedSubtitleIndex !== null && subtitle.length > 0) {
+            const sub = subtitle.find(s => s.Index === selectedSubtitleIndex);
+
+            if (sub && !sub.IsTextSubtitleStream) {
+                params.set("SubtitleStreamIndex", String(selectedSubtitleIndex));
+                params.set("SubtitleMethod", "Encode");
+
+                const existingReasons = params.get("TranscodeReasons");
+                const newReasons = existingReasons
+                    ? `${existingReasons}, SubtitleCodecNotSupported`
+                    : "SubtitleCodecNotSupported";
+
+                params.set("TranscodeReasons", newReasons);
             }
-
-
         }
-
-
 
         return `${this.serverUrl}/videos/${itemId}/main.m3u8?${params.toString()}`;
     }
