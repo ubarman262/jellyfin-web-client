@@ -9,6 +9,7 @@ interface PlayButtonProps {
   readonly type?: string;
   readonly width?: string | number;
   readonly height?: string | number;
+  onBeforePlay?: () => void | Promise<void>; // <-- add this
 }
 
 export default function PlayButton({
@@ -16,6 +17,7 @@ export default function PlayButton({
   type,
   width,
   height,
+  onBeforePlay, // <-- add this
 }: PlayButtonProps) {
   const navigate = useNavigate();
   const { api } = useAuth();
@@ -43,7 +45,10 @@ export default function PlayButton({
     resolveTargetId();
   }, [type, api, item, itemId]);
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
+    if (onBeforePlay) {
+      await onBeforePlay();
+    }
     navigate(`/play/${targetId}`);
   };
 

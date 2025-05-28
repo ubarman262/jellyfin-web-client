@@ -1,5 +1,6 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   BrowserView,
   isBrowser,
@@ -30,9 +31,12 @@ import Rotten from "../../assets/png/rotten.png";
 
 const MediaDetailsDrawer = () => {
   const { api } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const activeItemId = useRecoilValue(activeItem);
   const [open, isOpen] = useRecoilState(isDrawerOpen);
+  const [activeItemState, setActiveItem] = useRecoilState(activeItem);
   const { item } = useMediaItem(activeItemId);
 
   const [isWatched, setIsWatched] = useState<boolean>(false);
@@ -48,6 +52,32 @@ const MediaDetailsDrawer = () => {
     setIsWatched(!!item?.UserData?.Played);
     setIsFavourite(!!item?.UserData?.IsFavorite);
   }, [activeItemId, item]);
+
+  // Open modal if URL has ?item={itemId}
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const itemId = params.get("item");
+    if (itemId) {
+      setActiveItem(itemId);
+      isOpen(true);
+    }
+  }, [location.search, setActiveItem, isOpen]);
+
+  // When modal opens, update URL to /browse?item={itemId}
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const currentItem = params.get("item");
+    if (open && activeItemId && currentItem !== activeItemId) {
+      params.set("item", activeItemId);
+      navigate({ pathname: "/browse", search: params.toString() }, { replace: false });
+    }
+    // When modal closes, remove ?item from URL if present
+    if (!open && currentItem) {
+      params.delete("item");
+      navigate({ pathname: "/browse", search: params.toString() }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activeItemId]);
 
   if (!activeItemId) return null;
   // Only render content when the loaded item's ID matches the activeItemId
@@ -121,6 +151,7 @@ const MediaDetailsDrawer = () => {
 
   const onClose = () => {
     isOpen(false);
+    // URL will be handled by useEffect above
   };
 
   return (
