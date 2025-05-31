@@ -287,7 +287,10 @@ class JellyfinApi {
         );
     }
 
-    async getMediaItem(itemId: string): Promise<MediaItem> {
+    async getMediaItem(itemId: string): Promise<MediaItem | null> {
+        if(itemId === "string")  {
+            return new Promise(() => null);
+        }
         return this.makeRequest<MediaItem>(
             "get",
             `/Users/${this.userId}/Items/${itemId}`,
@@ -400,13 +403,14 @@ class JellyfinApi {
     getPlaybackUrl(
         itemId: string,
         audioStreamIndex: number = 0,
-        subtitle: MediaStream[],
+        subtitles: MediaStream[],
         selectedSubtitleIndex: number | null,
         directPlay: boolean,
         bitrate?: number
     ): string {
-        const res = bitrate ? this.getBitrateFromResolution(bitrate) : undefined;
-        const videoBitrate = bitrate && res ? res[0] : "139616000";
+        const resolution = bitrate ? this.getBitrateFromResolution(bitrate) : undefined;
+        const defaultVideoBitrate = "139616000";
+        const videoBitrate = resolution ? resolution[0] : defaultVideoBitrate;
 
         const params = new URLSearchParams({
             DeviceId: this.deviceId,
@@ -442,30 +446,34 @@ class JellyfinApi {
             VideoBitrate: videoBitrate
         });
 
-        if (res) {
-            params.set("maxWidth", res[2]);
-            params.set("maxHeight", res[1]);
+        // Add resolution constraints if available
+        if (resolution) {
+            params.set("maxWidth", resolution[2]);
+            params.set("maxHeight", resolution[1]);
         }
 
+        // Add transcode reasons for non-direct play
         if (!directPlay) {
             params.set("TranscodeReasons", "ContainerNotSupported, AudioCodecNotSupported");
         }
 
-        if (selectedSubtitleIndex !== null && subtitle.length > 0) {
-            const sub = subtitle.find(s => s.Index === selectedSubtitleIndex);
 
-            if (sub && !sub.IsTextSubtitleStream) {
-                params.set("SubtitleStreamIndex", String(selectedSubtitleIndex));
+        if (selectedSubtitleIndex !== null && subtitles.length > 0) {
+            const selectedSubtitle = subtitles.find(s => s.Index === selectedSubtitleIndex);
+
+            if (selectedSubtitle && !selectedSubtitle.IsTextSubtitleStream) {
+                params.set("SubtitleStreamIndex", selectedSubtitleIndex.toString());
                 params.set("SubtitleMethod", "Encode");
 
-                const existingReasons = params.get("TranscodeReasons");
-                const newReasons = existingReasons
-                    ? `${existingReasons}, SubtitleCodecNotSupported`
+                const currentReasons = params.get("TranscodeReasons") ?? "";
+                const updatedReasons = currentReasons
+                    ? `${currentReasons}, SubtitleCodecNotSupported`
                     : "SubtitleCodecNotSupported";
 
-                params.set("TranscodeReasons", newReasons);
+                params.set("TranscodeReasons", updatedReasons);
             }
         }
+
 
         return `${this.serverUrl}/videos/${itemId}/main.m3u8?${params.toString()}`;
     }

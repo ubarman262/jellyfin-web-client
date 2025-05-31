@@ -88,7 +88,6 @@ const MediaPlayerPage: React.FC = () => {
             item.MediaSources[0].MediaStreams.filter(
                 (stream) => stream.Type === "Video"
             ) ?? []; // fallback to empty array if undefined
-        // @ts-ignore
         return video[0].Height;
     }
 

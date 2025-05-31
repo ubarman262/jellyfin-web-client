@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import {ChevronDown, Film, LogOut, Menu, Search, Tv, X} from "lucide-react";
+import {Film, LogOut, Menu, Search, Tv, X} from "lucide-react";
 import React, {useEffect, useState} from "react";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useAuth} from "../../context/AuthContext";
