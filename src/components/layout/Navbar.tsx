@@ -145,13 +145,12 @@ const Navbar: React.FC = () => {
                             <div className="relative">
                                 <button
                                     onClick={() => setShowUserMenu(!showUserMenu)}
-                                    className="flex items-center gap-1 text-gray-300 hover:text-white transition-colors"
+                                    className="flex items-center gap-1 text-gray-300 hover:text-white transition-colors w-8 h-8 bg-red-600 rounded-[4px]"
                                 >
                                     <div
                                         className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-medium">
                                         {getUserInitial()}
                                     </div>
-                                    <ChevronDown size={16}/>
                                 </button>
 
                                 {showUserMenu && (

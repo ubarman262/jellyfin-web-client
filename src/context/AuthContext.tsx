@@ -1,6 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -9,21 +8,8 @@ import React, {
 import JellyfinApi from "../api/jellyfin";
 import { User, UserLogin } from "../types/jellyfin";
 
-interface AuthContextType {
-  api: JellyfinApi | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  user: User | null;
-  jellyfinClient: JellyfinApi | null;
-  serverUrl: string;
-  setServerUrl: (url: string) => void;
-  login: (credentials: UserLogin) => Promise<void>;
-  logout: () => Promise<void>;
-}
+import { AuthContext } from "./AuthProvider";
 
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
 
 export function AuthProvider({
   children,
@@ -43,11 +29,11 @@ export function AuthProvider({
   // Keep serverUrl in sync with localStorage
   const setServerUrl = useCallback((url: string) => {
     setServerUrlState(url);
-    if (url) {
+    /*if (url) {
       localStorage.setItem("jellyfin_server_url", url);
     } else {
       localStorage.removeItem("jellyfin_server_url");
-    }
+    }*/
   }, []);
 
   useEffect(() => {
@@ -59,12 +45,16 @@ export function AuthProvider({
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        if (!serverUrlState) {
+        /*if (!serverUrlState) {
           setIsLoading(false);
           setJellyfinClient(null);
           setUser(null);
           return;
-        }
+        }*/
+
+
+
+
 
         const client = new JellyfinApi({ serverUrl: serverUrlState });
         setJellyfinClient(client);
@@ -78,6 +68,7 @@ export function AuthProvider({
         const storedUser = localStorage.getItem("jellyfin_user");
         if (storedUser) {
           setUser(JSON.parse(storedUser));
+          setIsAuthenticated(true);
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -96,6 +87,7 @@ export function AuthProvider({
     try {
       const authResult = await jellyfinClient.login(credentials);
       setUser(authResult.User);
+      localStorage.setItem("jellyfin_user", JSON.stringify(authResult.User));
       setIsAuthenticated(true);
     } catch (error) {
       console.error("Login failed:", error);
@@ -113,6 +105,7 @@ export function AuthProvider({
       await jellyfinClient.logout();
     } finally {
       setUser(null);
+      localStorage.removeItem("jellyfin_user");
       setIsLoading(false);
       setIsAuthenticated(false);
     }
@@ -142,5 +135,6 @@ export const useAuth = () => {
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
+
   return context;
 };
