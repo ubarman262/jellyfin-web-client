@@ -73,7 +73,7 @@ const PersonDetailsPage: React.FC = () => {
   const personImage = (person: MediaItem | null) => {
     return person?.ImageTags?.Primary && !imgError ? (
       <img
-        src={api.getImageUrl(person.Id, "Primary", 400)}
+        src={api.getImageUrlProps({itemId: person.Id, imageType: "Primary", maxWidth: 400, quality: 60})}
         alt={person.Name}
         className="w-40 h-40 rounded-full object-cover border border-gray-700"
         onError={() => setImgError(true)}

@@ -122,15 +122,15 @@ const MediaDetailsPage: React.FC = () => {
 
   if (hasBackdropImage) {
     const itemId = isEpisode ? item.SeriesId : item.Id;
-    backdropUrl = api.getImageUrl(itemId ?? "", "Backdrop", 1920);
+    backdropUrl = api.getImageUrlProps({itemId: itemId ?? "", imageType: "Backdrop", maxWidth: 1920, quality: 60});
   }
 
   if (hasPrimaryImage) {
-    posterUrl = api.getImageUrl(item.Id, "Primary", 400);
+    posterUrl = api.getImageUrlProps({itemId: item.Id, imageType: "Primary", maxWidth: 400, quality: 60});
   }
 
   if (hasLogoImage) {
-    logoUrl = api.getImageUrl(item.Id, "Logo", 400);
+    logoUrl = api.getImageUrlProps({itemId: item.Id, imageType: "Logo", maxWidth: 400, quality: 60});
   }
 
   // Format runtime from ticks to minutes

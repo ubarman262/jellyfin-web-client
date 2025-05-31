@@ -141,7 +141,7 @@ export default function EpisodesList({
                 <img
                   src={
                     ep.ImageTags?.Primary && api
-                      ? api.getImageUrl(ep.Id, "Primary", 400)
+                      ? api.getImageUrlProps({itemId: ep.Id, imageType: "Primary", maxWidth: 400})
                       : ""
                   }
                   alt={ep.Name}

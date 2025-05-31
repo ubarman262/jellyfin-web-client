@@ -30,20 +30,24 @@ function getImageUrl(
   switch (item.Type) {
     case "Episode":
       if (item.SeriesId) {
-        return api.getImageUrl(item.SeriesId, "Primary", size);
+        //return api.getImageUrl(item.SeriesId, "Primary", size);
+        return api.getImageUrlProps({itemId: item.SeriesId, imageType: "Primary", maxWidth: size, quality: 50})
       }
       break;
     case "Series":
       if (hasPrimaryImage) {
-        return api.getImageUrl(item.Id, "Primary", size);
+        //return api.getImageUrl(item.Id, "Primary", size);
+        return api.getImageUrlProps({ itemId: item.Id, imageType: "Primary", maxWidth: size, quality: 50 });
       }
       break;
     default:
       if (hasPrimaryImage) {
-        return api.getImageUrl(item.Id, "Primary", size);
+        return api.getImageUrlProps({ itemId: item.Id, imageType: "Primary", maxWidth: size, quality: 50 });
+        //return api.getImageUrl(item.Id, "Primary", size);
       }
       if (hasBackdropImage) {
-        return api.getImageUrl(item.Id, "Backdrop", size);
+        //return api.getImageUrl(item.Id, "Backdrop", size);
+        return api.getImageUrlProps({ itemId: item.Id, imageType: "Backdrop", maxWidth: size, quality: 50 });
       }
       break;
   }

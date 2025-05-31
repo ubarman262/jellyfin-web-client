@@ -10,6 +10,15 @@ import {
     UserLogin,
 } from "../types/jellyfin";
 
+
+type ImageUrlProps = {
+    itemId: string;
+    imageType: string;
+    maxWidth?: number;
+    maxHeight?: number;
+    quality?: number;
+};
+
 class JellyfinApi {
     private readonly serverUrl: string = import.meta.env.VITE_SERVER_URL;
     private readonly apiKey?: string;
@@ -349,19 +358,13 @@ class JellyfinApi {
         );
     }
 
-    getImageUrl(
-        itemId: string,
-        imageType: string = "Primary",
-        maxWidth?: number,
-        maxHeight?: number
-    ): string {
-        let url = `${this.serverUrl}/emby/Items/${itemId}/Images/${imageType}`;
 
+    getImageUrlProps(props: ImageUrlProps): string {
+        let url = `${this.serverUrl}/emby/Items/${props.itemId}/Images/${props.imageType}`;
         const params = new URLSearchParams();
-        if (maxWidth) params.append("maxWidth", maxWidth.toString());
-        if (maxHeight) params.append("maxHeight", maxHeight.toString());
-        if (this.userId) params.append("tag", this.userId);
-
+        if(props.maxWidth) params.append("maxWidth", props.maxWidth.toString());
+        if (props.maxHeight) params.append("maxHeight", props.maxHeight.toString());
+        if (props.quality) params.append("quality", props.quality.toString());
         const queryString = params.toString();
         if (queryString) {
             url += `?${queryString}`;
@@ -369,6 +372,8 @@ class JellyfinApi {
 
         return url;
     }
+
+
 
 
     private getBitrateFromResolution(bitrate: number): (string)[] {

@@ -3,11 +3,14 @@ import { MediaItem, People, Studios } from "../types/jellyfin";
 
 const getBackdropUrl = (api: JellyfinApi, item: MediaItem) => {
   if (item.BackdropImageTags?.length) {
-    return api.getImageUrl(item.Id, "Backdrop", 1280);
+    //return api.getImageUrl(item.Id, "Backdrop", 1280);
+    return api.getImageUrlProps({itemId: item.Id, imageType: "Backdrop", maxWidth: 1280, quality: 60});
   } else if (item.Type === "Episode" && item.SeriesId) {
-    return api.getImageUrl(item.SeriesId, "Backdrop", 1280);
+    //return api.getImageUrl(item.SeriesId, "Backdrop", 1280);
+    return api.getImageUrlProps({itemId: item.SeriesId, imageType: "Backdrop", maxWidth: 1280, quality: 60});
   } else {
-    return api.getImageUrl(item.Id, "Primary", 1280);
+    //return api.getImageUrl(item.Id, "Primary", 1280);
+    return api.getImageUrlProps({itemId: item.Id, imageType: "Primary", maxWidth: 1280, quality: 60});
   }
 };
 
