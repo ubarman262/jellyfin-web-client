@@ -33,7 +33,7 @@ FROM oven/bun:1 as builder
 
 WORKDIR /app
 
-COPY bun.lockb package.json ./
+COPY package.json ./
 RUN bun install
 
 COPY . .
