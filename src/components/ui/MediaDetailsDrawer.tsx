@@ -61,11 +61,10 @@ const MediaDetailsDrawer = () => {
     }
   }, [location.search, setActiveItem, isOpen]);
 
-  // When modal opens, update URL to /browse?item={itemId}
+  // When modal opens, update URL to /home?item={itemId}
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const currentItem = params.get("item");
-    console.log(currentItem,)
     if (open && activeItemId && currentItem !== activeItemId) {
       params.set("item", activeItemId);
       navigate({ pathname: "/home", search: params.toString() }, { replace: false });

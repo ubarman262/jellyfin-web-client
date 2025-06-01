@@ -487,7 +487,10 @@ const MediaPlayerPage: React.FC = () => {
   return (
     <div
       ref={playerContainerRef}
-      className="relative w-full h-screen bg-black text-white overflow-hidden"
+      className={clsx(
+        "relative w-full h-screen bg-black text-white overflow-hidden",
+        { "cursor-none": !showControls && isPlaying }
+      )}
       onClick={handlePlayerClick}
       onMouseMove={handleMouseMove}
     >
