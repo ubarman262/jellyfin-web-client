@@ -43,14 +43,20 @@ const MediaPlayerPage: React.FC = () => {
   const [showControls, setShowControls] = useState(true);
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
+  const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [currentLocalSubtitleFile, setCurrentLocalSubtitleFile] = useState<File | null>(null);
+  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(null);
+  const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
+
 
   // Audio tracks state
   const [audioTracks, setAudioTracks] = useState<
     { id: number; label: string; language: string }[]
   >([]);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
-  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<
-    number | null
+  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState< // Can be number (server track), 'local', or null (off)
+    number | string | null
   >(null);
   const [hasInitializedSelections, setHasInitializedSelections] =
     useState(false);
@@ -142,7 +148,7 @@ const MediaPlayerPage: React.FC = () => {
       mediaSourceId: item.Id,
       playSessionId,
       audioStreamIndex: selectedAudioTrack,
-      subtitleStreamIndex: selectedSubtitleIndex ?? 0,
+      subtitleStreamIndex: typeof selectedSubtitleIndex === 'number' ? selectedSubtitleIndex : 0,
       positionTicks: Math.floor((resumeTime || 0) * 10000000),
       volumeLevel: 100,
       isMuted: false,
@@ -234,7 +240,7 @@ const MediaPlayerPage: React.FC = () => {
           item.Id,
           pos,
           selectedAudioTrack,
-          selectedSubtitleIndex ?? 0
+          typeof selectedSubtitleIndex === 'number' ? selectedSubtitleIndex : 0
         );
       }
       rafId = requestAnimationFrame(report);
@@ -431,7 +437,7 @@ const MediaPlayerPage: React.FC = () => {
     if (!hasInitializedSelections) {
       const cookie = getCookie(`jellyfin_media_${item.Id}`);
       let audioId = tracks[0]?.id ?? 0;
-      let subtitleIdx: number | null = null;
+      let subtitleIdx: number | string | null = null; // Can be number, 'local', or null
       if (cookie) {
         try {
           const parsed = JSON.parse(decodeURIComponent(cookie));
@@ -441,6 +447,8 @@ const MediaPlayerPage: React.FC = () => {
           ) {
             audioId = parsed.audio;
           }
+          // We don't persist "local" subtitle selection via cookie for simplicity.
+          // User will need to re-upload if they refresh.
           if (parsed.subtitle === null || typeof parsed.subtitle === "number") {
             subtitleIdx = parsed.subtitle;
           }
@@ -461,7 +469,8 @@ const MediaPlayerPage: React.FC = () => {
       `jellyfin_media_${item.Id}`,
       JSON.stringify({
         audio: selectedAudioTrack,
-        subtitle: selectedSubtitleIndex,
+        // Don't persist "local" in cookie, store null instead.
+        subtitle: typeof selectedSubtitleIndex === 'string' ? null : selectedSubtitleIndex,
       }),
       7
     );
@@ -471,6 +480,33 @@ const MediaPlayerPage: React.FC = () => {
     selectedSubtitleIndex,
     hasInitializedSelections,
   ]);
+
+  const handleSelectLocalSubtitle = (file: File) => {
+    if (localSubtitleUrl) {
+      URL.revokeObjectURL(localSubtitleUrl);
+    }
+    const newUrl = URL.createObjectURL(file);
+    setLocalSubtitleUrl(newUrl);
+    setCurrentLocalSubtitleFile(file);
+    setLocalSubtitleName(file.name);
+    handleSetSelectedSubtitleTrackUI("local"); // Use the main handler to set local as active
+  };
+
+  const handleSetSelectedSubtitleTrackUI = (index: number | string | null) => {
+    // If a new local subtitle is being activated, this function is called with "local".
+    // If a server track or "Off" is selected, we just update the index.
+    // The localSubtitleUrl and localSubtitleName should persist so the option remains in the menu.
+    // They are only cleared/updated when a *new* local file is uploaded via handleSelectLocalSubtitle.
+    setSelectedSubtitleIndex(index);
+  };
+
+  const increaseSubtitleDelay = () => {
+    setSubtitleDelayMs(prev => prev + 100);
+  };
+
+  const decreaseSubtitleDelay = () => {
+    setSubtitleDelayMs(prev => prev - 100);
+  };
 
   const handleBack = () => {
     navigate(-1);
@@ -508,22 +544,18 @@ const MediaPlayerPage: React.FC = () => {
         autoPlay
         onClick={togglePlay}
       >
-        <track
-          kind="captions"
-          srcLang="en"
-          label="English"
-          src="/subtitles/english.vtt"
-          default
-        />
+        {/* Native track element removed, SubtitleTrack component will handle rendering */}
       </video>
 
-      {/* SubtitleTrack now handles fetching and displaying the active subtitle */}
-      {selectedSubtitleIndex !== null && (
+      {/* SubtitleTrack now handles fetching and displaying the active subtitle from server or local file */}
+      {(localSubtitleUrl || selectedSubtitleIndex !== null) && (
         <SubtitleTrack
           subtitleTracks={subtitleTracks}
           selectedSubtitleIndex={selectedSubtitleIndex}
           itemId={item.Id}
           currentTime={currentTime}
+          localSubtitleFileUrl={selectedSubtitleIndex === "local" ? localSubtitleUrl ?? undefined : undefined}
+          subtitleDelayMs={subtitleDelayMs}
         />
       )}
 
@@ -666,7 +698,12 @@ const MediaPlayerPage: React.FC = () => {
                 setSelectedAudioTrack={setSelectedAudioTrack}
                 subtitleTracks={subtitleTracks}
                 selectedSubtitleIndex={selectedSubtitleIndex}
-                setSelectedSubtitleIndex={setSelectedSubtitleIndex}
+                setSelectedSubtitleIndex={handleSetSelectedSubtitleTrackUI}
+                onSelectLocalSubtitle={handleSelectLocalSubtitle}
+                localSubtitleName={localSubtitleName}
+                subtitleDelayMs={subtitleDelayMs}
+                increaseSubtitleDelay={increaseSubtitleDelay}
+                decreaseSubtitleDelay={decreaseSubtitleDelay}
                 isOpen={tracksMenuOpen}
                 setIsOpen={setTracksMenuOpen}
               />
