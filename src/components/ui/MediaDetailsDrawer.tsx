@@ -65,17 +65,18 @@ const MediaDetailsDrawer = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const currentItem = params.get("item");
+    console.log(currentItem,)
     if (open && activeItemId && currentItem !== activeItemId) {
       params.set("item", activeItemId);
-      navigate({ pathname: "/browse", search: params.toString() }, { replace: false });
+      navigate({ pathname: "/home", search: params.toString() }, { replace: false });
     }
     // When modal closes, remove ?item from URL if present
     if (!open && currentItem) {
       params.delete("item");
-      navigate({ pathname: "/browse", search: params.toString() }, { replace: true });
+      navigate({ pathname: "/home", search: params.toString() }, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, activeItemId]);
+  }, [open, activeItemId, location.search]);
 
   if (!activeItemId) return null;
   // Only render content when the loaded item's ID matches the activeItemId

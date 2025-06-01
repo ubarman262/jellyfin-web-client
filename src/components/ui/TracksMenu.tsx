@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Captions, Check, Settings } from "lucide-react";
+import { Captions, Check } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { MediaStream } from "../../types/jellyfin";
 

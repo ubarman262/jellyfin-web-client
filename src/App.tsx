@@ -146,7 +146,7 @@ const App: React.FC = () => {
         <Route path="/add-server" element={<AddServerPage />} />
 
         <Route
-          path="/browse"
+          path="/home"
           element={
             <ProtectedRoute>
               <HomePage />
