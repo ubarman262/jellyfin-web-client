@@ -1,6 +1,5 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
   BrowserView,
   isBrowser,
@@ -8,7 +7,9 @@ import {
   MobileView,
 } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useRecoilState } from "recoil";
+import Rotten from "../../assets/png/rotten.png";
 import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
 import activeItem from "../../states/atoms/ActiveItem";
@@ -24,10 +25,9 @@ import {
 import CastList from "./CastList";
 import EpisodesList from "./EpisodesList";
 import MarkWatchedButton from "./MarkWatchedButton";
+import MoreLikeThisSection from "./MoreLikeThisSection";
 import PlayButton from "./playButton";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
-import MoreLikeThisSection from "./MoreLikeThisSection";
-import Rotten from "../../assets/png/rotten.png";
 
 const MediaDetailsDrawer = () => {
   const { api } = useAuth();
@@ -77,12 +77,18 @@ const MediaDetailsDrawer = () => {
     const currentItem = params.get("item");
     if (open && activeItemId && currentItem !== activeItemId) {
       params.set("item", activeItemId);
-      navigate({ pathname: "/home", search: params.toString() }, { replace: false });
+      navigate(
+        { pathname: "/home", search: params.toString() },
+        { replace: false }
+      );
     }
     // When modal closes, remove ?item from URL if present
     if (!open && currentItem) {
       params.delete("item");
-      navigate({ pathname: "/home", search: params.toString() }, { replace: true });
+      navigate(
+        { pathname: "/home", search: params.toString() },
+        { replace: true }
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeItemId, location.search]);

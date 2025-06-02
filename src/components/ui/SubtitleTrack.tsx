@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import DOMPurify from "dompurify";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
@@ -50,7 +51,6 @@ const SubtitleTrack = ({
       const lines = block.split(/\r?\n/);
       if (lines.length < 3) continue; // Need at least index, time, text
 
-      // const index = parseInt(lines[0], 10); // Not strictly needed for display
       const timeLine = lines[1];
       const textLines = lines.slice(2).join("\n");
 
@@ -82,7 +82,6 @@ const SubtitleTrack = ({
             throw new Error(`Failed to fetch local subtitle: ${response.statusText}`);
           }
           const srtContent = await response.text();
-          // TODO: Add VTT parsing or auto-detect format
           const parsedEvents = parseSrt(srtContent);
           setSubtitleData(parsedEvents);
         } catch (error) {

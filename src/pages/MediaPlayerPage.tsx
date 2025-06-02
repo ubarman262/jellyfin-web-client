@@ -8,9 +8,11 @@ import {
   Minimize,
   Pause,
   Play,
+  SkipBack, // Added
+  SkipForward, // Added
   Volume1,
   Volume2,
-  VolumeX
+  VolumeX,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -45,9 +47,10 @@ const MediaPlayerPage: React.FC = () => {
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
-  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(null);
+  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(
+    null
+  );
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
-
 
   // Audio tracks state
   const [audioTracks, setAudioTracks] = useState<
@@ -55,7 +58,8 @@ const MediaPlayerPage: React.FC = () => {
   >([]);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
   type SubtitleIndex = number | string | null; // Can be number (server track), 'local', or null (off)
-  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<SubtitleIndex>(null);
+  const [selectedSubtitleIndex, setSelectedSubtitleIndex] =
+    useState<SubtitleIndex>(null);
   const [hasInitializedSelections, setHasInitializedSelections] =
     useState(false);
 
@@ -67,6 +71,12 @@ const MediaPlayerPage: React.FC = () => {
 
   // Next episode state
   const [nextEpisode, setNextEpisode] = useState<MediaItem | null>(null);
+  // Previous episode state
+  const [previousEpisode, setPreviousEpisode] = useState<MediaItem | null>(
+    null
+  );
+  // Flag to force starting video from the beginning, e.g., for next/prev episode
+  const [forceStartFromBeginning, setForceStartFromBeginning] = useState(false);
 
   // Helper functions for cookies
   function setCookie(name: string, value: string, days: number) {
@@ -84,6 +94,15 @@ const MediaPlayerPage: React.FC = () => {
     );
   }
 
+  // Reset player position states when the item itself changes
+  useEffect(() => {
+    setHasRestoredPosition(false);
+    setCurrentTime(0);
+    setDuration(0);
+    // Do NOT reset forceStartFromBeginning here, as it's set by user action right before item change.
+    // It will be consumed and reset by the main playback useEffect.
+  }, [itemId]);
+
   // Get playback URL and restore position
   useEffect(() => {
     let hls: Hls | null = null;
@@ -93,18 +112,33 @@ const MediaPlayerPage: React.FC = () => {
     if (!videoEl) return;
 
     // Get last watched position from API (UserData)
-    let resumeTime = 0;
-    if (!hasRestoredPosition) {
-      if (item.UserData?.PlaybackPositionTicks) {
-        resumeTime = Math.floor(item.UserData.PlaybackPositionTicks / 10000000);
-      }
+    // This 'resumeTime' is the potential start time from UserData if not forced or already restored.
+    let resumeTimeFromUserData = 0;
+    if (item.UserData?.PlaybackPositionTicks) {
+      resumeTimeFromUserData = Math.floor(item.UserData.PlaybackPositionTicks / 10000000);
     }
 
-    // Save current time and play state before switching audio track
-    const prevTime =
-      !hasRestoredPosition && resumeTime > 0
-        ? resumeTime
-        : currentTime || videoEl.currentTime || 0;
+    let timeToStartVideoAt;
+
+    if (!hasRestoredPosition) { // This is an initial load for the current 'item'
+      if (forceStartFromBeginning) {
+        timeToStartVideoAt = 0; // Force start from beginning
+      } else {
+        timeToStartVideoAt = resumeTimeFromUserData; // Use UserData or 0 if no UserData
+      }
+    } else { // Position has been restored before for this item; likely an audio/subtitle track change.
+             // Resume from the video's actual current playback time.
+      timeToStartVideoAt = videoRef.current?.currentTime || currentTime || 0;
+    }
+    
+    // This is the crucial time that will be passed to videoEl.currentTime in restoreTimeAndPlay
+    const prevTime = timeToStartVideoAt;
+
+    // If forceStartFromBeginning was true, reset it now that it has been used for this load.
+    if (forceStartFromBeginning) {
+      setForceStartFromBeginning(false);
+    }
+
     const wasPlaying = isPlaying || !videoEl.paused;
 
     // Show loader when switching audio
@@ -122,7 +156,9 @@ const MediaPlayerPage: React.FC = () => {
     // Helper to restore time and play state
     const restoreTimeAndPlay = () => {
       // Wait for metadata to be loaded
-      if (prevTime > 0 && Math.abs(videoEl.currentTime - prevTime) > 0.5) {
+      // If prevTime is 0, we still want to set it if currentTime is not already 0.
+      // The original (prevTime > 0) prevented setting to 0.
+      if (videoEl && Math.abs(videoEl.currentTime - prevTime) > 0.5) {
         try {
           videoEl.currentTime = prevTime;
         } catch (err) {
@@ -149,8 +185,9 @@ const MediaPlayerPage: React.FC = () => {
       mediaSourceId: item.Id,
       playSessionId,
       audioStreamIndex: selectedAudioTrack,
-      subtitleStreamIndex: typeof selectedSubtitleIndex === 'number' ? selectedSubtitleIndex : 0,
-      positionTicks: Math.floor((resumeTime || 0) * 10000000),
+      subtitleStreamIndex:
+        typeof selectedSubtitleIndex === "number" ? selectedSubtitleIndex : 0,
+      positionTicks: Math.floor((prevTime || 0) * 10000000), // Changed resumeTime to prevTime
       volumeLevel: 100,
       isMuted: false,
       isPaused: false,
@@ -217,7 +254,7 @@ const MediaPlayerPage: React.FC = () => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, item, selectedAudioTrack]);
+  }, [api, item, selectedAudioTrack, forceStartFromBeginning]); // Added forceStartFromBeginning
 
   // Report playback progress to Jellyfin
   useEffect(() => {
@@ -241,7 +278,7 @@ const MediaPlayerPage: React.FC = () => {
           item.Id,
           pos,
           selectedAudioTrack,
-          typeof selectedSubtitleIndex === 'number' ? selectedSubtitleIndex : 0
+          typeof selectedSubtitleIndex === "number" ? selectedSubtitleIndex : 0
         );
       }
       rafId = requestAnimationFrame(report);
@@ -471,7 +508,10 @@ const MediaPlayerPage: React.FC = () => {
       JSON.stringify({
         audio: selectedAudioTrack,
         // Don't persist "local" in cookie, store null instead.
-        subtitle: typeof selectedSubtitleIndex === 'string' ? null : selectedSubtitleIndex,
+        subtitle:
+          typeof selectedSubtitleIndex === "string"
+            ? null
+            : selectedSubtitleIndex,
       }),
       7
     );
@@ -500,11 +540,11 @@ const MediaPlayerPage: React.FC = () => {
     setSelectedSubtitleIndex(index);
   };
   const increaseSubtitleDelay = () => {
-    setSubtitleDelayMs(prev => prev + 100);
+    setSubtitleDelayMs((prev) => prev + 100);
   };
 
   const decreaseSubtitleDelay = () => {
-    setSubtitleDelayMs(prev => prev - 100);
+    setSubtitleDelayMs((prev) => prev - 100);
   };
 
   const handleBack = () => {
@@ -519,29 +559,57 @@ const MediaPlayerPage: React.FC = () => {
       targetId = item.SeriesId;
     }
     navigate(`/home?item=${targetId}`);
-  }
+  };
 
-  // Fetch next episode if this is an episode
+  // Fetch next and previous episode if this is an episode
   useEffect(() => {
     if (!api || !item) return;
     if (item.Type !== "Episode" || !item.SeriesId) {
       setNextEpisode(null);
+      setPreviousEpisode(null);
       return;
     }
-    // Find next episode using IndexNumber
+    // Find next and previous episode using IndexNumber
     api.getEpisodes(item.SeriesId, item.SeasonId).then((episodes) => {
       if (!episodes || !item.IndexNumber) {
         setNextEpisode(null);
+        setPreviousEpisode(null);
         return;
       }
-      const idx = episodes.findIndex((ep) => ep.Id === item.Id);
-      if (idx !== -1 && idx + 1 < episodes.length) {
-        setNextEpisode(episodes[idx + 1]);
+      const currentIndex = episodes.findIndex((ep) => ep.Id === item.Id);
+      if (currentIndex !== -1) {
+        if (currentIndex + 1 < episodes.length) {
+          setNextEpisode(episodes[currentIndex + 1]);
+        } else {
+          setNextEpisode(null);
+        }
+        if (currentIndex - 1 >= 0) {
+          setPreviousEpisode(episodes[currentIndex - 1]);
+        } else {
+          setPreviousEpisode(null);
+        }
       } else {
         setNextEpisode(null);
+        setPreviousEpisode(null);
       }
     });
   }, [api, item]);
+
+  const playNextEpisode = () => {
+    if (nextEpisode) {
+      setForceStartFromBeginning(true); // Signal to start next episode from beginning
+      navigate(`/play/${nextEpisode.Id}`);
+      // No need to reset other states here, useEffect[item.Id] handles it.
+    }
+  };
+
+  const playPreviousEpisode = () => {
+    if (previousEpisode) {
+      setForceStartFromBeginning(true); // Signal to start previous episode from beginning
+      navigate(`/play/${previousEpisode.Id}`);
+      // No need to reset other states here, useEffect[item.Id] handles it.
+    }
+  };
 
   if (isLoading || !item || !api) {
     return (
@@ -585,24 +653,23 @@ const MediaPlayerPage: React.FC = () => {
           selectedSubtitleIndex={selectedSubtitleIndex}
           itemId={item.Id}
           currentTime={currentTime}
-          localSubtitleFileUrl={selectedSubtitleIndex === "local" ? localSubtitleUrl ?? undefined : undefined}
+          localSubtitleFileUrl={
+            selectedSubtitleIndex === "local"
+              ? localSubtitleUrl ?? undefined
+              : undefined
+          }
           subtitleDelayMs={subtitleDelayMs}
         />
       )}
 
       {/* Next Episode Button Overlay */}
-      {nextEpisode &&
-        duration > 0 &&
-        duration - currentTime < 30 && (
-          <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
-            <div className="pointer-events-auto">
-              <NextEpisodeButton
-                nextEpisode={nextEpisode}
-              />
-            </div>
+      {nextEpisode && duration > 0 && duration - currentTime < 30 && (
+        <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
+          <div className="pointer-events-auto">
+            <NextEpisodeButton nextEpisode={nextEpisode} playNextEpisode={() => playNextEpisode()} />
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Controls overlay */}
       <div
@@ -683,6 +750,15 @@ const MediaPlayerPage: React.FC = () => {
           {/* Controls row */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+              {previousEpisode && (
+                <button
+                  onClick={playPreviousEpisode}
+                  className="text-white hover:text-gray-300 transition-colors"
+                  title="Previous Episode"
+                >
+                  <SkipBack size={22} />
+                </button>
+              )}
               <button
                 onClick={() => skip(-10)}
                 className="text-white hover:text-gray-300 transition-colors"
@@ -701,6 +777,15 @@ const MediaPlayerPage: React.FC = () => {
               >
                 <ChevronsRight size={24} />
               </button>
+              {nextEpisode && (
+                <button
+                  onClick={playNextEpisode}
+                  className="text-white hover:text-gray-300 transition-colors"
+                  title="Next Episode"
+                >
+                  <SkipForward size={22} />
+                </button>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleMute}

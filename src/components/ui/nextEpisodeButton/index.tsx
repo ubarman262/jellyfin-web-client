@@ -4,12 +4,14 @@ import { MediaItem } from "../../../types/jellyfin";
 
 interface NextEpisodeButtonProps {
   readonly nextEpisode: MediaItem;
+  readonly playNextEpisode: () => void;
 }
 
 export default function NextEpisodeButton({
   nextEpisode,
+  playNextEpisode,
 }: NextEpisodeButtonProps) {
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Handler to play next episode and clear timer
   const playNext = () => {
@@ -17,7 +19,7 @@ export default function NextEpisodeButton({
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    window.location.href = `/play/${nextEpisode.Id}`;
+    playNextEpisode();
   };
 
   useEffect(() => {
