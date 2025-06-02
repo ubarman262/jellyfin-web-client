@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { People } from "../../types/jellyfin";
 import { useAuth } from "../../context/AuthContext";
+import isDrawerOpen from "../../states/atoms/DrawerOpen";
+import { useSetRecoilState } from "recoil";
 
 interface CastListProps {
   people: People[];
@@ -10,6 +12,7 @@ interface CastListProps {
 const CastList: React.FC<CastListProps> = ({ people }) => {
   const { api } = useAuth();
   const [imgErrorMap, setImgErrorMap] = useState<{ [id: string]: boolean }>({});
+  const setDrawerOpen = useSetRecoilState(isDrawerOpen);
 
   if (!people || people.length === 0) return null;
 
@@ -30,6 +33,7 @@ const CastList: React.FC<CastListProps> = ({ people }) => {
               className="flex flex-col items-center w-20 group focus:outline-none"
               tabIndex={0}
               title={person.Name}
+              onClick={() => setDrawerOpen(false)}
             >
               {personImg && !imgError ? (
                 <img
