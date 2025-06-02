@@ -1,8 +1,8 @@
 .next-episode {
-  width: 300px;
-  height: 80px;
+  width: 150px;
+  height: 50px;
   position: relative;
-  border-radius: 15px;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
   user-select: none;
@@ -13,10 +13,10 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 300px;
+  width: 150px;
   height: 100%;
   font-family: Arial, sans-serif;
-  font-size: 30px;
+  font-size: 22px;
   overflow: hidden;
 }
 
@@ -25,9 +25,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 300px;
-  height: 80px;
-  gap: 15px;
+  width: 150px;
+  height: 50px;
+  gap: 10px;
 }
 
 .dark {
@@ -43,7 +43,7 @@
   animation-name: slide;
   animation-duration: 4s;
   animation-timing-function: ease-in;
-  animation-iteration-count: infinite;
+  animation-iteration-count: 1;
 }
 
 @keyframes slide {

@@ -34,10 +34,21 @@ const MediaDetailsDrawer = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeItemId = useRecoilValue(activeItem);
+  const [activeItemId, setActiveItemId] = useRecoilState(activeItem);
   const [open, isOpen] = useRecoilState(isDrawerOpen);
-  const [activeItemState, setActiveItem] = useRecoilState(activeItem);
   const { item } = useMediaItem(activeItemId);
+
+  // --- Fix: Sync activeItem atom with URL on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const itemId = params.get("item");
+    if (itemId && itemId !== "string" && activeItemId !== itemId) {
+      setActiveItemId(itemId);
+    }
+    // Only run on mount or when location.search changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+  // ---------------------------------------------------
 
   const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
@@ -56,10 +67,9 @@ const MediaDetailsDrawer = () => {
     const params = new URLSearchParams(location.search);
     const itemId = params.get("item");
     if (itemId) {
-      setActiveItem(itemId);
       isOpen(true);
     }
-  }, [location.search, setActiveItem, isOpen]);
+  }, [location.search, isOpen]);
 
   // When modal opens, update URL to /home?item={itemId}
   useEffect(() => {

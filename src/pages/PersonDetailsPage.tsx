@@ -1,11 +1,11 @@
 import { Calendar } from "lucide-react";
 import React, { Suspense, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useRecoilState } from "recoil";
 import Navbar from "../components/layout/Navbar";
 import { useAuth } from "../context/AuthContext";
-import { MediaItem } from "../types/jellyfin";
-import { useRecoilState, useRecoilValue } from "recoil";
 import isDrawerOpen from "../states/atoms/DrawerOpen";
+import { MediaItem } from "../types/jellyfin";
 
 const ShowMoreText: React.FC<{ text: string; maxLength?: number }> = ({
   text,

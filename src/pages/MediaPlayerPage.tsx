@@ -18,7 +18,8 @@ import SubtitleTrack from "../components/ui/SubtitleTrack";
 import TracksMenu from "../components/ui/TracksMenu";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
-import { MediaStream } from "../types/jellyfin";
+import { MediaItem, MediaStream } from "../types/jellyfin";
+import NextEpisodeButton from "../components/ui/nextEpisodeButton";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
@@ -44,8 +45,6 @@ const MediaPlayerPage: React.FC = () => {
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [currentLocalSubtitleFile, setCurrentLocalSubtitleFile] = useState<File | null>(null);
   const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(null);
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
 
@@ -55,9 +54,8 @@ const MediaPlayerPage: React.FC = () => {
     { id: number; label: string; language: string }[]
   >([]);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
-  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState< // Can be number (server track), 'local', or null (off)
-    number | string | null
-  >(null);
+  type SubtitleIndex = number | string | null; // Can be number (server track), 'local', or null (off)
+  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<SubtitleIndex>(null);
   const [hasInitializedSelections, setHasInitializedSelections] =
     useState(false);
 
@@ -66,6 +64,9 @@ const MediaPlayerPage: React.FC = () => {
 
   // Track if we have already restored position for this session
   const [hasRestoredPosition, setHasRestoredPosition] = useState(false);
+
+  // Next episode state
+  const [nextEpisode, setNextEpisode] = useState<MediaItem | null>(null);
 
   // Helper functions for cookies
   function setCookie(name: string, value: string, days: number) {
@@ -487,19 +488,17 @@ const MediaPlayerPage: React.FC = () => {
     }
     const newUrl = URL.createObjectURL(file);
     setLocalSubtitleUrl(newUrl);
-    setCurrentLocalSubtitleFile(file);
     setLocalSubtitleName(file.name);
     handleSetSelectedSubtitleTrackUI("local"); // Use the main handler to set local as active
   };
 
-  const handleSetSelectedSubtitleTrackUI = (index: number | string | null) => {
+  const handleSetSelectedSubtitleTrackUI = (index: SubtitleIndex) => {
     // If a new local subtitle is being activated, this function is called with "local".
     // If a server track or "Off" is selected, we just update the index.
     // The localSubtitleUrl and localSubtitleName should persist so the option remains in the menu.
     // They are only cleared/updated when a *new* local file is uploaded via handleSelectLocalSubtitle.
     setSelectedSubtitleIndex(index);
   };
-
   const increaseSubtitleDelay = () => {
     setSubtitleDelayMs(prev => prev + 100);
   };
@@ -509,8 +508,40 @@ const MediaPlayerPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    if (!item) return;
+    let targetId = item.Id;
+    if (
+      item.Type === "Episode" &&
+      item.SeriesId &&
+      typeof item.SeriesId === "string" &&
+      item.SeriesId !== "string"
+    ) {
+      targetId = item.SeriesId;
+    }
+    navigate(`/home?item=${targetId}`);
   }
+
+  // Fetch next episode if this is an episode
+  useEffect(() => {
+    if (!api || !item) return;
+    if (item.Type !== "Episode" || !item.SeriesId) {
+      setNextEpisode(null);
+      return;
+    }
+    // Find next episode using IndexNumber
+    api.getEpisodes(item.SeriesId, item.SeasonId).then((episodes) => {
+      if (!episodes || !item.IndexNumber) {
+        setNextEpisode(null);
+        return;
+      }
+      const idx = episodes.findIndex((ep) => ep.Id === item.Id);
+      if (idx !== -1 && idx + 1 < episodes.length) {
+        setNextEpisode(episodes[idx + 1]);
+      } else {
+        setNextEpisode(null);
+      }
+    });
+  }, [api, item]);
 
   if (isLoading || !item || !api) {
     return (
@@ -558,6 +589,20 @@ const MediaPlayerPage: React.FC = () => {
           subtitleDelayMs={subtitleDelayMs}
         />
       )}
+
+      {/* Next Episode Button Overlay */}
+      {nextEpisode &&
+        duration > 0 &&
+        duration - currentTime < 30 && (
+          <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
+            <div className="pointer-events-auto">
+              <NextEpisodeButton
+                nextEpisode={nextEpisode}
+              />
+            </div>
+          </div>
+        )
+      }
 
       {/* Controls overlay */}
       <div

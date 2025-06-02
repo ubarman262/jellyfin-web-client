@@ -123,7 +123,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                     ref={fileInputRef}
                     style={{ display: "none" }}
                     onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
+                      if (e.target.files?.[0]) {
                         onSelectLocalSubtitle(e.target.files[0]);
                         setIsOpen(false);
                       }

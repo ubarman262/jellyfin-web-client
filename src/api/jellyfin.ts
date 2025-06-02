@@ -593,7 +593,7 @@ class JellyfinApi {
    * @param seriesId The series ID.
    * @param seasonId The season ID.
    */
-  async getEpisodes(seriesId: string, seasonId: string): Promise<MediaItem[]> {
+  async getEpisodes(seriesId: string, seasonId: string | undefined): Promise<MediaItem[]> {
     const data = await this.makeRequest<ItemsResponse>(
       "get",
       `/Shows/${seriesId}/Episodes`,
