@@ -21,6 +21,7 @@ interface TracksMenuProps {
   subtitleDelayMs: number;
   increaseSubtitleDelay: () => void;
   decreaseSubtitleDelay: () => void;
+  resetSubtitleDelay: () => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
@@ -37,6 +38,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
   subtitleDelayMs,
   increaseSubtitleDelay,
   decreaseSubtitleDelay,
+  resetSubtitleDelay,
   isOpen,
   setIsOpen,
 }) => {
@@ -210,7 +212,11 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                     >
                       -
                     </button>
-                    <span className="text-xs tabular-nums">
+                    <span
+                      className="text-xs tabular-nums cursor-pointer"
+                      onDoubleClick={resetSubtitleDelay}
+                      title="Double-click to reset delay"
+                    >
                       {subtitleDelayMs > 0 ? "+" : ""}
                       {(subtitleDelayMs / 1000).toFixed(1)}s
                     </span>

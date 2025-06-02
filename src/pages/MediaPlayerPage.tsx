@@ -547,6 +547,10 @@ const MediaPlayerPage: React.FC = () => {
     setSubtitleDelayMs((prev) => prev - 100);
   };
 
+  const resetSubtitleDelay = () => {
+    setSubtitleDelayMs(0);
+  };
+
   const handleBack = () => {
     if (!item) return;
     let targetId = item.Id;
@@ -834,6 +838,7 @@ const MediaPlayerPage: React.FC = () => {
                 subtitleDelayMs={subtitleDelayMs}
                 increaseSubtitleDelay={increaseSubtitleDelay}
                 decreaseSubtitleDelay={decreaseSubtitleDelay}
+                resetSubtitleDelay={resetSubtitleDelay}
                 isOpen={tracksMenuOpen}
                 setIsOpen={setTracksMenuOpen}
               />
