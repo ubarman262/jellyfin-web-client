@@ -140,7 +140,7 @@ const CardContent: React.FC<CardContentProps> = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            const firstSegment = location.pathname.split('/')[1];
+            const firstSegment = location.pathname.split("/")[1];
             navigate(`/play/${playbackId}`, {
               state: { callbackPath: `/${firstSegment}` },
             });
@@ -218,70 +218,68 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
   };
 
   return (
-    <>
-      <div
-        className={clsx(
-          "group relative transition-all duration-300 overflow-hidden rounded-md bg-gray-900 cursor-pointer",
-          featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3]",
-          isHovered && "z-10 scale-110 shadow-xl"
-        )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        tabIndex={0}
-        aria-label={`View details for ${title}`}
-        style={{ display: "block" }}
-        onClick={() => handleCardClick(item.Id)}
-        role="button"
-      >
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={title}
-            className={clsx(
-              "w-full h-full object-cover transition-all duration-500",
-              isHovered && "brightness-30"
-            )}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-800">
-            <span className="text-gray-400">{title}</span>
-          </div>
-        )}
-
-        {progressPercent > 0 && (
-          <div className="absolute left-0 right-0 bottom-0 h-1.5 bg-black/40 z-20">
-            <div
-              className="h-full bg-[var(--accent-secondary)] transition-all"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        )}
-
-        <div
+    <div
+      className={clsx(
+        "group relative transition-all duration-300 overflow-hidden rounded-md bg-gray-900 cursor-pointer",
+        featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3]",
+        isHovered && "z-10 scale-110 shadow-xl"
+      )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      tabIndex={0}
+      aria-label={`View details for ${title}`}
+      style={{ display: "block" }}
+      onClick={() => handleCardClick(item.Id)}
+      role="button"
+    >
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={title}
           className={clsx(
-            "absolute inset-0 flex flex-col justify-end p-3 text-start",
-            "bg-gradient-to-t from-black/90 to-transparent",
-            "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            "w-full h-full object-cover transition-all duration-500",
+            isHovered && "brightness-30"
           )}
-        >
-          <CardContent
-            item={item}
-            isEpisode={isEpisode}
-            isMovie={isMovie}
-            isSeries={isSeries}
-            nextUoId={targetId}
-            seasonNum={seasonNum}
-            episodeNum={episodeNum}
-            showName={showName}
-            year={year}
-            rating={rating}
-            title={title}
-            navigate={navigate}
-            onCardClick={() => handleCardClick(item.Id)}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-gray-800">
+          <span className="text-gray-400">{title}</span>
+        </div>
+      )}
+
+      {progressPercent > 0 && (
+        <div className="absolute left-0 right-0 bottom-0 h-1.5 bg-black/40 z-20">
+          <div
+            className="h-full bg-[var(--accent-secondary)] transition-all"
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
+      )}
+
+      <div
+        className={clsx(
+          "absolute inset-0 flex flex-col justify-end p-3 text-start",
+          "bg-gradient-to-t from-black/90 to-transparent",
+          "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        )}
+      >
+        <CardContent
+          item={item}
+          isEpisode={isEpisode}
+          isMovie={isMovie}
+          isSeries={isSeries}
+          nextUoId={targetId}
+          seasonNum={seasonNum}
+          episodeNum={episodeNum}
+          showName={showName}
+          year={year}
+          rating={rating}
+          title={title}
+          navigate={navigate}
+          onCardClick={() => handleCardClick(item.Id)}
+        />
       </div>
-    </>
+    </div>
   );
 };
 

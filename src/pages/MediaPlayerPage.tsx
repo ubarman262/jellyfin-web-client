@@ -23,7 +23,7 @@ import TracksMenu from "../components/ui/TracksMenu";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
 import isDrawerOpen from "../states/atoms/DrawerOpen";
-import { DRAWER_PATHS, MediaItem, MediaStream } from "../types/jellyfin";
+import { MediaItem, MediaStream } from "../types/jellyfin";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;

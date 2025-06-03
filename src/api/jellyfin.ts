@@ -366,6 +366,28 @@ class JellyfinApi {
     return url;
   }
 
+  /**
+   * Get the image URL for a user.
+   * @param userId The user ID.
+   * @param tag The image tag (optional, for cache busting/versioning).
+   * @param quality Image quality (optional, default 90).
+   */
+  getUserImageUrl(
+    userId: string,
+    tag?: string,
+    quality: number = 90
+  ): string {
+    let url = `${this.serverUrl}/emby/Users/${userId}/Images/Primary`;
+    const params = new URLSearchParams();
+    if (tag) params.append("tag", tag);
+    if (quality) params.append("quality", quality.toString());
+    const queryString = params.toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+    return url;
+  }
+
   getPlaybackUrl(itemId: string, audioStreamIndex: number = 0): string {
     const params = new URLSearchParams({
       DeviceId: this.deviceId,

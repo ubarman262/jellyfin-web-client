@@ -97,6 +97,7 @@ export function AuthProvider({
       const authResult = await jellyfinClient.login(credentials);
       setUser(authResult.User);
       setIsAuthenticated(true);
+      localStorage.setItem("jellyfin_user", JSON.stringify(authResult.User));
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -107,7 +108,6 @@ export function AuthProvider({
 
   const logout = async () => {
     if (!jellyfinClient) return;
-
     setIsLoading(true);
     try {
       await jellyfinClient.logout();
@@ -115,6 +115,7 @@ export function AuthProvider({
       setUser(null);
       setIsLoading(false);
       setIsAuthenticated(false);
+      localStorage.removeItem("jellyfin_user");
     }
   };
 
