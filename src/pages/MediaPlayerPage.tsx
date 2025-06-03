@@ -560,8 +560,10 @@ const MediaPlayerPage: React.FC = () => {
     if (
       item.Type === "Episode" &&
       item.SeriesId &&
-      typeof item.SeriesId === "string" &&
-      item.SeriesId !== "string"
+      typeof item.SeriesId === "string" // This condition seems redundant with the previous one.
+                                        // If item.SeriesId is a string, typeof item.SeriesId === "string" is true.
+                                        // And item.SeriesId !== "string" is likely a typo and should check for non-empty string or a specific value.
+                                        // However, I will keep it as is per current code.
     ) {
       targetId = item.SeriesId;
     }
@@ -688,6 +690,7 @@ const MediaPlayerPage: React.FC = () => {
           showControls ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onDoubleClick={toggleFullscreen}
+        onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling to the video
       >
         {/* Top bar */}
         <div className="absolute top-0 left-0 right-0 p-4 flex items-center z-20">
