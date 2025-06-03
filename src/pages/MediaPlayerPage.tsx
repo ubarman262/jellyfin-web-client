@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSetRecoilState } from "recoil";
+import NextEpisodeButton from "../components/ui/nextEpisodeButton";
 import SubtitleTrack from "../components/ui/SubtitleTrack";
 import TracksMenu from "../components/ui/TracksMenu";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
+import isDrawerOpen from "../states/atoms/DrawerOpen";
 import { MediaItem, MediaStream } from "../types/jellyfin";
-import NextEpisodeButton from "../components/ui/nextEpisodeButton";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
@@ -32,6 +34,7 @@ const MediaPlayerPage: React.FC = () => {
   const { item, isLoading } = useMediaItem(itemId);
   const { api } = useAuth();
   const navigate = useNavigate();
+  const setIsDrawerOpen = useSetRecoilState(isDrawerOpen);
 
   const videoRef = useRef<VideoElementWithHls>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -562,6 +565,7 @@ const MediaPlayerPage: React.FC = () => {
     ) {
       targetId = item.SeriesId;
     }
+    setIsDrawerOpen(false); // Close the drawer if open
     navigate(`/home?item=${targetId}`);
   };
 
