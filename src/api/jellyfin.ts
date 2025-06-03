@@ -689,6 +689,30 @@ class JellyfinApi {
       }
     );
   }
+
+  /**
+   * Get search suggestions for the current user.
+   * Returns a mix of Movies, Series, and MusicArtists.
+   * @param limit Number of suggestions to fetch (default: 20)
+   */
+  async getSearchSuggestions(limit: number = 20): Promise<ItemsResponse> {
+    if (!this.userId) throw new Error("User not authenticated");
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Items`,
+      undefined,
+      {
+        userId: this.userId,
+        limit,
+        recursive: true,
+        includeItemTypes: ["Movie", "Series"].join(","),
+        sortBy: ["IsFavoriteOrLiked", "Random"].join(","),
+        imageTypeLimit: 0,
+        enableTotalRecordCount: false,
+        enableImages: false,
+      }
+    );
+  }
 }
 
 export default JellyfinApi;

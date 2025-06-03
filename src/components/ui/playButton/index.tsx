@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useMediaItem } from "../../../hooks/useMediaData";
@@ -12,17 +12,13 @@ interface PlayButtonProps {
   onBeforePlay?: () => void | Promise<void>; // <-- add this
 }
 
-export default function PlayButton({
-  itemId,
-  type,
-  width,
-  height,
-  onBeforePlay, // <-- add this
-}: PlayButtonProps) {
+export default function PlayButton(props: Readonly<PlayButtonProps>) {
+  const { itemId, type, width, height, onBeforePlay } = props;
   const navigate = useNavigate();
   const { api } = useAuth();
   const { item } = useMediaItem(itemId);
   const [targetId, setTargetId] = useState<string>(itemId);
+  const location = useLocation();
 
   useEffect(() => {
     async function resolveTargetId() {
@@ -49,7 +45,10 @@ export default function PlayButton({
     if (onBeforePlay) {
       await onBeforePlay();
     }
-    navigate(`/play/${targetId}`);
+    const firstSegment = location.pathname.split("/")[1];
+    navigate(`/play/${targetId}`, {
+      state: { callbackPath: `/${firstSegment}` },
+    });
   };
 
   return (

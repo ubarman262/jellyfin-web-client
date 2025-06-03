@@ -28,6 +28,7 @@ import MarkWatchedButton from "./MarkWatchedButton";
 import MoreLikeThisSection from "./MoreLikeThisSection";
 import PlayButton from "./playButton";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
+import { DRAWER_PATHS } from "../../types/jellyfin";
 
 const MediaDetailsDrawer = () => {
   const { api } = useAuth();
@@ -75,18 +76,22 @@ const MediaDetailsDrawer = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const currentItem = params.get("item");
+    // Determine base path for navigation
+    // Use drawerPaths to determine base path, fallback to "/home"
+    const basePath = DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
     if (open && activeItemId && currentItem !== activeItemId) {
       params.set("item", activeItemId);
       navigate(
-        { pathname: "/home", search: params.toString() },
-        { replace: false }
+      { pathname: basePath, search: params.toString() },
+      { replace: false }
       );
     }
     // When modal closes, remove ?item from URL if present
     if (!open && currentItem) {
       params.delete("item");
+      const basePath = DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
       navigate(
-        { pathname: "/home", search: params.toString() },
+        { pathname: basePath, search: params.toString() },
         { replace: true }
       );
     }

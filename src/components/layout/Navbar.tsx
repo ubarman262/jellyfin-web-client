@@ -28,6 +28,10 @@ const Navbar: React.FC = () => {
     }
   };
 
+  const handleSearch = () => {
+    navigate(`/search`);
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate("/login");
@@ -96,7 +100,7 @@ const Navbar: React.FC = () => {
             {/* Search */}
             <div className="relative">
               <button
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                onClick={() => handleSearch()}
                 className="p-2 text-gray-300 hover:text-white transition-colors"
                 aria-label="Search"
               >
@@ -104,7 +108,7 @@ const Navbar: React.FC = () => {
               </button>
 
               {/* Search Input */}
-              {isSearchOpen && (
+              {/* {isSearchOpen && (
                 <div className="absolute right-0 top-12 w-64 bg-gray-900 rounded-md shadow-lg overflow-hidden">
                   <form
                     onSubmit={handleSearchSubmit}
@@ -126,7 +130,7 @@ const Navbar: React.FC = () => {
                     </button>
                   </form>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* User Profile */}

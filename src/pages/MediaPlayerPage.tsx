@@ -15,7 +15,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSetRecoilState } from "recoil";
 import NextEpisodeButton from "../components/ui/nextEpisodeButton";
 import SubtitleTrack from "../components/ui/SubtitleTrack";
@@ -23,7 +23,7 @@ import TracksMenu from "../components/ui/TracksMenu";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
 import isDrawerOpen from "../states/atoms/DrawerOpen";
-import { MediaItem, MediaStream } from "../types/jellyfin";
+import { DRAWER_PATHS, MediaItem, MediaStream } from "../types/jellyfin";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
@@ -34,6 +34,9 @@ const MediaPlayerPage: React.FC = () => {
   const { item, isLoading } = useMediaItem(itemId);
   const { api } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { callbackPath } = location.state ?? {};
+
   const setIsDrawerOpen = useSetRecoilState(isDrawerOpen);
 
   const videoRef = useRef<VideoElementWithHls>(null);
@@ -118,22 +121,26 @@ const MediaPlayerPage: React.FC = () => {
     // This 'resumeTime' is the potential start time from UserData if not forced or already restored.
     let resumeTimeFromUserData = 0;
     if (item.UserData?.PlaybackPositionTicks) {
-      resumeTimeFromUserData = Math.floor(item.UserData.PlaybackPositionTicks / 10000000);
+      resumeTimeFromUserData = Math.floor(
+        item.UserData.PlaybackPositionTicks / 10000000
+      );
     }
 
     let timeToStartVideoAt;
 
-    if (!hasRestoredPosition) { // This is an initial load for the current 'item'
+    if (!hasRestoredPosition) {
+      // This is an initial load for the current 'item'
       if (forceStartFromBeginning) {
         timeToStartVideoAt = 0; // Force start from beginning
       } else {
         timeToStartVideoAt = resumeTimeFromUserData; // Use UserData or 0 if no UserData
       }
-    } else { // Position has been restored before for this item; likely an audio/subtitle track change.
-             // Resume from the video's actual current playback time.
+    } else {
+      // Position has been restored before for this item; likely an audio/subtitle track change.
+      // Resume from the video's actual current playback time.
       timeToStartVideoAt = videoRef.current?.currentTime || currentTime || 0;
     }
-    
+
     // This is the crucial time that will be passed to videoEl.currentTime in restoreTimeAndPlay
     const prevTime = timeToStartVideoAt;
 
@@ -560,15 +567,14 @@ const MediaPlayerPage: React.FC = () => {
     if (
       item.Type === "Episode" &&
       item.SeriesId &&
-      typeof item.SeriesId === "string" // This condition seems redundant with the previous one.
-                                        // If item.SeriesId is a string, typeof item.SeriesId === "string" is true.
-                                        // And item.SeriesId !== "string" is likely a typo and should check for non-empty string or a specific value.
-                                        // However, I will keep it as is per current code.
+      typeof item.SeriesId === "string"
     ) {
       targetId = item.SeriesId;
     }
     setIsDrawerOpen(false); // Close the drawer if open
-    navigate(`/home?item=${targetId}`);
+    const basePath = callbackPath ?? "/home";
+
+    navigate(`${basePath}?item=${targetId}`);
   };
 
   // Fetch next and previous episode if this is an episode
@@ -608,7 +614,10 @@ const MediaPlayerPage: React.FC = () => {
   const playNextEpisode = () => {
     if (nextEpisode) {
       setForceStartFromBeginning(true); // Signal to start next episode from beginning
-      navigate(`/play/${nextEpisode.Id}`);
+      const firstSegment = location.pathname.split("/")[1];
+      navigate(`/play/${nextEpisode.Id}`, {
+        state: { callbackPath: `/${firstSegment}` },
+      });
       // No need to reset other states here, useEffect[item.Id] handles it.
     }
   };
@@ -616,7 +625,10 @@ const MediaPlayerPage: React.FC = () => {
   const playPreviousEpisode = () => {
     if (previousEpisode) {
       setForceStartFromBeginning(true); // Signal to start previous episode from beginning
-      navigate(`/play/${previousEpisode.Id}`);
+      const firstSegment = location.pathname.split("/")[1];
+      navigate(`/play/${previousEpisode.Id}`, {
+        state: { callbackPath: `/${firstSegment}` },
+      });
       // No need to reset other states here, useEffect[item.Id] handles it.
     }
   };
@@ -676,7 +688,10 @@ const MediaPlayerPage: React.FC = () => {
       {nextEpisode && duration > 0 && duration - currentTime < 30 && (
         <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
           <div className="pointer-events-auto">
-            <NextEpisodeButton nextEpisode={nextEpisode} playNextEpisode={() => playNextEpisode()} />
+            <NextEpisodeButton
+              nextEpisode={nextEpisode}
+              playNextEpisode={() => playNextEpisode()}
+            />
           </div>
         </div>
       )}
