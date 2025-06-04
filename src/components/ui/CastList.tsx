@@ -28,7 +28,7 @@ const CastList: React.FC<CastListProps> = ({ people }) => {
           const imgError = imgErrorMap[person.Id];
           return (
             <Link
-              to={`/person/${person.Id}`}
+              to={`/person?personId=${person.Id}`}
               key={person.Id || idx}
               className="flex flex-col items-center w-20 group focus:outline-none"
               tabIndex={0}

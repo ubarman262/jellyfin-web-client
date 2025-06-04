@@ -1,11 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
 import { useAuth } from "../context/AuthContext";
 import { MediaItem } from "../types/jellyfin";
+import { ArrowLeft } from "lucide-react";
 
 const PAGE_SIZE = 100;
+
+// Dynamically import all PNGs from /src/assets/studios/
+const studioLogoModules = import.meta.glob("../assets/studios/*.png", {
+  eager: true,
+  as: "url",
+});
+
+function getStudioLogo(studioName: string): string | null {
+  // Normalize studio name for matching
+  const normalized = studioName.replace(/[\s.]/g, "").toLowerCase();
+  // Find a logo whose filename includes the normalized studio name
+  for (const path in studioLogoModules) {
+    const fileName =
+      path
+        .split("/")
+        .pop()
+        ?.replace(/[\s.-]/g, "")
+        .toLowerCase() ?? "";
+    if (fileName.includes(normalized)) {
+      return studioLogoModules[path];
+    }
+  }
+  return null;
+}
 
 const StudioDetailsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +39,11 @@ const StudioDetailsPage: React.FC = () => {
   const [studioName, setStudioName] = useState<string>("");
   const [movies, setMovies] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     if (!api || !studioId) return;
@@ -42,7 +72,28 @@ const StudioDetailsPage: React.FC = () => {
     <div className="min-h-screen bg-neutral-900 text-white">
       <Navbar />
       <div className="container mx-auto px-4 pt-24 pb-16">
-        <h1 className="text-3xl font-bold mb-8">{studioName}</h1>
+        <button
+          className="mb-4 flex items-center text-gray-300 hover:text-white transition-colors"
+          onClick={() => navigate("/home")}
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
+        <div className="flex justify-center mb-12">
+          {getStudioLogo(studioName) ? (
+            <img
+              src={getStudioLogo(studioName)!}
+              alt={studioName}
+              className="max-h-40 object-contain"
+              style={{ maxWidth: 220 }}
+            />
+          ) : (
+            <h1 className="text-3xl font-bold mb-8 text-center">
+              {studioName}
+            </h1>
+          )}
+        </div>
+
         {(() => {
           if (isLoading) {
             return (

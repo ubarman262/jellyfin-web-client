@@ -85,7 +85,6 @@ const HomePage: React.FC = () => {
 
   function getStudioIdByName(name: string): string | undefined {
     const normalized = name.replace(/[\s.]/g, "").toLowerCase();
-    console.log(studioApiList);
     
     const found = studioApiList.find((s) =>
       s.Name.replace(/[\s.]/g, "").toLowerCase().includes(normalized)
@@ -97,7 +96,7 @@ const HomePage: React.FC = () => {
   const studioLogoModules = import.meta.glob("../assets/studios/*.png", {
     eager: true,
     as: "url",
-  }) as Record<string, string>;
+  });
 
   function getStudioLogo(studioName: string): string | null {
     // Normalize studio name for matching
@@ -109,7 +108,7 @@ const HomePage: React.FC = () => {
           .split("/")
           .pop()
           ?.replace(/[\s.-]/g, "")
-          .toLowerCase() || "";
+          .toLowerCase() ?? "";
       if (fileName.includes(normalized)) {
         return studioLogoModules[path];
       }
@@ -129,7 +128,7 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Content Rows */}
-      <div className="container mx-auto px-4 -mt-16 relative z-10 mt-[20px] sm:mt-[-4rem] mb-16">
+      <div className="container mx-auto px-4 mt-[20px] relative z-10 sm:mt-[-4rem] mb-16">
         <MediaRow
           title="Continue Watching"
           items={resumeItems}

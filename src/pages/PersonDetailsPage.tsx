@@ -1,6 +1,6 @@
 import { Calendar } from "lucide-react";
 import React, { Suspense, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useRecoilState } from "recoil";
 import Navbar from "../components/layout/Navbar";
 import { useAuth } from "../context/AuthContext";
@@ -49,7 +49,8 @@ const AppearsInSection = React.lazy(
 );
 
 const PersonDetailsPage: React.FC = () => {
-  const { personId } = useParams<{ personId: string }>();
+  const [searchParams] = useSearchParams();
+  const personId = searchParams.get("personId") ?? "";
   const { api } = useAuth();
   const [person, setPerson] = useState<MediaItem | null>(null);
   const [personLoading, setPersonLoading] = useState(true);

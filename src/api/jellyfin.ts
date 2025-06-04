@@ -799,7 +799,7 @@ class JellyfinApi {
         StudioIds: studioId,
         SortOrder: "Ascending",
         ImageTypeLimit: 1,
-        // IncludeItemTypes: "Movie",
+        IncludeItemTypes: "Movie, Series",  
       }
     );
   }

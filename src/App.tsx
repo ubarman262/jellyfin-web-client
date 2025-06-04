@@ -118,7 +118,7 @@ const App: React.FC = () => {
         />
 
         <Route
-          path="/person/:personId"
+          path="/person"
           element={
             <ProtectedRoute>
               <PersonDetailsPage />
