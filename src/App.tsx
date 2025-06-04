@@ -14,6 +14,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import FavouritesPage from "./pages/FavouritesPage";
 import { RecoilRoot } from "recoil";
 import MediaDetailsDrawer from "./components/ui/MediaDetailsDrawer";
+import StudioDetailsPage from "./pages/StudioDetailsPage";
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -150,6 +151,15 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <HomePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/studio"
+          element={
+            <ProtectedRoute>
+              <StudioDetailsPage />
             </ProtectedRoute>
           }
         />

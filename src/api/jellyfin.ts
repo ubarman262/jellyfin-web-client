@@ -735,6 +735,74 @@ class JellyfinApi {
       }
     );
   }
+
+  /**
+   * Get a list of all studios for the current user.
+   * Returns an ItemsResponse with studios.
+   * @param limit Number of studios to fetch (optional)
+   */
+  async getStudios(limit: number = 100): Promise<ItemsResponse> {
+    if (!this.userId) throw new Error("User not authenticated");
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Studios`,
+      undefined,
+      {
+        userId: this.userId,
+        limit,
+        recursive: true,
+        sortBy: "SortName",
+      }
+    );
+  }
+
+  /**
+   * Get a studio by name for the current user.
+   * Returns an ItemsResponse with studios matching the name.
+   * @param name Studio name (partial or full, case-insensitive)
+   * @param limit Number of studios to fetch (optional)
+   */
+  async getStudioByName(name: string, limit: number = 5): Promise<ItemsResponse> {
+    if (!this.userId) throw new Error("User not authenticated");
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Studios`,
+      undefined,
+      {
+        userId: this.userId,
+        limit,
+        recursive: true,
+        sortBy: "SortName",
+        searchTerm: name,
+      }
+    );
+  }
+
+  /**
+   * Get all movies for a given studio ID.
+   * @param studioId The studio's ID.
+   * @param limit Number of movies to fetch (default: 48)
+   * @param startIndex Pagination start index (default: 0)
+   */
+  async getItemsByStudioId(studioId: string, limit: number = 48, startIndex: number = 0): Promise<ItemsResponse> {
+    if (!this.userId) throw new Error("User not authenticated");
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Users/${this.userId}/Items`,
+      undefined,
+      {
+        StartIndex: startIndex,
+        Limit: limit,
+        Fields: "PrimaryImageAspectRatio,SortName,PrimaryImageAspectRatio",
+        Recursive: true,
+        SortBy: "IsFolder,SortName",
+        StudioIds: studioId,
+        SortOrder: "Ascending",
+        ImageTypeLimit: 1,
+        // IncludeItemTypes: "Movie",
+      }
+    );
+  }
 }
 
 export default JellyfinApi;

@@ -14,6 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
 import activeItem from "../../states/atoms/ActiveItem";
 import isDrawerOpen from "../../states/atoms/DrawerOpen";
+import { DRAWER_PATHS, MediaItem } from "../../types/jellyfin";
 import { formatRuntime } from "../../utils/formatters";
 import {
   getDirectors,
@@ -28,7 +29,6 @@ import MarkWatchedButton from "./MarkWatchedButton";
 import MoreLikeThisSection from "./MoreLikeThisSection";
 import PlayButton from "./playButton";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
-import { DRAWER_PATHS } from "../../types/jellyfin";
 
 const MediaDetailsDrawer = () => {
   const { api } = useAuth();
@@ -53,6 +53,7 @@ const MediaDetailsDrawer = () => {
 
   const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
+  const [seriesDetails, setSeriesDetails] = useState<MediaItem | null>(null);
 
   const isEpisode = typeEpisode(item);
   const isSeries = typeSeries(item);
@@ -62,6 +63,30 @@ const MediaDetailsDrawer = () => {
     setIsWatched(!!item?.UserData?.Played);
     setIsFavourite(!!item?.UserData?.IsFavorite);
   }, [activeItemId, item]);
+
+  // Fetch series details if this is an episode or series
+  useEffect(() => {
+    let ignore = false;
+    const fetchSeries = async () => {
+      if ((isEpisode || isSeries) && item?.SeriesId && api) {
+        try {
+          const details = await api.getMediaItem(item.SeriesId);
+          if (!ignore) setSeriesDetails(details);
+        } catch {
+          if (!ignore) setSeriesDetails(null);
+        }
+      } else if (isSeries && item?.Id) {
+        // For series itself, use its own details
+        setSeriesDetails(item);
+      } else {
+        setSeriesDetails(null);
+      }
+    };
+    fetchSeries();
+    return () => {
+      ignore = true;
+    };
+  }, [item, isEpisode, isSeries, api]);
 
   // Open modal if URL has ?item={itemId}
   useEffect(() => {
@@ -78,18 +103,20 @@ const MediaDetailsDrawer = () => {
     const currentItem = params.get("item");
     // Determine base path for navigation
     // Use drawerPaths to determine base path, fallback to "/home"
-    const basePath = DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
+    const basePath =
+      DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
     if (open && activeItemId && currentItem !== activeItemId) {
       params.set("item", activeItemId);
       navigate(
-      { pathname: basePath, search: params.toString() },
-      { replace: false }
+        { pathname: basePath, search: params.toString() },
+        { replace: false }
       );
     }
     // When modal closes, remove ?item from URL if present
     if (!open && currentItem) {
       params.delete("item");
-      const basePath = DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
+      const basePath =
+        DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
       navigate(
         { pathname: basePath, search: params.toString() },
         { replace: true }
@@ -582,6 +609,45 @@ const MediaDetailsDrawer = () => {
                 <div className="mt-10">
                   <MoreLikeThisSection item={item} />
                 </div>
+
+                {/* --- Series Details Section --- */}
+                {(isSeries || isEpisode) &&
+                  (item.SeriesId || item.SeriesName) && (
+                    <div>
+                      <h3 className="mt-10 text-xl font-semibold text-white mb-4">
+                        About
+                      </h3>
+                      <div className=" flex flex-col md:flex-row gap-6 items-start bg-[#262729] rounded-lg">
+                        {/* Series Primary Image */}
+                        {seriesDetails?.Id &&
+                          seriesDetails?.ImageTags?.Primary && (
+                            <img
+                              src={
+                                api.getImageUrl
+                                  ? api.getImageUrl(
+                                      seriesDetails.Id,
+                                      "Primary",
+                                      180
+                                    )
+                                  : ""
+                              }
+                              alt={seriesDetails.Name ?? "Series"}
+                              className="rounded-l-lg w-[80px] md:w-[140px] object-cover bg-neutral-800"
+                              style={{ flexShrink: 0 }}
+                            />
+                          )}
+                        <div className="flex-1 p-6 flex flex-col justify-between h-[200px]">
+                          <div className="font-semibold text-lg text-white mb-1">
+                            {seriesDetails?.Name ?? item.SeriesName ?? item.Name}
+                          </div>
+                          <div className="text-gray-300 text-sm max-w-xl mb-2">
+                            {seriesDetails?.Overview}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                {/* --- End Series Details Section --- */}
               </div>
             </div>
           </Sheet.Scroller>
