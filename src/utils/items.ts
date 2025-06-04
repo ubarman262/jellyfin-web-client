@@ -45,7 +45,7 @@ const typeSeries = (item: MediaItem | null): boolean => {
 
 const fetchTrailerUrl = async (item: MediaItem, api: JellyfinApi | null) => {
   if (Array.isArray(item.RemoteTrailers) && item.RemoteTrailers.length > 0) {
-    const trailer = item.RemoteTrailers[0];
+    const trailer = item.RemoteTrailers[Math.floor(Math.random() * item.RemoteTrailers.length)];
     return trailer.Url;
   } else if (api && item.SeriesId) {
     const seriesItem = await api.getRemoteTrailers(item.SeriesId);
@@ -53,7 +53,8 @@ const fetchTrailerUrl = async (item: MediaItem, api: JellyfinApi | null) => {
       Array.isArray(seriesItem.RemoteTrailers) &&
       seriesItem.RemoteTrailers.length > 0
     ) {
-      const trailer = seriesItem.RemoteTrailers[0];
+      
+      const trailer = seriesItem.RemoteTrailers[Math.floor(Math.random() * seriesItem.RemoteTrailers.length)];
       return trailer.Url;
     }
   }

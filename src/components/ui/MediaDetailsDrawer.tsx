@@ -1,6 +1,5 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
   BrowserView,
   isBrowser,
@@ -8,7 +7,9 @@ import {
   MobileView,
 } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useRecoilState } from "recoil";
+import Rotten from "../../assets/png/rotten.png";
 import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
 import activeItem from "../../states/atoms/ActiveItem";
@@ -24,20 +25,31 @@ import {
 import CastList from "./CastList";
 import EpisodesList from "./EpisodesList";
 import MarkWatchedButton from "./MarkWatchedButton";
+import MoreLikeThisSection from "./MoreLikeThisSection";
 import PlayButton from "./playButton";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
-import MoreLikeThisSection from "./MoreLikeThisSection";
-import Rotten from "../../assets/png/rotten.png";
+import { DRAWER_PATHS } from "../../types/jellyfin";
 
 const MediaDetailsDrawer = () => {
   const { api } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeItemId = useRecoilValue(activeItem);
+  const [activeItemId, setActiveItemId] = useRecoilState(activeItem);
   const [open, isOpen] = useRecoilState(isDrawerOpen);
-  const [activeItemState, setActiveItem] = useRecoilState(activeItem);
   const { item } = useMediaItem(activeItemId);
+
+  // --- Fix: Sync activeItem atom with URL on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const itemId = params.get("item");
+    if (itemId && itemId !== "string" && activeItemId !== itemId) {
+      setActiveItemId(itemId);
+    }
+    // Only run on mount or when location.search changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+  // ---------------------------------------------------
 
   const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
@@ -58,26 +70,35 @@ const MediaDetailsDrawer = () => {
     const params = new URLSearchParams(location.search);
     const itemId = params.get("item");
     if (itemId) {
-      setActiveItem(itemId);
       isOpen(true);
     }
-  }, [location.search, setActiveItem, isOpen]);
+  }, [location.search, isOpen]);
 
-  // When modal opens, update URL to /browse?item={itemId}
+  // When modal opens, update URL to /home?item={itemId}
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const currentItem = params.get("item");
+    // Determine base path for navigation
+    // Use drawerPaths to determine base path, fallback to "/home"
+    const basePath = DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
     if (open && activeItemId && currentItem !== activeItemId) {
       params.set("item", activeItemId);
-      navigate({ pathname: "/browse", search: params.toString() }, { replace: false });
+      navigate(
+      { pathname: basePath, search: params.toString() },
+      { replace: false }
+      );
     }
     // When modal closes, remove ?item from URL if present
     if (!open && currentItem) {
       params.delete("item");
-      navigate({ pathname: "/browse", search: params.toString() }, { replace: true });
+      const basePath = DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
+      navigate(
+        { pathname: basePath, search: params.toString() },
+        { replace: true }
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, activeItemId]);
+  }, [open, activeItemId, location.search]);
 
   if (!activeItemId) return null;
   // Only render content when the loaded item's ID matches the activeItemId

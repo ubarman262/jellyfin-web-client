@@ -142,11 +142,12 @@ export const useMediaItem = (itemId: string | undefined) => {
 };
 
 export const useSearch = (searchTerm: string, limit: number = 100) => {
-    const {api, isAuthenticated} = useAuth();
-    const [results, setResults] = useState<MediaItem[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
-    const [totalResults, setTotalResults] = useState(0);
+  const { api, isAuthenticated } = useAuth();
+  const [results, setResults] = useState<MediaItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [totalResults, setTotalResults] = useState(0);
+  const [suggestions, setSuggestions] = useState<MediaItem[]>([]);
 
     useEffect(() => {
         if (!api || !isAuthenticated || !searchTerm.trim()) {
@@ -181,7 +182,34 @@ export const useSearch = (searchTerm: string, limit: number = 100) => {
         return () => clearTimeout(timeoutId);
     }, [api, isAuthenticated, searchTerm, limit]);
 
-    return {results, isLoading, error, totalResults};
+  // Suggestions logic
+  useEffect(() => {
+    if (!api || !isAuthenticated) {
+      setSuggestions([]);
+      return;
+    }
+
+    const fetchSuggestions = async () => {
+      try {
+        const result = await api.getSearchSuggestions();
+        setSuggestions(result.Items);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err : new Error("An unknown error occurred")
+        );
+        console.error("Error searching:", err);
+      }
+    };
+
+    // Debounce suggestions as well
+    const timeoutId = setTimeout(() => {
+      fetchSuggestions();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [api, isAuthenticated, searchTerm]);
+
+  return { results, isLoading, error, totalResults, suggestions };
 };
 
 export const useGenres = (mediaType: string = "") => {

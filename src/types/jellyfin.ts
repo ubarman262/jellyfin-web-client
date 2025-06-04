@@ -326,3 +326,10 @@ export interface MediaSourceResponse {
   MediaSources: MediaSource[];
   PlaySessionId: string;
 }
+export const DRAWER_PATHS = [
+  "/home",
+  "/search",
+  "/movies",
+  "/shows",
+  "/favourites",
+];

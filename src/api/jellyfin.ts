@@ -373,6 +373,28 @@ class JellyfinApi {
         return url;
     }
 
+    /**
+     * Get the image URL for a user.
+     * @param userId The user ID.
+     * @param tag The image tag (optional, for cache busting/versioning).
+     * @param quality Image quality (optional, default 90).
+     */
+    getUserImageUrl(
+        userId: string,
+        tag?: string,
+        quality: number = 90
+    ): string {
+        let url = `${this.serverUrl}/emby/Users/${userId}/Images/Primary`;
+        const params = new URLSearchParams();
+        if (tag) params.append("tag", tag);
+        if (quality) params.append("quality", quality.toString());
+        const queryString = params.toString();
+        if (queryString) {
+            url += `?${queryString}`;
+        }
+        return url;
+    }
+
 
 
 
@@ -667,27 +689,27 @@ class JellyfinApi {
         return data.Items ?? [];
     }
 
-    /**
-     * Get all episodes for a given series and season.
-     * @param seriesId The series ID.
-     * @param seasonId The season ID.
-     */
-    async getEpisodes(seriesId: string, seasonId: string): Promise<MediaItem[]> {
-        const data = await this.makeRequest<ItemsResponse>(
-            "get",
-            `/Shows/${seriesId}/Episodes`,
-            undefined,
-            {
-                SeasonId: seasonId,
-                UserId: this.userId,
-                SortBy: "IndexNumber",
-                SortOrder: "Ascending",
-                Fields:
-                    "ItemCounts,PrimaryImageAspectRatio,CanDelete,Overview,MediaSourceCount",
-            }
-        );
-        return data.Items ?? [];
-    }
+  /**
+   * Get all episodes for a given series and season.
+   * @param seriesId The series ID.
+   * @param seasonId The season ID.
+   */
+  async getEpisodes(seriesId: string, seasonId: string | undefined): Promise<MediaItem[]> {
+    const data = await this.makeRequest<ItemsResponse>(
+      "get",
+      `/Shows/${seriesId}/Episodes`,
+      undefined,
+      {
+        SeasonId: seasonId,
+        UserId: this.userId,
+        SortBy: "IndexNumber",
+        SortOrder: "Ascending",
+        Fields:
+          "ItemCounts,PrimaryImageAspectRatio,CanDelete,Overview,MediaSourceCount",
+      }
+    );
+    return data.Items ?? [];
+  }
 
     /**
      * Mark an item as played for the current user.
@@ -751,23 +773,47 @@ class JellyfinApi {
         );
     }
 
-    /**
-     * Get similar items for a given item.
-     * @param itemId The item ID to find similar items for.
-     * @param limit Number of similar items to fetch.
-     */
-    async getSimilarItems(itemId: string, limit: number = 12): Promise<ItemsResponse> {
-        return this.makeRequest<ItemsResponse>(
-            "get",
-            `/Items/${itemId}/Similar`,
-            undefined,
-            {
-                userId: this.userId,
-                limit,
-                fields: "PrimaryImageAspectRatio,CanDelete",
-            }
-        );
-    }
+  /**
+   * Get similar items for a given item.
+   * @param itemId The item ID to find similar items for.
+   * @param limit Number of similar items to fetch.
+   */
+  async getSimilarItems(itemId: string, limit: number = 12): Promise<ItemsResponse> {
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Items/${itemId}/Similar`,
+      undefined,
+      {
+        userId: this.userId,
+        limit,
+        fields: "PrimaryImageAspectRatio,CanDelete",
+      }
+    );
+  }
+
+  /**
+   * Get search suggestions for the current user.
+   * Returns a mix of Movies, Series, and MusicArtists.
+   * @param limit Number of suggestions to fetch (default: 20)
+   */
+  async getSearchSuggestions(limit: number = 20): Promise<ItemsResponse> {
+    if (!this.userId) throw new Error("User not authenticated");
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Items`,
+      undefined,
+      {
+        userId: this.userId,
+        limit,
+        recursive: true,
+        includeItemTypes: ["Movie", "Series"].join(","),
+        sortBy: ["IsFavoriteOrLiked", "Random"].join(","),
+        imageTypeLimit: 0,
+        enableTotalRecordCount: false,
+        enableImages: false,
+      }
+    );
+  }
 }
 
 export default JellyfinApi;

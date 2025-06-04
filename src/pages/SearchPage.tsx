@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
 import { useSearch } from "../hooks/useMediaData";
@@ -7,11 +7,16 @@ import { Search as SearchIcon } from "lucide-react";
 
 const SearchPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const initialQuery = searchParams.get("q") ?? "";
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const { results, isLoading, totalResults } = useSearch(searchQuery);
+  // Debounce timer state (not strictly necessary, but for cleanup)
+  const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  const { results, isLoading, totalResults, suggestions } =
+    useSearch(searchQuery);
 
   useEffect(() => {
     // Update query when URL changes
@@ -20,9 +25,33 @@ const SearchPage: React.FC = () => {
     setSearchQuery(newQuery);
   }, [location.search]);
 
+  // Debounce effect for updating URL as user types
+  useEffect(() => {
+    // Don't debounce on initial mount if query matches URL
+    if (searchQuery === (new URLSearchParams(location.search).get("q") ?? "")) return;
+
+    if (debounceTimer) clearTimeout(debounceTimer);
+    const timer = setTimeout(() => {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`, { replace: true });
+    }, 600); // 600ms debounce
+    setDebounceTimer(timer);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // The search is performed automatically via the useSearch hook
+    // Immediate update on submit
+    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+  };
+
+  const handleItemClick = (itemId: string) => {
+    navigate("/search?item=" + itemId);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
 
   return (
@@ -42,9 +71,9 @@ const SearchPage: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search for movies, TV shows, people..."
+                placeholder="Search for Movies, Shows..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleInputChange}
                 className="bg-gray-800 w-full pl-10 pr-4 py-3 rounded-l-md text-white focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
@@ -57,18 +86,41 @@ const SearchPage: React.FC = () => {
           </form>
         </div>
 
+        {/* Suggestions when searchQuery is empty */}
+        {!searchQuery && suggestions.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-medium mb-4 text-center">Suggestions</h2>
+            <ul className="flex flex-col items-center text-center space-y-2">
+              {suggestions.map((item) => (
+              <li key={item.Id} className="w-full max-w-xs">
+                <button
+                  type="button"
+                  className="w-full text-center text-red-500 cursor-pointer hover:text-red-500 hover:underline transition-colors bg-transparent border-none p-0 m-0"
+                  onClick={() => handleItemClick(item.Id)}
+                >
+                  {item.Name}
+                </button>
+              </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Results */}
         {(() => {
           let resultsContent;
           if (isLoading) {
             resultsContent = (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
-                  ></div>
-                ))}
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const uniqueKey = `skeleton-${Date.now()}-${i}`;
+                  return (
+                    <div
+                      key={uniqueKey}
+                      className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
+                    ></div>
+                  );
+                })}
               </div>
             );
           } else if (results.length > 0) {
@@ -105,10 +157,14 @@ const SearchPage: React.FC = () => {
               {searchQuery && (
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-medium">
-                    {isLoading ? "Searching..." : `Results for "${searchQuery}"`}
+                    {isLoading
+                      ? "Searching..."
+                      : `Results for "${searchQuery}"`}
                   </h2>
                   {!isLoading && totalResults > 0 && (
-                    <p className="text-gray-400">{totalResults} results found</p>
+                    <p className="text-gray-400">
+                      {totalResults} results found
+                    </p>
                   )}
                 </div>
               )}

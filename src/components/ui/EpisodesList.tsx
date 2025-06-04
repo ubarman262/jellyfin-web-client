@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { MediaItem } from "../../types/jellyfin";
 
 type Episode = {
   Id: string;
@@ -46,6 +47,32 @@ export default function EpisodesList({
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
 
+  // Helper function to select the appropriate season
+  function selectSeasonBasedOnNextUp(
+    items: Season[],
+    nextUp: MediaItem[],
+    setSelectedSeasonId: (id: string | null) => void
+  ) {
+    if (nextUp && nextUp.length > 0 && nextUp[0].ParentIndexNumber) {
+      // Find the season with IndexNumber matching next up episode's ParentIndexNumber
+      const season = items.find(
+        (s) => s.IndexNumber === nextUp[0].ParentIndexNumber
+      );
+      if (season) {
+        setSelectedSeasonId(season.Id);
+        return;
+      }
+    }
+    // If not watching, select season 1 (IndexNumber === 1)
+    const season1 = items.find((s) => s.IndexNumber === 1);
+    if (season1) {
+      setSelectedSeasonId(season1.Id);
+    } else {
+      // fallback to first in array
+      setSelectedSeasonId(items[0].Id);
+    }
+  }
+
   // Fetch seasons on mount or when seriesId changes
   useEffect(() => {
     if (!api || !seriesId) {
@@ -58,13 +85,14 @@ export default function EpisodesList({
       .getSeasons(seriesId)
       .then((items: Season[]) => {
         setSeasons(items);
-        if (items && items.length > 0) {
-          // Sort by IndexNumber descending, fallback to last in array
-          const sorted = [...items].sort(
-            (a, b) => (b.IndexNumber ?? 0) - (a.IndexNumber ?? 0)
-          );
-          setSelectedSeasonId(sorted[0]?.Id ?? items[items.length - 1].Id);
+        if (!items || items.length === 0) {
+          setSelectedSeasonId(null);
+          return;
         }
+        // Check if user is watching the series (has a next up episode)
+        return api.getSeriesNextUp(seriesId, 1).then((nextUp: MediaItem[]) => {
+          selectSeasonBasedOnNextUp(items, nextUp, setSelectedSeasonId);
+        });
       })
       .catch(() => {
         setSeasons([]);
@@ -99,7 +127,7 @@ export default function EpisodesList({
       <div className="flex flex-col gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
-            key={i}
+            key={`skeleton-placeholder-${seriesId}-${selectedSeasonId ?? "none"}-${i}`}
             className="flex flex-row gap-4 items-center px-4 py-3 bg-[#181818] rounded-xl animate-pulse"
           >
             <div className="w-8 h-6 bg-gray-800 rounded" />
@@ -137,29 +165,37 @@ export default function EpisodesList({
               className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center group hover:bg-[#232323] transition px-2 py-4 sm:px-4 sm:py-3"
             >
               {/* Thumbnail and play overlay */}
-              <div className="relative w-full sm:w-40 h-24 sm:h-20 flex-shrink-0 rounded overflow-hidden group cursor-pointer mb-2 sm:mb-0">
-                <img
-                  src={
-                    ep.ImageTags?.Primary && api
-                      ? api.getImageUrlProps({itemId: ep.Id, imageType: "Primary", maxWidth: 400, quality: 30})
-                      : ""
-                  }
-                  alt={ep.Name}
-                  className="w-full h-full object-cover"
-                  onClick={() => navigate(`/play/${ep.Id}`)}
-                  style={{ cursor: "pointer" }}
-                />
-                {/* Play overlay */}
+              <div className="relative w-full sm:w-40 h-24 sm:h-20 flex-shrink-0 rounded overflow-hidden group mb-2 sm:mb-0">
                 <button
                   onClick={() => navigate(`/play/${ep.Id}`)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition"
-                  tabIndex={-1}
+                  className="w-full h-full p-0 m-0 border-none bg-transparent relative cursor-pointer focus:outline-none"
                   aria-label={`Play ${ep.Name}`}
+                  tabIndex={0}
+                  style={{ display: "block" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/play/${ep.Id}`);
+                    }
+                  }}
                 >
-                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                    <circle cx="20" cy="20" r="20" fill="rgba(0,0,0,0.5)" />
-                    <polygon points="16,13 30,20 16,27" fill="#fff" />
-                  </svg>
+                  <img
+                    src={
+                        ep.ImageTags?.Primary && api
+                            ? api.getImageUrlProps({itemId: ep.Id, imageType: "Primary", maxWidth: 400, quality: 30})
+                            : ""
+                    }
+                    alt={ep.Name}
+                    className="w-full h-full object-cover"
+                    style={{ pointerEvents: "none" }}
+                  />
+                  {/* Play overlay */}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                      <circle cx="20" cy="20" r="20" fill="rgba(0,0,0,0.5)" />
+                      <polygon points="16,13 30,20 16,27" fill="#fff" />
+                    </svg>
+                  </span>
                 </button>
               </div>
               {/* Details */}
