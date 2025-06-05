@@ -39,11 +39,20 @@ const StudioDetailsPage: React.FC = () => {
   const [studioName, setStudioName] = useState<string>("");
   const [movies, setMovies] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (studioName) {
+      setLogoUrl(getStudioLogo(studioName));
+    } else {
+      setLogoUrl(null);
+    }
+  }, [studioName]);
 
   useEffect(() => {
     if (!api || !studioId) return;
@@ -80,18 +89,26 @@ const StudioDetailsPage: React.FC = () => {
           Back
         </button>
         <div className="flex justify-center mb-12">
-          {getStudioLogo(studioName) ? (
-            <img
-              src={getStudioLogo(studioName)!}
-              alt={studioName}
-              className="max-h-40 object-contain"
-              style={{ maxWidth: 220 }}
-            />
-          ) : (
-            <h1 className="text-3xl font-bold mb-8 text-center">
-              {studioName}
-            </h1>
-          )}
+          {(() => {
+            if (!isLoading && logoUrl) {
+              return (
+                <img
+                  src={logoUrl}
+                  alt={studioName}
+                  className="max-h-40 object-contain"
+                  style={{ maxWidth: 220 }}
+                />
+              );
+            } else if (!isLoading) {
+              return (
+                <h1 className="text-3xl font-bold mb-8 text-center">
+                  {studioName}
+                </h1>
+              );
+            } else {
+              return null;
+            }
+          })()}
         </div>
 
         {(() => {

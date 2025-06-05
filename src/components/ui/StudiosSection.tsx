@@ -7,6 +7,7 @@ const studios = [
   { name: "DC Films", background: "#0377f2" },
   { name: "Disney+", background: "#1e2161" },
   { name: "Apple TV+", background: "#2d2d2d" },
+  { name: "Prime Video", background: "#117dff" },
   { name: "Netflix", background: "#e6111b" },
   { name: "HBO", background: "#0808ff" },
   { name: "Sony Pictures", background: "#ffff" },
