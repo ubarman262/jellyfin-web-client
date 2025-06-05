@@ -1,10 +1,9 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BrowserView,
   isBrowser,
   isMobile,
-  MobileView,
+  MobileView
 } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -543,7 +542,7 @@ const MediaDetailsDrawer = () => {
                 )}
 
                 {/* Fade overlay between video and details */}
-                <BrowserView>
+                {!isMobile && (
                   <div
                     className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
                     style={{
@@ -552,7 +551,7 @@ const MediaDetailsDrawer = () => {
                       zIndex: 10,
                     }}
                   />
-                </BrowserView>
+                )}
               </div>
 
               {/* Details */}
@@ -818,13 +817,13 @@ const MediaDetailsDrawer = () => {
                   item.People &&
                   item.People.length > 0 &&
                   isMobile && (
-                    <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">
+                    <div className="md:w-full w-full mt-8 mb-4 md:mb-0">
                       <CastList people={item.People} />
                     </div>
                   )}
 
                 {/* Movie Tabs Section */}
-                {isMovie && (
+                {(isMovie || isSeries) && (
                   <div className="mt-10">
                     {/* Tabs */}
                     <div className="flex border-b border-neutral-700 mb-4">

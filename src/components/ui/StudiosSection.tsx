@@ -12,7 +12,7 @@ const studios = [
   { name: "HBO", background: "#0808ff" },
   { name: "Sony Pictures", background: "#ffff" },
   { name: "Warner Bros. Pictures", background: "#003399" },
-  { name: "20th Century Fox", background: "#FFD700" },
+  { name: "20th Century Fox", background: "#d7b853" },
   // Add more studios as needed
 ];
 
