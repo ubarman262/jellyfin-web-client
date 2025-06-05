@@ -1,5 +1,5 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BrowserView,
   isBrowser,
@@ -14,7 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
 import activeItem from "../../states/atoms/ActiveItem";
 import isDrawerOpen from "../../states/atoms/DrawerOpen";
-import { DRAWER_PATHS, MediaItem } from "../../types/jellyfin";
+import { DRAWER_PATHS, ItemsResponse, MediaItem } from "../../types/jellyfin";
 import { formatRuntime } from "../../utils/formatters";
 import {
   getDirectors,
@@ -24,6 +24,7 @@ import {
   typeSeries,
 } from "../../utils/items";
 import CastList from "./CastList";
+import CollectionSection from "./CollectionSection";
 import EpisodesList from "./EpisodesList";
 import MarkWatchedButton from "./MarkWatchedButton";
 import MoreLikeThisSection from "./MoreLikeThisSection";
@@ -125,6 +126,149 @@ const MediaDetailsDrawer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeItemId, location.search]);
 
+  // Move these hooks to the top level, before any return/conditional
+  const [movieTab, setMovieTab] = useState<"collection" | "more" | "trailers">(
+    "collection"
+  );
+  const isMovie = useMemo(() => item?.Type === "Movie", [item]);
+
+  // Track if the movie has a BoxSet
+  const [hasBoxSet, setHasBoxSet] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkBoxSet = async () => {
+      if (api && isMovie && item?.Id) {
+        try {
+          const boxSet = await api.findBoxSetForItem(item.Id);
+          if (!cancelled) setHasBoxSet(!!boxSet);
+          // Set tab to "more" if no boxset, otherwise "collection"
+          if (!cancelled) {
+            setMovieTab(boxSet ? "collection" : "more");
+          }
+        } catch {
+          if (!cancelled) {
+            setHasBoxSet(false);
+            setMovieTab("more");
+          }
+        }
+      } else {
+        setHasBoxSet(false);
+        setMovieTab("more");
+      }
+    };
+    checkBoxSet();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, isMovie, item]);
+
+  // --- Collection (BoxSet) and MoreLikeThis (Similar) state and cache ---
+  const [collectionItems, setCollectionItems] = useState<MediaItem[]>([]);
+  const [collectionLoading, setCollectionLoading] = useState(false);
+  const collectionCache = useRef<Record<string, MediaItem[]>>({});
+
+  const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const similarCache = useRef<Record<string, MediaItem[]>>({});
+
+  // Fetch BoxSet movies when item changes and is a movie
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCollection = async () => {
+      if (!api || !item?.Id || !isMovie) {
+        setCollectionItems([]);
+        setCollectionLoading(false);
+        return;
+      }
+      // Check cache
+      if (collectionCache.current[item.Id]) {
+        setCollectionItems(collectionCache.current[item.Id]);
+        setCollectionLoading(false);
+        return;
+      }
+      setCollectionLoading(true);
+      try {
+        const foundBoxSet = await api.findBoxSetForItem(item.Id);
+        if (!foundBoxSet) {
+          setCollectionItems([]);
+          setCollectionLoading(false);
+          return;
+        }
+        let movies = await api.getBoxSetMovies(foundBoxSet.Id);
+        movies = movies.slice().sort((a, b) => {
+          const aYear =
+            a.ProductionYear ??
+            (a.PremiereDate ? new Date(a.PremiereDate).getFullYear() : 0);
+          const bYear =
+            b.ProductionYear ??
+            (b.PremiereDate ? new Date(b.PremiereDate).getFullYear() : 0);
+          if (aYear !== bYear) return aYear - bYear;
+          if (a.PremiereDate && b.PremiereDate) {
+            return (
+              new Date(a.PremiereDate).getTime() -
+              new Date(b.PremiereDate).getTime()
+            );
+          }
+          return 0;
+        });
+        if (!cancelled) {
+          collectionCache.current[item.Id] = movies;
+          setCollectionItems(movies);
+        }
+      } catch {
+        if (!cancelled) setCollectionItems([]);
+      } finally {
+        if (!cancelled) setCollectionLoading(false);
+      }
+    };
+    fetchCollection();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, item, isMovie]);
+
+  // Fetch Similar items when item changes
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSimilar = async () => {
+      if (!api || !item) {
+        setSimilarItems([]);
+        setSimilarLoading(false);
+        return;
+      }
+      const id = item.Type === "Episode" ? item.SeriesId : item.Id;
+      if (!id) {
+        setSimilarItems([]);
+        setSimilarLoading(false);
+        return;
+      }
+      // Check cache
+      if (similarCache.current[id]) {
+        setSimilarItems(similarCache.current[id]);
+        setSimilarLoading(false);
+        return;
+      }
+      setSimilarLoading(true);
+      try {
+        const res: ItemsResponse = await api.getSimilarItems(id, 12);
+        const filtered = res.Items.filter((m) => m.Id !== id);
+        if (!cancelled) {
+          similarCache.current[id] = filtered;
+          setSimilarItems(filtered);
+        }
+      } catch {
+        if (!cancelled) setSimilarItems([]);
+      } finally {
+        if (!cancelled) setSimilarLoading(false);
+      }
+    };
+    fetchSimilar();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, item]);
+
   if (!activeItemId) return null;
   // Only render content when the loaded item's ID matches the activeItemId
   const isCorrectItem = !!item && !!activeItemId && item.Id === activeItemId;
@@ -197,6 +341,7 @@ const MediaDetailsDrawer = () => {
 
   const onClose = () => {
     isOpen(false);
+    setHasBoxSet(false);
     // URL will be handled by useEffect above
   };
 
@@ -588,27 +733,78 @@ const MediaDetailsDrawer = () => {
                 </div>
 
                 {/* Episodes list below both columns */}
-                {isSeries && (
-                  <div className="mt-8">
-                    <EpisodesList seriesId={item.Id} />
-                  </div>
-                )}
-                {isEpisode && item.SeasonId && (
-                  <div className="mt-8">
-                    <EpisodesList seriesId={item.SeriesId ?? item.SeasonId} />
-                  </div>
+                {!isMovie && (
+                  <>
+                    {isSeries && (
+                      <div className="mt-8">
+                        <EpisodesList seriesId={item.Id} />
+                      </div>
+                    )}
+                    {isEpisode && item.SeasonId && (
+                      <div className="mt-8">
+                        <EpisodesList
+                          seriesId={item.SeriesId ?? item.SeasonId}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {item.People && item.People.length > 0 && isMobile && (
-                  <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">
-                    <CastList people={item.People} />
+                {!isMovie &&
+                  item.People &&
+                  item.People.length > 0 &&
+                  isMobile && (
+                    <div className="md:w-1/3 w-full mt-8 mb-4 md:mb-0">
+                      <CastList people={item.People} />
+                    </div>
+                  )}
+
+                {/* Movie Tabs Section */}
+                {isMovie && (
+                  <div className="mt-10">
+                    {/* Tabs */}
+                    <div className="flex border-b border-neutral-700 mb-4">
+                      {hasBoxSet && (
+                        <button
+                          className={`px-4 py-2 font-semibold ${
+                            movieTab === "collection"
+                              ? "border-b-2 border-red-600 text-white"
+                              : "text-gray-400"
+                          }`}
+                          onClick={() => setMovieTab("collection")}
+                        >
+                          Collection
+                        </button>
+                      )}
+                      <button
+                        className={`px-4 py-2 font-semibold ${
+                          movieTab === "more"
+                            ? "border-b-2 border-red-600 text-white"
+                            : "text-gray-400"
+                        }`}
+                        onClick={() => setMovieTab("more")}
+                      >
+                        More Like This
+                      </button>
+                    </div>
+                    {/* Tab Content */}
+                    <div>
+                      {movieTab === "collection" && hasBoxSet && (
+                        <CollectionSection
+                          items={collectionItems}
+                          isLoading={collectionLoading}
+                        />
+                      )}
+                      {movieTab === "more" && (
+                        <MoreLikeThisSection
+                          item={item}
+                          items={similarItems}
+                          isLoading={similarLoading}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
-
-                {/* More like this for movies */}
-                <div className="mt-10">
-                  <MoreLikeThisSection item={item} />
-                </div>
 
                 {/* --- Series Details Section --- */}
                 {(isSeries || isEpisode) &&
@@ -638,7 +834,9 @@ const MediaDetailsDrawer = () => {
                           )}
                         <div className="flex-1 p-6 flex flex-col justify-between h-[200px]">
                           <div className="font-semibold text-lg text-white mb-1">
-                            {seriesDetails?.Name ?? item.SeriesName ?? item.Name}
+                            {seriesDetails?.Name ??
+                              item.SeriesName ??
+                              item.Name}
                           </div>
                           <div className="text-gray-300 text-sm max-w-xl mb-2">
                             {seriesDetails?.Overview}

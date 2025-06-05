@@ -803,6 +803,67 @@ class JellyfinApi {
       }
     );
   }
+
+  /**
+   * Find the first BoxSet (collection) that contains the given item.
+   * @param itemId The item ID.
+   * @returns The BoxSet MediaItem or null if not found.
+   */
+  async findBoxSetForItem(itemId: string): Promise<MediaItem | null> {
+    // 1. Get all BoxSets for the user
+    const boxSetsResp = await this.makeRequest<ItemsResponse>(
+      "get",
+      `/Users/${this.userId}/Items`,
+      undefined,
+      {
+        IncludeItemTypes: "BoxSet",
+        Recursive: true,
+        Fields: "PrimaryImageTag,SortName",
+        SortBy: "SortName",
+        SortOrder: "Ascending",
+      }
+    );
+    const boxSets = boxSetsResp.Items ?? [];
+    // 2. For each BoxSet, check if the item is a child
+    for (const boxSet of boxSets) {
+      const childrenResp = await this.makeRequest<ItemsResponse>(
+        "get",
+        `/Users/${this.userId}/Items`,
+        undefined,
+        {
+          ParentId: boxSet.Id,
+          IncludeItemTypes: "Movie",
+          Recursive: false,
+          Fields: "PrimaryImageTag,SortName",
+        }
+      );
+      if ((childrenResp.Items ?? []).some((child) => child.Id === itemId)) {
+        return boxSet;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get all movies in a BoxSet (collection).
+   * @param boxSetId The BoxSet (collection) ID.
+   */
+  async getBoxSetMovies(boxSetId: string): Promise<MediaItem[]> {
+    const itemsResp = await this.makeRequest<ItemsResponse>(
+      "get",
+      `/Users/${this.userId}/Items`,
+      undefined,
+      {
+        ParentId: boxSetId,
+        IncludeItemTypes: "Movie",
+        Recursive: false,
+        Fields: "PrimaryImageTag,SortName",
+        SortBy: "SortName",
+        SortOrder: "Ascending",
+      }
+    );
+    return itemsResp.Items ?? [];
+  }
 }
 
 export default JellyfinApi;

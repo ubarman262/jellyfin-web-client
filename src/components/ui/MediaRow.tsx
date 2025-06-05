@@ -20,7 +20,6 @@ const MediaRow: React.FC<MediaRowProps> = ({
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [isScrolling, setIsScrolling] = useState(false);
 
-
   const checkArrows = () => {
     if (!rowRef.current) return;
 
@@ -58,13 +57,16 @@ const MediaRow: React.FC<MediaRowProps> = ({
     return (
       <div className="mb-8">
         <h2 className="text-xl font-medium text-white mb-2">{title}</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={`media-row-skeleton-${i}`}
-              className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
-            ></div>
-          ))}
+        <div className="flex overflow-x-scroll scrollbar-hide gap-4 pb-4">
+          {Array.from({ length: 6 }).map(() => {
+            const uniqueKey = `media-row-skeleton-${Math.random().toString(36).substring(2, 11)}`;
+            return (
+              <div
+                key={uniqueKey}
+                className="flex-none w-[160px] sm:w-[180px] md:w-[200px] aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
+              ></div>
+            );
+          })}
         </div>
       </div>
     );
@@ -74,7 +76,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
     return null;
   }
 
-  return (<>
+  return (
     <div className="mb-8 group/row">
       <h2 className="text-xl font-medium text-white mb-2">{title}</h2>
 
@@ -128,7 +130,6 @@ const MediaRow: React.FC<MediaRowProps> = ({
         )}
       </div>
     </div>
-  </>
   );
 };
 
