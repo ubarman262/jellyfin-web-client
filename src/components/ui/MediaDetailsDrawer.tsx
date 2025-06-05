@@ -172,6 +172,12 @@ const MediaDetailsDrawer = () => {
   const [similarLoading, setSimilarLoading] = useState(false);
   const similarCache = useRef<Record<string, MediaItem[]>>({});
 
+  // Add BoxSet tab state
+  const isBoxSet = useMemo(() => item?.Type === "BoxSet", [item]);
+  const [boxSetMovies, setBoxSetMovies] = useState<MediaItem[]>([]);
+  const [boxSetLoading, setBoxSetLoading] = useState(false);
+  const boxSetCache = useRef<Record<string, MediaItem[]>>({});
+
   // Fetch BoxSet movies when item changes and is a movie
   useEffect(() => {
     let cancelled = false;
@@ -268,6 +274,56 @@ const MediaDetailsDrawer = () => {
       cancelled = true;
     };
   }, [api, item]);
+
+  // Fetch BoxSet movies when item is a BoxSet
+  useEffect(() => {
+    let cancelled = false;
+    const fetchBoxSetMovies = async () => {
+      if (!api || !item?.Id || !isBoxSet) {
+        setBoxSetMovies([]);
+        setBoxSetLoading(false);
+        return;
+      }
+      // Check cache
+      if (boxSetCache.current[item.Id]) {
+        setBoxSetMovies(boxSetCache.current[item.Id]);
+        setBoxSetLoading(false);
+        return;
+      }
+      setBoxSetLoading(true);
+      try {
+        let movies = await api.getBoxSetMovies(item.Id);
+        movies = movies.slice().sort((a, b) => {
+          const aYear =
+            a.ProductionYear ??
+            (a.PremiereDate ? new Date(a.PremiereDate).getFullYear() : 0);
+          const bYear =
+            b.ProductionYear ??
+            (b.PremiereDate ? new Date(b.PremiereDate).getFullYear() : 0);
+          if (aYear !== bYear) return aYear - bYear;
+          if (a.PremiereDate && b.PremiereDate) {
+            return (
+              new Date(a.PremiereDate).getTime() -
+              new Date(b.PremiereDate).getTime()
+            );
+          }
+          return 0;
+        });
+        if (!cancelled) {
+          boxSetCache.current[item.Id] = movies;
+          setBoxSetMovies(movies);
+        }
+      } catch {
+        if (!cancelled) setBoxSetMovies([]);
+      } finally {
+        if (!cancelled) setBoxSetLoading(false);
+      }
+    };
+    fetchBoxSetMovies();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, item, isBoxSet]);
 
   if (!activeItemId) return null;
   // Only render content when the loaded item's ID matches the activeItemId
@@ -404,7 +460,11 @@ const MediaDetailsDrawer = () => {
                 {isBrowser && (
                   <div className="absolute bottom-2 left-4 z-30 flex items-center gap-2 ml-4">
                     <PlayButton
-                      itemId={item.Id}
+                      itemId={
+                        isBoxSet && boxSetMovies.length > 0
+                          ? boxSetMovies[0].Id
+                          : item.Id
+                      }
                       type={item.Type}
                       width={200}
                       height={50}
@@ -527,7 +587,11 @@ const MediaDetailsDrawer = () => {
                       <div className="mt-5 mb-5 text-lg">
                         {/* Added text-lg for larger font on mobile */}
                         <PlayButton
-                          itemId={item.Id}
+                          itemId={
+                            isBoxSet && boxSetMovies.length > 0
+                              ? boxSetMovies[0].Id
+                              : item.Id
+                          }
                           type={item.Type}
                           width="100%"
                           height={50}
@@ -555,7 +619,7 @@ const MediaDetailsDrawer = () => {
                           {item.ProductionYear}
                         </span>
                       )}
-                      {item.RunTimeTicks && (
+                      {!isSeries && item.RunTimeTicks && (
                         <span className="flex items-center gap-1">
                           <Clock size={16} />
                           {isEpisode
@@ -846,6 +910,25 @@ const MediaDetailsDrawer = () => {
                     </div>
                   )}
                 {/* --- End Series Details Section --- */}
+
+                {/* --- BoxSet Section --- */}
+                {isBoxSet && (
+                  <div className="mt-10">
+                    {/* Tabs for BoxSet */}
+                    <h3 className="text-xl font-semibold text-white mb-4">
+                      Movies{" "}
+                      {boxSetMovies.length > 0 && `(${boxSetMovies.length})`}
+                    </h3>
+                    {/* Tab Content */}
+                    <div>
+                      <CollectionSection
+                        items={boxSetMovies}
+                        isLoading={boxSetLoading}
+                      />
+                    </div>
+                  </div>
+                )}
+                {/* --- End BoxSet Section --- */}
               </div>
             </div>
           </Sheet.Scroller>

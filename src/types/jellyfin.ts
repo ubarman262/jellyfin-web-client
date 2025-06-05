@@ -332,4 +332,5 @@ export const DRAWER_PATHS = [
   "/favourites",
   "/person",
   "/studio",
+  "/collections",
 ];

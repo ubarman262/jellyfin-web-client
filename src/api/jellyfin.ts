@@ -805,6 +805,26 @@ class JellyfinApi {
   }
 
   /**
+   * Get all BoxSets (collections) for the current user.
+   * @returns ItemsResponse containing all BoxSets.
+   */
+  async getAllBoxSets(): Promise<ItemsResponse> {
+    if (!this.userId) throw new Error("User not authenticated");
+    return this.makeRequest<ItemsResponse>(
+      "get",
+      `/Users/${this.userId}/Items`,
+      undefined,
+      {
+        IncludeItemTypes: "BoxSet",
+        Recursive: true,
+        Fields: "PrimaryImageTag,SortName",
+        SortBy: "SortName",
+        SortOrder: "Ascending",
+      }
+    );
+  }
+
+  /**
    * Find the first BoxSet (collection) that contains the given item.
    * @param itemId The item ID.
    * @returns The BoxSet MediaItem or null if not found.

@@ -11,7 +11,8 @@ export const useMediaData = (
     | "genre"
     | "resume"
     | "nextup"
-    | "favourites",
+    | "favourites"
+    | "collections",
   options?: { limit?: number; genreId?: string; startIndex?: number }
 ) => {
   const { api, isAuthenticated } = useAuth();
@@ -68,6 +69,11 @@ export const useMediaData = (
             break;
           case "favourites":
             result = await api.getFavourites(limit, startIndex);
+            setItems(result.Items);
+            setTotalItems(result.TotalRecordCount);
+            break;
+          case "collections":
+            result = await api.getAllBoxSets();
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;

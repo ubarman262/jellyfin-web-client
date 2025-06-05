@@ -78,6 +78,9 @@ interface CardContentProps {
   title: string;
   navigate: ReturnType<typeof useNavigate>;
   onCardClick: React.Dispatch<React.SetStateAction<string>>;
+  // Add these for BoxSet support
+  isBoxSet?: boolean;
+  boxSetFirstMovieId?: string;
 }
 
 const CardContent: React.FC<CardContentProps> = ({
@@ -94,6 +97,8 @@ const CardContent: React.FC<CardContentProps> = ({
   nextUoId,
   navigate,
   onCardClick,
+  isBoxSet,
+  boxSetFirstMovieId,
 }) => {
   const location = useLocation();
 
@@ -118,7 +123,15 @@ const CardContent: React.FC<CardContentProps> = ({
     titleContent = title;
   }
 
-  const playbackId = isSeries ? nextUoId : item.Id;
+  // Use first movie in BoxSet if present
+  let playbackId: string | undefined;
+  if (isBoxSet && boxSetFirstMovieId) {
+    playbackId = boxSetFirstMovieId;
+  } else if (isSeries) {
+    playbackId = nextUoId;
+  } else {
+    playbackId = item.Id;
+  }
 
   return (
     <>
@@ -174,7 +187,11 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [targetId, setTargetId] = useState<string>(item.Id);
-
+  // BoxSet state
+  const [boxSetFirstMovieId, setBoxSetFirstMovieId] = useState<
+    string | undefined
+  >(undefined);
+  const isBoxSet = item.Type === "BoxSet";
   const isEpisode = item.Type === "Episode";
   const isMovie = item.Type === "Movie";
   const isSeries = item.Type === "Series";
@@ -211,6 +228,31 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
 
     resolveTargetId();
   }, [isSeries, api, item]);
+
+  // Fetch first movie in BoxSet if item is a BoxSet
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchBoxSetFirstMovie() {
+      if (!api || !isBoxSet) {
+        setBoxSetFirstMovieId(undefined);
+        return;
+      }
+      try {
+        const movies = await api.getBoxSetMovies(item.Id);
+        if (!cancelled && movies && movies.length > 0) {
+          setBoxSetFirstMovieId(movies[0].Id);
+        } else if (!cancelled) {
+          setBoxSetFirstMovieId(undefined);
+        }
+      } catch {
+        if (!cancelled) setBoxSetFirstMovieId(undefined);
+      }
+    }
+    fetchBoxSetFirstMovie();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, isBoxSet, item]);
 
   const handleCardClick = (id: string) => {
     setActiveTiemId(id);
@@ -277,6 +319,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
           title={title}
           navigate={navigate}
           onCardClick={() => handleCardClick(item.Id)}
+          isBoxSet={isBoxSet}
+          boxSetFirstMovieId={boxSetFirstMovieId}
         />
       </div>
     </div>
