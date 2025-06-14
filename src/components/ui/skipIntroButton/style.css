@@ -1,0 +1,38 @@
+.skipIntro-item {
+  width: 200px;
+  height: 50px;
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.493);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+}
+
+.skipIntro-light {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200px;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  font-size: 22px;
+  overflow: hidden;
+  color: white;
+  background: #3741517f; /* gray-700 */
+  z-index: 2;
+}
+
+.skipIntro-light:hover {
+  background-color: #4b5563; /* gray-600 */
+  transition: background-color 0.3s ease;
+}
+
+.skipIntro-light span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 50px;
+  gap: 10px;
+}

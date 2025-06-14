@@ -142,6 +142,11 @@ export interface MediaItem {
   };
   ProductionLocations?: string[];
   ProviderIds?: ProviderIds;
+  Chapters?: Array<{
+    Name: string;
+    StartPositionTicks: number;
+    EndPositionTicks: number;
+  }>;
 }
 export interface Studios {
   Name: string;

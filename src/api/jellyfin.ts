@@ -293,7 +293,7 @@ class JellyfinApi {
       undefined,
       {
         Fields:
-          "Overview,Genres,PrimaryImageTag,BackdropImageTags,MediaStreams,RemoteTrailers",
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,MediaStreams,RemoteTrailers,Chapters",
       }
     );
   }
