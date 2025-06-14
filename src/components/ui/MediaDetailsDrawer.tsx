@@ -826,46 +826,62 @@ const MediaDetailsDrawer = () => {
                 {(isMovie || isSeries) && (
                   <div className="mt-10">
                     {/* Tabs */}
-                    <div className="flex border-b border-neutral-700 mb-4">
-                      {hasBoxSet && (
-                        <button
-                          className={`px-4 py-2 font-semibold ${
-                            movieTab === "collection"
-                              ? "border-b-2 border-red-600 text-white"
-                              : "text-gray-400"
-                          }`}
-                          onClick={() => setMovieTab("collection")}
-                        >
-                          Collection
-                        </button>
-                      )}
-                      <button
-                        className={`px-4 py-2 font-semibold ${
-                          movieTab === "more"
-                            ? "border-b-2 border-red-600 text-white"
-                            : "text-gray-400"
-                        }`}
-                        onClick={() => setMovieTab("more")}
-                      >
-                        More Like This
-                      </button>
-                    </div>
-                    {/* Tab Content */}
-                    <div>
-                      {movieTab === "collection" && hasBoxSet && (
-                        <CollectionSection
-                          items={collectionItems}
-                          isLoading={collectionLoading}
-                        />
-                      )}
-                      {movieTab === "more" && (
-                        <MoreLikeThisSection
-                          item={item}
-                          items={similarItems}
-                          isLoading={similarLoading}
-                        />
-                      )}
-                    </div>
+                    {(collectionLoading || similarLoading) ? (
+                      // Skeleton for the whole tabs section (tabs + content)
+                      <div>
+                        <div className="flex gap-4">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="w-[200px] h-[250px] bg-gray-800 rounded-lg animate-pulse"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex border-b border-neutral-700 mb-4">
+                          {hasBoxSet && (
+                            <button
+                              className={`px-4 py-2 font-semibold ${
+                                movieTab === "collection"
+                                  ? "border-b-2 border-red-600 text-white"
+                                  : "text-gray-400"
+                              }`}
+                              onClick={() => setMovieTab("collection")}
+                            >
+                              Collection
+                            </button>
+                          )}
+                          <button
+                            className={`px-4 py-2 font-semibold ${
+                              movieTab === "more"
+                                ? "border-b-2 border-red-600 text-white"
+                                : "text-gray-400"
+                            }`}
+                            onClick={() => setMovieTab("more")}
+                          >
+                            More Like This
+                          </button>
+                        </div>
+                        {/* Tab Content */}
+                        <div>
+                          {movieTab === "collection" && hasBoxSet && (
+                            <CollectionSection
+                              items={collectionItems}
+                              isLoading={collectionLoading}
+                            />
+                          )}
+                          {movieTab === "more" && (
+                            <MoreLikeThisSection
+                              item={item}
+                              items={similarItems}
+                              isLoading={similarLoading}
+                            />
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
