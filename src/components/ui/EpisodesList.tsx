@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
@@ -46,6 +46,41 @@ export default function EpisodesList({
   );
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
+
+  // Custom dropdown state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  // Keyboard navigation for dropdown
+  const handleDropdownKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+      e.preventDefault();
+      setDropdownOpen((open) => !open);
+    }
+    if (e.key === "Escape") {
+      setDropdownOpen(false);
+    }
+  };
 
   // Helper function to select the appropriate season
   function selectSeasonBasedOnNextUp(
@@ -276,34 +311,71 @@ export default function EpisodesList({
         {seasonsLoading ? (
           <span className="text-gray-400">Loading...</span>
         ) : (
-          <div className="relative">
-            <select
-              className="appearance-none bg-gray-800 text-white rounded px-4 py-2 pr-10 font-semibold border border-gray-700 focus:ring-2 focus:ring-red-600 transition-all outline-none cursor-pointer"
-              value={selectedSeasonId ?? ""}
-              onChange={handleSeasonChange}
-              style={{
-                minWidth: "140px",
-                boxShadow: "0 2px 8px 0 rgba(0,0,0,0.15)",
-              }}
+          <div className="relative" ref={dropdownRef}>
+            {/* Custom dropdown */}
+            <button
+              className="appearance-none bg-gray-800 text-white rounded px-4 py-2 pr-10 font-semibold border border-gray-700 transition-all outline-none cursor-pointer flex items-center min-w-[140px] shadow"
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={dropdownOpen}
+              onClick={() => setDropdownOpen((open) => !open)}
+              onKeyDown={handleDropdownKeyDown}
+              tabIndex={0}
             >
-              {seasons.map((season) => (
-                <option key={season.Id} value={season.Id}>
-                  {season.Name}
-                </option>
-              ))}
-            </select>
-            {/* Chevron icon */}
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M6 9l6 6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
+              {
+                seasons.find((s) => s.Id === selectedSeasonId)?.Name ??
+                "Select Season"
+              }
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M6 9l6 6 6-6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            {dropdownOpen && (
+              <ul
+                className="absolute z-50 mt-2 left-0 w-full bg-gray-800 border border-gray-700 rounded shadow-lg overflow-hidden animate-fade-in scrollbar-hide"
+                role="listbox"
+                tabIndex={-1}
+                style={{
+                  boxShadow: "0 2px 8px 0 rgba(0,0,0,0.15)",
+                  maxHeight: "260px",
+                  overflowY: "auto",
+                }}
+              >
+                {seasons.map((season) => (
+                  <li
+                    key={season.Id}
+                    role="option"
+                    aria-selected={season.Id === selectedSeasonId}
+                    className={`px-4 py-2 cursor-pointer transition-all ${
+                      season.Id === selectedSeasonId
+                        ? "bg-[var(--accent-secondary)] text-white"
+                        : "hover:bg-[#232323] text-white"
+                    } font-semibold`}
+                    onClick={() => {
+                      setSelectedSeasonId(season.Id);
+                      setDropdownOpen(false);
+                    }}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        setSelectedSeasonId(season.Id);
+                        setDropdownOpen(false);
+                      }
+                    }}
+                  >
+                    {season.Name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </div>
