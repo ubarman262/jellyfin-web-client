@@ -884,6 +884,45 @@ class JellyfinApi {
     );
     return itemsResp.Items ?? [];
   }
+
+  /**
+   * Upload a new user profile image.
+   * @param userId The user ID.
+   * @param file The image file (File or Blob).
+   * @returns Promise<void>
+   */
+  async uploadUserProfileImage(userId: string, file: File | Blob): Promise<void> {
+    const url = `${this.serverUrl}/emby/Users/${userId}/Images/Primary`;
+
+    // Compose the authorization header as in the working curl
+    let authorization = `MediaBrowser Client="Jellyfin Web", Device="Chrome", DeviceId="${this.deviceId}", Version="10.10.7", Token="${this.accessToken ?? ""}"`;
+
+    // Read the file as base64 and send as body
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Remove the data:*/*;base64, prefix if present
+        const result = reader.result as string;
+        const base64Data = result.split(',')[1] || result;
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    await axios.post(url, base64, {
+      headers: {
+        "accept": "*/*",
+        "authorization": authorization,
+        "content-type": file.type || "application/octet-stream",
+        "origin": window.location.origin,
+        "cache-control": "no-cache",
+        "pragma": "no-cache",
+        "user-agent": navigator.userAgent,
+      },
+      withCredentials: false,
+    });
+  }
 }
 
 export default JellyfinApi;

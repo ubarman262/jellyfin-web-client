@@ -9,6 +9,7 @@ import {
   Menu,
   Search,
   Tv,
+  User,
   X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -139,11 +140,14 @@ const Navbar: React.FC = () => {
             {/* User Profile */}
             {isAuthenticated && (
               <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-1 text-gray-300 hover:text-white transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-medium overflow-hidden">
+                <div className="flex items-center gap-1 text-gray-300 hover:text-white transition-colors">
+                  <div
+                    className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-medium overflow-hidden cursor-pointer"
+                    onClick={() => {
+                      if (window.innerWidth >= 768) setShowUserMenu(!showUserMenu);
+                    }}
+                    tabIndex={0}
+                  >
                     {profilePicUrl ? (
                       <img
                         src={profilePicUrl}
@@ -154,12 +158,20 @@ const Navbar: React.FC = () => {
                       getUserInitial()
                     )}
                   </div>
-                  <ChevronDown size={16} />
-                </button>
-
+                  {/* Hide ChevronDown on mobile (md:hidden) */}
+                  <span className="hidden md:inline-flex cursor-pointer" onClick={() => setShowUserMenu(!showUserMenu)}>
+                    <ChevronDown size={16} />
+                  </span>
+                </div>
                 {showUserMenu && (
                   <div className="absolute right-0 top-12 w-48 bg-gray-900 rounded-md shadow-lg overflow-hidden z-50">
-                    <div className="p-3 border-b border-gray-800">
+                    <div
+                      className="p-3 border-b border-gray-800 cursor-pointer"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate("/profile");
+                      }}
+                    >
                       <p className="text-white font-medium">{user?.Name}</p>
                     </div>
                     <button
@@ -286,18 +298,30 @@ const Navbar: React.FC = () => {
                 <Library size={22} strokeWidth={2.5} />
                 <span>Collections</span>
               </Link>
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 text-2xl font-bold text-gray-300 hover:text-white p-2"
+                style={{
+                  opacity: isMenuOpen ? 1 : 0,
+                  transform: isMenuOpen ? "translateY(0)" : "translateY(20px)",
+                  transition: "opacity 0.3s 0.42s, transform 0.3s 0.42s",
+                }}
+              >
+                <User size={22} strokeWidth={2.5} />
+                <span>Profile</span>
+              </Link>
 
               {isAuthenticated && (
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 text-gray-300 hover:text-white p-2 text-left"
+                  className="flex items-center gap-2 text-2xl font-bold text-gray-300 hover:text-white p-2"
                   style={{
                     opacity: isMenuOpen ? 1 : 0,
                     transform: isMenuOpen ? "translateY(0)" : "translateY(20px)",
                     transition: "opacity 0.3s 0.5s, transform 0.3s 0.5s",
                   }}
                 >
-                  <LogOut size={18} />
+                  <LogOut size={22} strokeWidth={2.5} />
                   <span>Sign Out</span>
                 </button>
               )}

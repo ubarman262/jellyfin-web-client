@@ -16,6 +16,7 @@ import { RecoilRoot } from "recoil";
 import MediaDetailsDrawer from "./components/ui/MediaDetailsDrawer";
 import StudioDetailsPage from "./pages/StudioDetailsPage";
 import CollectionsPage from "./pages/CollectionsPage";
+import ProfilePage from "./components/ProfilePage";
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -105,6 +106,15 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <CollectionsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

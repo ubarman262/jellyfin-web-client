@@ -357,7 +357,7 @@ export default function EpisodesList({
                     className={`px-4 py-2 cursor-pointer transition-all ${
                       season.Id === selectedSeasonId
                         ? "bg-[var(--accent-secondary)] text-white"
-                        : "hover:bg-[#232323] text-white"
+                        : "hover:bg-gray-900 text-white"
                     } font-semibold`}
                     onClick={() => {
                       setSelectedSeasonId(season.Id);
