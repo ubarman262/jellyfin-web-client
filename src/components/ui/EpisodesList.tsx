@@ -162,7 +162,9 @@ export default function EpisodesList({
       <div className="flex flex-col gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
-            key={`skeleton-placeholder-${seriesId}-${selectedSeasonId ?? "none"}-${i}`}
+            key={`skeleton-placeholder-${seriesId}-${
+              selectedSeasonId ?? "none"
+            }-${i}`}
             className="flex flex-row gap-4 items-center px-4 py-3 bg-[#181818] rounded-xl animate-pulse"
           >
             <div className="w-8 h-6 bg-gray-800 rounded" />
@@ -277,12 +279,7 @@ export default function EpisodesList({
               <div className="hidden sm:flex flex-col gap-2 ml-4">
                 {watched && (
                   <span className="text-red-500" title="Watched">
-                    <svg
-                      width="22"
-                      height="22"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
                       <path
                         stroke="currentColor"
                         strokeWidth="2"
@@ -309,7 +306,7 @@ export default function EpisodesList({
     <div className="mt-8">
       <div className="flex items-center gap-4 mb-4">
         {seasonsLoading ? (
-          <span className="text-gray-400">Loading...</span>
+          <span className="flex-none w-[140px] h-[38px] bg-gray-800 animate-pulse rounded-md"></span>
         ) : (
           <div className="relative" ref={dropdownRef}>
             {/* Custom dropdown */}
@@ -322,10 +319,8 @@ export default function EpisodesList({
               onKeyDown={handleDropdownKeyDown}
               tabIndex={0}
             >
-              {
-                seasons.find((s) => s.Id === selectedSeasonId)?.Name ??
-                "Select Season"
-              }
+              {seasons.find((s) => s.Id === selectedSeasonId)?.Name ??
+                "Select Season"}
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path

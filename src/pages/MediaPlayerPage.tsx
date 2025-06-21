@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ChevronsLeft,
   ChevronsRight,
+  GalleryVerticalEnd,
   Maximize,
   Minimize,
   Pause,
@@ -25,6 +26,7 @@ import { useMediaItem } from "../hooks/useMediaData";
 import isDrawerOpen from "../states/atoms/DrawerOpen";
 import { MediaItem, MediaStream } from "../types/jellyfin";
 import SkipIntroButton from "../components/ui/skipIntroButton";
+import EpisodesList from "../components/ui/EpisodesList";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
@@ -57,6 +59,26 @@ const MediaPlayerPage: React.FC = () => {
   const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(null);
   const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null); // new state
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
+
+  // --- Add state for episodes menu visibility ---
+  const [showEpisodesMenu, setShowEpisodesMenu] = useState(false);
+  const episodesMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showEpisodesMenu) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        episodesMenuRef.current &&
+        !episodesMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowEpisodesMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEpisodesMenu]);
 
   // Audio tracks state
   const [audioTracks, setAudioTracks] = useState<
@@ -380,7 +402,7 @@ const MediaPlayerPage: React.FC = () => {
   // Auto-hide controls
   useEffect(() => {
     const hideControls = () => {
-      if (isPlaying && !tracksMenuOpen) {
+      if (isPlaying && !tracksMenuOpen && !showEpisodesMenu) {
         setShowControls(false);
       }
     };
@@ -398,7 +420,7 @@ const MediaPlayerPage: React.FC = () => {
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [showControls, isPlaying, tracksMenuOpen]);
+  }, [showControls, isPlaying, tracksMenuOpen, showEpisodesMenu]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -475,6 +497,10 @@ const MediaPlayerPage: React.FC = () => {
       playerContainerRef.current.requestFullscreen();
     }
   }, [isFullscreen]);
+
+  const toggleEpsisodesMenu = () => {
+    setShowEpisodesMenu((prev) => !prev);
+  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -958,6 +984,12 @@ const MediaPlayerPage: React.FC = () => {
                 </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
+              <button
+                className="text-white hover:text-gray-300 transition-colors mr-2"
+                onClick={toggleEpsisodesMenu}
+              >
+                <GalleryVerticalEnd size={24} />
+              </button>
               <TracksMenu
                 audioTracks={audioTracks}
                 selectedAudioTrack={selectedAudioTrack}
@@ -984,6 +1016,20 @@ const MediaPlayerPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Episodes List button and overlay */}
+          {item.Type === "Episode" && item.SeriesId && item.SeasonId && (
+            <div className="mt-6">
+              {showEpisodesMenu && (
+                <div
+                  ref={episodesMenuRef}
+                  className="absolute right-0 bottom-[65px] w-[620px] max-h-[80vh] bg-neutral-900 text-white text-sm rounded overflow-y-auto shadow-lg p-2 z-50"
+                >
+                  <EpisodesList seriesId={item.SeriesId} initialSeasonId={item.SeasonId} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
