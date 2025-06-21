@@ -829,7 +829,7 @@ class JellyfinApi {
    * @param itemId The item ID.
    * @returns The BoxSet MediaItem or null if not found.
    */
-  async findBoxSetForItem(itemId: string): Promise<MediaItem | null> {
+  async findBoxSetForItem(item: MediaItem): Promise<MediaItem | null> {
     // 1. Get all BoxSets for the user
     const boxSetsResp = await this.makeRequest<ItemsResponse>(
       "get",
@@ -844,23 +844,49 @@ class JellyfinApi {
       }
     );
     const boxSets = boxSetsResp.Items ?? [];
-    // 2. For each BoxSet, check if the item is a child
-    for (const boxSet of boxSets) {
-      const childrenResp = await this.makeRequest<ItemsResponse>(
-        "get",
-        `/Users/${this.userId}/Items`,
-        undefined,
-        {
-          ParentId: boxSet.Id,
-          IncludeItemTypes: "Movie",
-          Recursive: false,
-          Fields: "PrimaryImageTag,SortName",
-        }
-      );
-      if ((childrenResp.Items ?? []).some((child) => child.Id === itemId)) {
-        return boxSet;
+
+
+    // Get the last word from the item's name (case-insensitive)
+    const itemNameWords = item.Name.trim().split(/\s+/);
+    // Ignore common words like 'the'
+    const ignoreWords = ["the", "captain"];
+    let firstWord = itemNameWords.find(
+      (word) =>
+      !ignoreWords.includes(word.toLowerCase()) &&
+      isNaN(Number(word))
+    ) || itemNameWords[0];
+    // Remove trailing colon if present
+    firstWord = firstWord.replace(/:$/, "");
+    const searchWord = firstWord.toLowerCase();
+    const boxSet = boxSets.find((boxSet) => {
+      // console.log(`Checking BoxSet: ${boxSet.Name} against search word: ${searchWord}`);
+      const boxSetNameWords = boxSet.Name.toLowerCase();
+     if(boxSetNameWords.includes(searchWord)) {
+        return true;
       }
+    });
+
+    if (boxSet) {
+      return boxSet;
     }
+
+    // 2. For each BoxSet, check if the item is a child
+    // for (const boxSet of boxSets) {
+    //   const childrenResp = await this.makeRequest<ItemsResponse>(
+    //     "get",
+    //     `/Users/${this.userId}/Items`,
+    //     undefined,
+    //     {
+    //       ParentId: boxSet.Id,
+    //       IncludeItemTypes: "Movie",
+    //       Recursive: false,
+    //       Fields: "PrimaryImageTag,SortName",
+    //     }
+    //   );
+    //   if ((childrenResp.Items ?? []).some((child) => child.Id === itemId)) {
+    //     return boxSet;
+    //   }
+    // }
     return null;
   }
 
