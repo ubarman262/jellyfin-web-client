@@ -895,7 +895,7 @@ class JellyfinApi {
     const url = `${this.serverUrl}/emby/Users/${userId}/Images/Primary`;
 
     // Compose the authorization header as in the working curl
-    let authorization = `MediaBrowser Client="Jellyfin Web", Device="Chrome", DeviceId="${this.deviceId}", Version="10.10.7", Token="${this.accessToken ?? ""}"`;
+    const authorization = `MediaBrowser Client="Jellyfin Web", Device="Chrome", DeviceId="${this.deviceId}", Version="10.10.7", Token="${this.accessToken ?? ""}"`;
 
     // Read the file as base64 and send as body
     const base64 = await new Promise<string>((resolve, reject) => {
@@ -922,6 +922,46 @@ class JellyfinApi {
       },
       withCredentials: false,
     });
+  }
+
+  /**
+   * Upload a subtitle file to the server for a video item.
+   * @param itemId The video item ID.
+   * @param file The subtitle file (File).
+   * @param language The language code (default: 'eng').
+   * @param isForced Whether the subtitle is forced (default: false).
+   * @param isHearingImpaired Whether the subtitle is for hearing impaired (default: false).
+   * @returns Promise<void>
+   */
+  async uploadSubtitleToServer(
+    itemId: string,
+    file: File,
+    language: string = "eng",
+    isForced: boolean = false,
+    isHearingImpaired: boolean = false
+  ): Promise<void> {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64Data = result.split(",")[1] || result;
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const payload = {
+      Data: base64,
+      Format: file.name.endsWith(".srt") ? "srt" : "vtt",
+      IsForced: isForced,
+      IsHearingImpaired: isHearingImpaired,
+      Language: language,
+    };
+    await this.makeRequest(
+      "post",
+      `/Videos/${itemId}/Subtitles`,
+      payload
+    );
   }
 }
 

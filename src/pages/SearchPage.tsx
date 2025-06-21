@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { Search as SearchIcon } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
 import { useSearch } from "../hooks/useMediaData";
-import { Search as SearchIcon } from "lucide-react";
 
 const SearchPage: React.FC = () => {
   const location = useLocation();
@@ -13,7 +13,9 @@ const SearchPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   // Debounce timer state (not strictly necessary, but for cleanup)
-  const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [debounceTimer, setDebounceTimer] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const { results, isLoading, totalResults, suggestions } =
     useSearch(searchQuery);
@@ -28,11 +30,14 @@ const SearchPage: React.FC = () => {
   // Debounce effect for updating URL as user types
   useEffect(() => {
     // Don't debounce on initial mount if query matches URL
-    if (searchQuery === (new URLSearchParams(location.search).get("q") ?? "")) return;
+    if (searchQuery === (new URLSearchParams(location.search).get("q") ?? ""))
+      return;
 
     if (debounceTimer) clearTimeout(debounceTimer);
     const timer = setTimeout(() => {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`, { replace: true });
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`, {
+        replace: true,
+      });
     }, 600); // 600ms debounce
     setDebounceTimer(timer);
 
@@ -86,21 +91,28 @@ const SearchPage: React.FC = () => {
           </form>
         </div>
 
+        {/* Genre Section */}
+        {/* <div className="container mx-auto px-4 mt-[-2rem] z-10">
+          <GenreSection />
+        </div> */}
+
         {/* Suggestions when searchQuery is empty */}
         {!searchQuery && suggestions.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-xl font-medium mb-4 text-center">Suggestions</h2>
+            <h2 className="text-xl font-medium mb-4 text-center">
+              Suggestions
+            </h2>
             <ul className="flex flex-col items-center text-center space-y-2">
               {suggestions.map((item) => (
-              <li key={item.Id} className="w-full max-w-xs">
-                <button
-                  type="button"
-                  className="w-full text-center text-red-500 cursor-pointer hover:text-red-500 hover:underline transition-colors bg-transparent border-none p-0 m-0"
-                  onClick={() => handleItemClick(item.Id)}
-                >
-                  {item.Name}
-                </button>
-              </li>
+                <li key={item.Id} className="w-full max-w-xs">
+                  <button
+                    type="button"
+                    className="w-full text-center text-red-500 cursor-pointer hover:text-red-500 hover:underline transition-colors bg-transparent border-none p-0 m-0"
+                    onClick={() => handleItemClick(item.Id)}
+                  >
+                    {item.Name}
+                  </button>
+                </li>
               ))}
             </ul>
           </div>

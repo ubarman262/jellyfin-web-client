@@ -77,12 +77,6 @@ const HomePage: React.FC = () => {
           isLoading={latestLoading}
         />
 
-        {/* <MediaRow 
-          title="Recommended for You" 
-          items={recommendedItems} 
-          isLoading={recommendedLoading} 
-        /> */}
-
         <MediaRow
           title="Movies"
           items={moviesItems}

@@ -54,9 +54,8 @@ const MediaPlayerPage: React.FC = () => {
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
-  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(
-    null
-  );
+  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(null);
+  const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null); // new state
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
 
   // Audio tracks state
@@ -609,7 +608,19 @@ const MediaPlayerPage: React.FC = () => {
     const newUrl = URL.createObjectURL(file);
     setLocalSubtitleUrl(newUrl);
     setLocalSubtitleName(file.name);
-    handleSetSelectedSubtitleTrackUI("local"); // Use the main handler to set local as active
+    setLocalSubtitleFile(file); // store file
+    handleSetSelectedSubtitleTrackUI("local");
+  };
+
+  const handleUploadLocalSubtitle = async (file: File) => {
+    if (!api || !item) return;
+    try {
+      await api.uploadSubtitleToServer(item.Id, file, "eng", false, false);
+      getSubtitles();
+      alert("Subtitle uploaded successfully!");
+    } catch {
+      alert("Failed to upload subtitle");
+    }
   };
 
   const handleSetSelectedSubtitleTrackUI = (index: SubtitleIndex) => {
@@ -955,7 +966,9 @@ const MediaPlayerPage: React.FC = () => {
                 selectedSubtitleIndex={selectedSubtitleIndex}
                 setSelectedSubtitleIndex={handleSetSelectedSubtitleTrackUI}
                 onSelectLocalSubtitle={handleSelectLocalSubtitle}
+                onUploadLocalSubtitle={handleUploadLocalSubtitle} // new prop
                 localSubtitleName={localSubtitleName}
+                localSubtitleFile={localSubtitleFile} // new prop
                 subtitleDelayMs={subtitleDelayMs}
                 increaseSubtitleDelay={increaseSubtitleDelay}
                 decreaseSubtitleDelay={decreaseSubtitleDelay}

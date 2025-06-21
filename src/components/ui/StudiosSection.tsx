@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, createSearchParams } from "react-router-dom";
+import MediaRowNavigation from "./MediaRowNavigation";
 
 const studios = [
   { name: "Marvel Studios", background: "#FF0000" },
@@ -25,6 +26,10 @@ const StudiosSection: React.FC = () => {
   const { api } = useAuth();
   const [studioApiList, setStudioApiList] = useState<{ Name: string; Id: string }[]>([]);
   const navigate = useNavigate();
+  const rowRef = React.useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   useEffect(() => {
     if (!api) return;
@@ -67,40 +72,81 @@ const StudiosSection: React.FC = () => {
     return null;
   }
 
+  const checkArrows = () => {
+    if (!rowRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
+    const maxScrollLeft = scrollWidth - clientWidth;
+    setShowLeftArrow(scrollLeft > 10);
+    setShowRightArrow(scrollLeft < maxScrollLeft - 10);
+  };
+
+  const scroll = (direction: "left" | "right") => {
+    if (!rowRef.current) return;
+    setIsScrolling(true);
+    const { clientWidth } = rowRef.current;
+    const scrollAmount = clientWidth * 0.9;
+    const scrollPos =
+      direction === "left"
+        ? rowRef.current.scrollLeft - scrollAmount
+        : rowRef.current.scrollLeft + scrollAmount;
+    rowRef.current.scrollTo({
+      left: scrollPos,
+      behavior: "smooth",
+    });
+    setTimeout(() => {
+      setIsScrolling(false);
+      checkArrows();
+    }, 500);
+  };
+
   return (
     <div className="mt-10">
       <h2 className="text-2xl font-bold mb-4">Studios</h2>
-      <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide">
-        {studios.map((studio) => {
-          const logo = getStudioLogo(studio.name);
-          const studioId = getStudioIdByName(studio.name);
-          return (
-            <div
-              key={studio.name}
-              className="rounded-lg flex items-center justify-center w-56 h-28 shadow-md flex-shrink-0 cursor-pointer"
-              style={{ background: studio.background }}
-              title={studio.name}
-              data-studio-id={studioId}
-              onClick={() =>
-                studioId &&
-                navigate({
-                  pathname: "/studio",
-                  search: createSearchParams({ studioId }).toString(),
-                })
-              }
-            >
-              {logo ? (
-                <img
-                  src={logo}
-                  alt={studio.name}
-                  className="max-h-16 max-w-[80%] object-contain"
-                />
-              ) : (
-                <span className="text-neutral-200">{studio.name}</span>
-              )}
-            </div>
-          );
-        })}
+      <div className="relative group/row">
+        <div
+          ref={rowRef}
+          className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
+          onScroll={checkArrows}
+        >
+          {studios.map((studio) => {
+            const logo = getStudioLogo(studio.name);
+            const studioId = getStudioIdByName(studio.name);
+            return (
+              <div
+                key={studio.name}
+                className="rounded-lg flex items-center justify-center w-56 h-28 shadow-md flex-shrink-0 cursor-pointer"
+                style={{ background: studio.background }}
+                title={studio.name}
+                data-studio-id={studioId}
+                onClick={() =>
+                  studioId &&
+                  navigate({
+                    pathname: "/studio",
+                    search: createSearchParams({ studioId }).toString(),
+                  })
+                }
+              >
+                {logo ? (
+                  <img
+                    src={logo}
+                    alt={studio.name}
+                    className="max-h-16 max-w-[80%] object-contain"
+                  />
+                ) : (
+                  <span className="text-neutral-200">{studio.name}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <MediaRowNavigation
+          showLeftArrow={showLeftArrow}
+          showRightArrow={showRightArrow}
+          isScrolling={isScrolling}
+          onScrollLeft={() => scroll("left")}
+          onScrollRight={() => scroll("right")}
+          itemsLength={studios.length}
+        />
       </div>
     </div>
   );

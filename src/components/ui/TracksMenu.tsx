@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { Captions, Check } from "lucide-react";
 import React, { useEffect, useRef } from "react";
-import { MediaStream } from "../../types/jellyfin";
+import { LANGUAGE_MAP, MediaStream } from "../../types/jellyfin";
 
 type AudioTrack = {
   id: number;
@@ -17,7 +17,9 @@ interface TracksMenuProps {
   selectedSubtitleIndex: number | string | null;
   setSelectedSubtitleIndex: (index: number | string | null) => void;
   onSelectLocalSubtitle: (file: File) => void;
+  onUploadLocalSubtitle?: (file: File) => void; // new prop
   localSubtitleName?: string | null;
+  localSubtitleFile?: File | null; // new prop
   subtitleDelayMs: number;
   increaseSubtitleDelay: () => void;
   decreaseSubtitleDelay: () => void;
@@ -34,7 +36,9 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
   selectedSubtitleIndex,
   setSelectedSubtitleIndex,
   onSelectLocalSubtitle,
+  onUploadLocalSubtitle, // new prop
   localSubtitleName,
+  localSubtitleFile, // new prop
   subtitleDelayMs,
   increaseSubtitleDelay,
   decreaseSubtitleDelay,
@@ -61,6 +65,13 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [setIsOpen]);
+
+  // Helper to convert language code to full name
+  const getLanguageName = (code: string) => {
+    const map: Record<string, string> = LANGUAGE_MAP;
+    if(!code.length) return null;
+    return map[code?.toLowerCase()] || code;
+  };
 
   return (
     <div className="relative inline-block text-left" ref={menuRef}>
@@ -173,6 +184,15 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                       <span>{truncateName(localSubtitleName)} (Local)</span>
                       {selectedSubtitleIndex === "local" && <Check size={16} />}
                     </button>
+                    {onUploadLocalSubtitle && localSubtitleFile && (
+                      <button
+                        type="button"
+                        className="mt-1 ml-2 px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
+                        onClick={() => onUploadLocalSubtitle(localSubtitleFile)}
+                      >
+                        Upload to Server
+                      </button>
+                    )}
                   </li>
                 )}
                 {subtitleTracks.map((track) => (
@@ -189,7 +209,14 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                       )}
                       aria-pressed={selectedSubtitleIndex === track.Index}
                     >
-                      <span>{truncateName(track.Title ?? `Subtitle ${track.Index}`)}</span>
+                      <span>
+                        {getLanguageName(track.Language ?? "") ??
+                          (track.Title
+                            ? `- ${truncateName(track.Title)}`
+                            : track.Index !== undefined
+                            ? `Subtitle ${track.Index}`
+                            : "")}
+                      </span>
                       {selectedSubtitleIndex === track.Index && (
                         <Check size={16} />
                       )}

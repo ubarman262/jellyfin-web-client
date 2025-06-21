@@ -1,8 +1,7 @@
-import clsx from "clsx";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { MediaItem } from "../../types/jellyfin";
 import MediaCard from "./MediaCard";
+import MediaRowNavigation from "./MediaRowNavigation";
 
 interface MediaRowProps {
   title: string;
@@ -96,38 +95,14 @@ const MediaRow: React.FC<MediaRowProps> = ({
           ))}
         </div>
 
-        {/* Navigation arrows */}
-        {items.length > 1 && (
-          <>
-            <button
-              onClick={() => scroll("left")}
-              className={clsx(
-                "absolute top-1/2 left-0 -translate-y-1/2 -ml-4 z-20",
-                "w-12 h-12 rounded-full bg-black/50 text-white flex items-center justify-center",
-                "transition-opacity backdrop-blur-sm hover:bg-black/80",
-                "opacity-0",
-                showLeftArrow && !isScrolling && "group-hover/row:opacity-100"
-              )}
-              aria-label="Scroll left"
-            >
-              <ChevronLeft />
-            </button>
-
-            <button
-              onClick={() => scroll("right")}
-              className={clsx(
-                "absolute top-1/2 right-0 -translate-y-1/2 -mr-4 z-20",
-                "w-12 h-12 rounded-full bg-black/50 text-white flex items-center justify-center",
-                "transition-opacity backdrop-blur-sm hover:bg-black/80",
-                "opacity-0",
-                showRightArrow && !isScrolling && "group-hover/row:opacity-100"
-              )}
-              aria-label="Scroll right"
-            >
-              <ChevronRight />
-            </button>
-          </>
-        )}
+        <MediaRowNavigation
+          showLeftArrow={showLeftArrow}
+          showRightArrow={showRightArrow}
+          isScrolling={isScrolling}
+          onScrollLeft={() => scroll("left")}
+          onScrollRight={() => scroll("right")}
+          itemsLength={items.length}
+        />
       </div>
     </div>
   );
