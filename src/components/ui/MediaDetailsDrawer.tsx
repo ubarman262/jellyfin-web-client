@@ -139,7 +139,7 @@ const MediaDetailsDrawer = () => {
     const checkBoxSet = async () => {
       if (api && isMovie && item?.Id) {
         try {
-          const boxSet = await api.findBoxSetForItem(item.Id);
+          const boxSet = await api.findBoxSetForItem(item);
           if (!cancelled) setHasBoxSet(!!boxSet);
           // Set tab to "more" if no boxset, otherwise "collection"
           if (!cancelled) {
@@ -194,7 +194,7 @@ const MediaDetailsDrawer = () => {
       }
       setCollectionLoading(true);
       try {
-        const foundBoxSet = await api.findBoxSetForItem(item.Id);
+        const foundBoxSet = await api.findBoxSetForItem(item);
         if (!foundBoxSet) {
           setCollectionItems([]);
           setCollectionLoading(false);
