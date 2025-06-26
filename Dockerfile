@@ -9,13 +9,16 @@ COPY package.json .
 COPY package-lock.json .
 
 # Install dependencies
-RUN npm ci --omit=dev
+RUN npm install
 
 # Copy the rest of the application code
 COPY . .
 
 # Build the app
 RUN npm run build
+
+# Remove devDependencies
+RUN npm prune --production
 
 # Production image
 FROM nginx:alpine
