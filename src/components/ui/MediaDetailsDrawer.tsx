@@ -569,8 +569,8 @@ const MediaDetailsDrawer = () => {
                           {item.ParentIndexNumber !== undefined &&
                           item.IndexNumber !== undefined ? (
                             <>
-                              Season {item.ParentIndexNumber} -{" "}
-                              {item.IndexNumber}. {item.Name}
+                              S{item.ParentIndexNumber} -{" "}
+                              E{item.IndexNumber}. {item.Name}
                             </>
                           ) : (
                             item.Name

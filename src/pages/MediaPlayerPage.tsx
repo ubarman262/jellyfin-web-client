@@ -56,7 +56,9 @@ const MediaPlayerPage: React.FC = () => {
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
-  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(null);
+  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(
+    null
+  );
   const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null); // new state
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
 
@@ -107,7 +109,9 @@ const MediaPlayerPage: React.FC = () => {
   const [forceStartFromBeginning, setForceStartFromBeginning] = useState(false);
 
   // --- Intro skip state ---
-  const [intro, setIntro] = useState<{ start: number; end: number } | null>(null);
+  const [intro, setIntro] = useState<{ start: number; end: number } | null>(
+    null
+  );
   const [hasSkippedIntro, setHasSkippedIntro] = useState(false);
 
   // Helper: returns true if chapter name is an intro-like segment
@@ -127,23 +131,25 @@ const MediaPlayerPage: React.FC = () => {
     setHasSkippedIntro(false);
     if (item?.Chapters && Array.isArray(item.Chapters)) {
       // Find all intro-like chapters
-      const introChapters = item.Chapters
-        .map((ch, idx) => ({ ...ch, idx }))
-        .filter((ch) => isIntroChapter(ch.Name));
+      const introChapters = item.Chapters.map((ch, idx) => ({
+        ...ch,
+        idx,
+      })).filter((ch) => isIntroChapter(ch.Name));
       if (introChapters.length > 0) {
         const firstIntro = introChapters[0];
         const lastIntro = introChapters[introChapters.length - 1];
-        const start = Math.floor((firstIntro.StartPositionTicks ?? 0) / 10000000);
+        const start = Math.floor(
+          (firstIntro.StartPositionTicks ?? 0) / 10000000
+        );
 
         // Find the next non-intro chapter after the last intro
         let end: number | undefined;
-        for (
-          let i = lastIntro.idx + 1;
-          i < item.Chapters.length;
-          ++i
-        ) {
+        for (let i = lastIntro.idx + 1; i < item.Chapters.length; ++i) {
           const ch = item.Chapters[i];
-          if (!isIntroChapter(ch.Name) && typeof ch.StartPositionTicks === "number") {
+          if (
+            !isIntroChapter(ch.Name) &&
+            typeof ch.StartPositionTicks === "number"
+          ) {
             end = Math.ceil(ch.StartPositionTicks / 10000000);
             break;
           }
@@ -500,7 +506,7 @@ const MediaPlayerPage: React.FC = () => {
 
   const toggleEpsisodesMenu = () => {
     setShowEpisodesMenu((prev) => !prev);
-  }
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -753,6 +759,59 @@ const MediaPlayerPage: React.FC = () => {
     setHasSkippedIntro(true);
   };
 
+  // Set Media Session metadata for iOS/iPadOS control center
+  useEffect(() => {
+    if (!item || !api) return;
+    if (!("mediaSession" in navigator)) return;
+
+    // Get the best thumbnail url (prefer Primary, fallback to Backdrop)
+    let artworkUrl = "";
+    if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+      artworkUrl = api.getImageUrl(item.Id, "Thumb", 512, 288);
+    } else if (item.ImageTags?.Primary) {
+      artworkUrl = api.getImageUrl(item.Id, "Primary", 512, 512);
+    }
+
+    navigator.mediaSession.metadata = new window.MediaMetadata({
+      title: item.Name,
+      // artist: item.Artists?.join(", ") || item.AlbumArtist || "",
+      artist: item.SeriesName ? `Jellyfin - ${item.SeriesName}` : "Jellyfin",
+      // album: `Jellyfin - ${item.SeriesName}`,
+      artwork: artworkUrl
+        ? [
+            { src: artworkUrl, sizes: "512x512", type: "image/jpeg" },
+            // Optionally add more sizes/types if available
+          ]
+        : [],
+    });
+
+    // Optionally, handle play/pause/seek actions
+    navigator.mediaSession.setActionHandler?.("play", () => {
+      videoRef.current?.play();
+    });
+    navigator.mediaSession.setActionHandler?.("pause", () => {
+      videoRef.current?.pause();
+    });
+    navigator.mediaSession.setActionHandler?.("seekto", (details: any) => {
+      if (
+        videoRef.current &&
+        details.fastSeek &&
+        "fastSeek" in videoRef.current
+      ) {
+        (videoRef.current as any).fastSeek(details.seekTime);
+      } else if (videoRef.current) {
+        videoRef.current.currentTime = details.seekTime;
+      }
+    });
+
+    // Clean up on unmount
+    return () => {
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.metadata = null;
+      }
+    };
+  }, [item, api]);
+
   if (isLoading || !item || !api) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -948,21 +1007,21 @@ const MediaPlayerPage: React.FC = () => {
                   <SkipForward size={22} />
                 </button>
               )}
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={toggleMute}
                   className="text-white hover:text-gray-300 transition-colors"
                 >
                   {(() => {
-                  let volumeIcon;
-                  if (isMuted) {
-                    volumeIcon = <VolumeX size={24} />;
-                  } else if (volume > 0.5) {
-                    volumeIcon = <Volume2 size={24} />;
-                  } else {
-                    volumeIcon = <Volume1 size={24} />;
-                  }
-                  return volumeIcon;
+                    let volumeIcon;
+                    if (isMuted) {
+                      volumeIcon = <VolumeX size={24} />;
+                    } else if (volume > 0.5) {
+                      volumeIcon = <Volume2 size={24} />;
+                    } else {
+                      volumeIcon = <Volume1 size={24} />;
+                    }
+                    return volumeIcon;
                   })()}
                 </button>
                 <input
@@ -974,14 +1033,16 @@ const MediaPlayerPage: React.FC = () => {
                   onChange={handleVolumeChange}
                   className="volume-slider w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer"
                   style={{
-                  ...(typeof volume === "number"
-                    ? ({
-                      "--volume-progress": `${(isMuted ? 0 : volume) * 100}%`,
-                    } as React.CSSProperties)
-                    : {}),
+                    ...(typeof volume === "number"
+                      ? ({
+                          "--volume-progress": `${
+                            (isMuted ? 0 : volume) * 100
+                          }%`,
+                        } as React.CSSProperties)
+                      : {}),
                   }}
                 />
-                </div>
+              </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
               <button
@@ -1025,7 +1086,10 @@ const MediaPlayerPage: React.FC = () => {
                   ref={episodesMenuRef}
                   className="absolute right-0 bottom-[65px] w-[620px] max-h-[80vh] bg-neutral-900 text-white text-sm rounded overflow-y-auto shadow-lg p-2 z-50"
                 >
-                  <EpisodesList seriesId={item.SeriesId} initialSeasonId={item.SeasonId} />
+                  <EpisodesList
+                    seriesId={item.SeriesId}
+                    initialSeasonId={item.SeasonId}
+                  />
                 </div>
               )}
             </div>
