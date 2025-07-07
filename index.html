@@ -3,18 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Viewport for safe area insets (important for notch areas) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
     <title>Jellyfin</title>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons and Manifest -->
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./logo.png">
+
+    <!-- PWA Meta Tags for iOS -->
     <meta name="theme-color" content="#171717" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Jellyfin" />
-    <link rel="apple-touch-icon" href="./logo.png">
 
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="Jellyfin - Your Personal Streaming Server" />
@@ -28,9 +37,22 @@
     <meta name="twitter:title" content="Jellyfin - Your Personal Streaming Server" />
     <meta name="twitter:description" content="Stream your personal collection of movies and shows from anywhere, securely." />
     <meta name="twitter:image" content="https://i0.wp.com/silverscreenanalysis.com/wp-content/uploads/2015/06/50-guy-movies-collage.jpg?ssl=1" />
+    
+    <!-- Optional: CSS reset for safe area insets -->
+    <style>
+      body {
+        margin: 0;
+        padding-top: env(safe-area-inset-top);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+        background-color: #171717;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
