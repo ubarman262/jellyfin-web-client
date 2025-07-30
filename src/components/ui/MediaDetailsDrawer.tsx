@@ -127,7 +127,7 @@ const MediaDetailsDrawer = () => {
 
   // Move these hooks to the top level, before any return/conditional
   const [movieTab, setMovieTab] = useState<"collection" | "more" | "trailers">(
-    "collection"
+    "more"
   );
   const isMovie = useMemo(() => item?.Type === "Movie", [item]);
 

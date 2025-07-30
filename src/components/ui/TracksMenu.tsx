@@ -77,6 +77,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
     <div className="relative inline-block text-left" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
         className="text-white hover:text-gray-300 transition-colors mr-2 mt-2"
         title="Tracks"
       >

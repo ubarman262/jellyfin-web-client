@@ -27,6 +27,8 @@ import isDrawerOpen from "../states/atoms/DrawerOpen";
 import { MediaItem, MediaStream } from "../types/jellyfin";
 import SkipIntroButton from "../components/ui/skipIntroButton";
 import EpisodesList from "../components/ui/EpisodesList";
+import RewindIcon from "../assets/svg/rewind-10-seconds.svg";
+import ForwardIcon  from "../assets/svg/forward-10-seconds.svg";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
@@ -65,16 +67,26 @@ const MediaPlayerPage: React.FC = () => {
   // --- Add state for episodes menu visibility ---
   const [showEpisodesMenu, setShowEpisodesMenu] = useState(false);
   const episodesMenuRef = useRef<HTMLDivElement | null>(null);
+  const episodesButtonRef = useRef<HTMLButtonElement | null>(null); // <-- add ref for the button
 
   useEffect(() => {
     if (!showEpisodesMenu) return;
     function handleClickOutside(event: MouseEvent) {
+      // If click is inside the menu, ignore
       if (
         episodesMenuRef.current &&
-        !episodesMenuRef.current.contains(event.target as Node)
+        episodesMenuRef.current.contains(event.target as Node)
       ) {
-        setShowEpisodesMenu(false);
+        return;
       }
+      // If click is on the button, ignore
+      if (
+        episodesButtonRef.current &&
+        episodesButtonRef.current.contains(event.target as Node)
+      ) {
+        return;
+      }
+      setShowEpisodesMenu(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -752,6 +764,12 @@ const MediaPlayerPage: React.FC = () => {
     if (currentTime > intro.end) setHasSkippedIntro(true);
   }, [currentTime, intro]);
 
+  useEffect(() => {
+    if (nextEpisode && duration > 0 && duration - currentTime < 30) {
+      setShowControls(true);
+    }
+  }, [nextEpisode, duration, currentTime]);
+
   // Handler for skip intro
   const handleSkipIntro = () => {
     if (!videoRef.current || !intro) return;
@@ -775,7 +793,7 @@ const MediaPlayerPage: React.FC = () => {
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title: item.Name,
       // artist: item.Artists?.join(", ") || item.AlbumArtist || "",
-      artist: item.SeriesName ? `Jellyfin - ${item.SeriesName}` : "Jellyfin",
+      artist: item.SeriesName ?? "Jellyfin",
       // album: `Jellyfin - ${item.SeriesName}`,
       artwork: artworkUrl
         ? [
@@ -920,27 +938,32 @@ const MediaPlayerPage: React.FC = () => {
           <div className="flex flex-row items-center justify-center gap-8 sm:gap-10 pointer-events-auto">
             <button
               onClick={() => skip(-10)}
+              onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
               className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
               style={{ touchAction: "manipulation" }}
               tabIndex={0}
             >
-              <ChevronsLeft size={28} />
+              {/* <ChevronsLeft size={28} /> */}
+              <img src={RewindIcon} alt="Rewind 10 seconds" className="w-8 h-8" />
             </button>
             <button
               onClick={togglePlay}
+              onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
               className="bg-white/20 hover:bg-white/30 rounded-full p-6 mx-2 transition-colors"
               style={{ touchAction: "manipulation" }}
               tabIndex={0}
             >
-              {isPlaying ? <Pause size={36} /> : <Play size={36} />}
+              {isPlaying ? <Pause size={36} strokeWidth="1" /> : <Play size={36} strokeWidth="1" />}
             </button>
             <button
               onClick={() => skip(10)}
+              onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
               className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
               style={{ touchAction: "manipulation" }}
               tabIndex={0}
             >
-              <ChevronsRight size={28} />
+              {/* <ChevronsRight size={28} /> */}
+              <img src={ForwardIcon} alt="Rewind 10 seconds" className="w-8 h-8" />
             </button>
           </div>
         </div>
@@ -1045,12 +1068,17 @@ const MediaPlayerPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-              <button
-                className="text-white hover:text-gray-300 transition-colors mr-2"
-                onClick={toggleEpsisodesMenu}
-              >
-                <GalleryVerticalEnd size={24} />
-              </button>
+              {item.Type !== "Movie" && (
+                <button
+                  ref={episodesButtonRef}
+                  className="text-white hover:text-gray-300 transition-colors mr-2"
+                  onClick={toggleEpsisodesMenu}
+                  onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
+                >
+                  <GalleryVerticalEnd size={24} />
+                </button>
+              )}
+
               <TracksMenu
                 audioTracks={audioTracks}
                 selectedAudioTrack={selectedAudioTrack}
