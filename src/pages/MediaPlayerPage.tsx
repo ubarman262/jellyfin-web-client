@@ -935,12 +935,12 @@ const MediaPlayerPage: React.FC = () => {
 
         {/* Center controls - mobile layout */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-          <div className="flex flex-row items-center justify-center gap-8 sm:gap-10 pointer-events-auto">
+            <div className="flex flex-row items-center justify-center gap-14 sm:gap-20 pointer-events-auto">
             <button
               onClick={() => skip(-10)}
               onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
               className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
-              style={{ touchAction: "manipulation" }}
+              style={{ touchAction: "manipulation", backdropFilter: "blur(5px) saturate(1.5)" }}
               tabIndex={0}
             >
               {/* <ChevronsLeft size={28} /> */}
@@ -950,7 +950,7 @@ const MediaPlayerPage: React.FC = () => {
               onClick={togglePlay}
               onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
               className="bg-white/20 hover:bg-white/30 rounded-full p-6 mx-2 transition-colors"
-              style={{ touchAction: "manipulation" }}
+              style={{ touchAction: "manipulation", backdropFilter: "blur(5px) saturate(1.5)" }}
               tabIndex={0}
             >
               {isPlaying ? <Pause size={36} strokeWidth="1" /> : <Play size={36} strokeWidth="1" />}
@@ -959,7 +959,7 @@ const MediaPlayerPage: React.FC = () => {
               onClick={() => skip(10)}
               onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
               className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
-              style={{ touchAction: "manipulation" }}
+              style={{ touchAction: "manipulation", backdropFilter: "blur(5px) saturate(1.5)" }}
               tabIndex={0}
             >
               {/* <ChevronsRight size={28} /> */}
