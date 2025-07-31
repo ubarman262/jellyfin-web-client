@@ -78,14 +78,14 @@ const YouTubeWithProgressiveFallback = ({
       {youtubeId && !trailerEnded && backdropLoaded && (
         <YouTube
           style={{
-            width: "100vw",
-            height: "100vh",
-            minWidth: "100%",
-            minHeight: "100%",
+            // width: "100vw",
+            // height: "100vh",
+            // minWidth: "100%",
+            // minHeight: "100%",
             position: "absolute",
-            top: "50%",
+            top: "44%",
             left: "50%",
-            transform: "translate(-50%, -50%) scale(1)",
+            transform: "translate(-50%, -50%) scale(1.2)",
             pointerEvents: "auto",
           }}
           videoId={youtubeId}

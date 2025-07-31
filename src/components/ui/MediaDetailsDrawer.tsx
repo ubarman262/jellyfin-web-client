@@ -339,7 +339,8 @@ const MediaDetailsDrawer = () => {
         snapPoints={[1, 0]}
         initialSnap={0}
         disableDrag={false}
-        tweenConfig={{ ease: "easeOut", duration: 0.3 }}
+        // tweenConfig={{ ease: "easeOut", duration: 0.3 }}
+        // modalEffectRootId="root"
       >
         <Sheet.Container className="!bg-neutral-900 !rounded-t-xl">
           <Sheet.Content className="!rounded-t-xl">
@@ -953,6 +954,8 @@ const MediaDetailsDrawer = () => {
         onTap={onClose}
         style={{
           backgroundColor: "rgba(0, 0, 0, 0.55)",
+          backdropFilter: "blur(2px)",
+          WebkitBackdropFilter: "blur(2px)",
         }}
       />
     </Sheet>
