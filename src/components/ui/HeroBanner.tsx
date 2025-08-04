@@ -21,6 +21,10 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Touch swipe state
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
   const [isDrawerOpen, setIsDrawerOpen] = useRecoilState(drawerState);
   const setActiveTiemId = useSetRecoilState(activeItem);
 
@@ -44,6 +48,35 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
     setCurrentIndex((prev) => (prev + 1) % items.length);
   }, [items]);
 
+  const goToPrev = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
+  }, [items]);
+
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current !== null && touchEndX.current !== null) {
+      const deltaX = touchEndX.current - touchStartX.current;
+      if (Math.abs(deltaX) > 50) {
+        if (deltaX < 0) {
+          goToNext();
+        } else {
+          goToPrev();
+        }
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
   useEffect(() => {
     if (!api || items.length === 0) return;
     const currentItem = items[currentIndex];
@@ -64,7 +97,52 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
   if (!api || !items) return null;
 
   return (
-    <div className="relative w-full h-[70vh] overflow-hidden mb-8">
+    <div
+      className="relative w-full h-[70vh] overflow-hidden mb-8"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Arrow buttons */}
+      {items.length > 1 && (
+        <>
+          <button
+            className="absolute left-4 top-1/2 z-20 -translate-y-1/2 text-white rounded-full w-10 h-10 flex items-center justify-center focus:outline-none"
+            style={{ backdropFilter: "blur(2px)" }}
+            onClick={goToPrev}
+            aria-label="Previous"
+            tabIndex={0}
+          >
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M15 18l-6-6 6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            className="absolute right-4 top-1/2 z-20 -translate-y-1/2 text-white rounded-full w-10 h-10 flex items-center justify-center focus:outline-none"
+            style={{ backdropFilter: "blur(2px)" }}
+            onClick={goToNext}
+            aria-label="Next"
+            tabIndex={0}
+          >
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </>
+      )}
+
       {items.map((item, index) => {
         const isActive = index === currentIndex;
         const genres = item.Genres ?? [];
@@ -76,11 +154,15 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
           <div
             key={item.Id}
             className={clsx(
-              "absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out",
+              "absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out cursor-pointer",
               isActive
                 ? "opacity-100 z-10"
                 : "opacity-0 z-0 pointer-events-none"
             )}
+            onClick={() => {
+              setActiveTiemId(item.Id);
+              setIsDrawerOpen(true);
+            }}
           >
             {backdropUrl ? (
               <>
@@ -90,14 +172,22 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                   className="w-full h-full object-cover object-center"
                   draggable={false}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-neutral-900/20" />
-                <div className="absolute inset-0 bg-gradient-to-r from-neutral-900 to-transparent" />
+                {/* <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/70 via-neutral-900/40 to-neutral-900/10" /> */}
+                <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/60 to-transparent" />
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-44 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                    zIndex: 10,
+                  }}
+                />
               </>
             ) : (
               <div className="absolute inset-0 bg-neutral-900" />
             )}
 
-            <div className="absolute inset-0 flex items-end md:items-center p-8">
+            <div className="absolute inset-0 flex items-end md:items-end bottom-32">
               <div className="container mx-auto">
                 <div className="max-w-2xl space-y-4">
                   <h1
@@ -116,7 +206,9 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                         style={{ display: "inline-block" }}
                       />
                     ) : (
-                      item.Name
+                      <div>
+                        <h1 style={{ fontSize: "2.5rem" }}>{item.Name}</h1>
+                      </div>
                     )}
                   </h1>
 
@@ -137,7 +229,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                     )}
                   </div>
 
-                  <p
+                  {/* <p
                     className={clsx(
                       "text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200",
                       isActive
@@ -146,7 +238,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                     )}
                   >
                     {item.Overview}
-                  </p>
+                  </p> */}
 
                   <div
                     className={clsx(
@@ -160,17 +252,17 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                     <PlayButton
                       itemId={item.Id}
                       type={item.Type}
-                      width={150}
-                      height={50}
+                      width={120}
+                      height={45}
                     />
-                    <MoreInfoButton
-                      width={150}
-                      height={50}
+                    {/* <MoreInfoButton
+                      width={130}
+                      height={45}
                       onClick={() => {
                         setActiveTiemId(item.Id);
                         setIsDrawerOpen(true);
                       }}
-                    />
+                    /> */}
                   </div>
                 </div>
               </div>

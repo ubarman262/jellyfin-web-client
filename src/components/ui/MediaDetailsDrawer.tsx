@@ -465,13 +465,14 @@ const MediaDetailsDrawer = () => {
 
                 {/* Item Logo or Name above play button */}
                 {itemLogo ? (
-                  <div className="absolute left-8 bottom-8 z-20 object-contain drop-shadow-lg"
-                  style={{
-                    width: "25%",
-                    height: "auto",
-                    display: "flex",
-                    justifyContent: "center",
-                  }}
+                  <div
+                    className="absolute left-8 bottom-8 z-20 object-contain drop-shadow-lg"
+                    style={{
+                      width: "25%",
+                      height: "auto",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
                   >
                     <img
                       src={itemLogo}
@@ -503,16 +504,14 @@ const MediaDetailsDrawer = () => {
                 )}
 
                 {/* Fade overlay between video and details */}
-                {!isMobile && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-                    style={{
-                      background:
-                        "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
-                      zIndex: 10,
-                    }}
-                  />
-                )}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                    zIndex: 10,
+                  }}
+                />
               </div>
 
               {/* Details */}
@@ -521,7 +520,7 @@ const MediaDetailsDrawer = () => {
                   {/* Left column: text details */}
                   <div className="flex-1 min-w-0">
                     {/* Title and episode info */}
-                    <h2 className="text-2xl md:text-4xl font-bold mb-2">
+                    <h2 className="text-2xl md:text-4xl mb-2">
                       {/* Play button over video, bottom left */}
                       {isBrowser && (
                         <div className="z-30 flex items-center mb-5">
