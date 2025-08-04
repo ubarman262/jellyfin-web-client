@@ -372,11 +372,7 @@ class JellyfinApi {
    * @param tag The image tag (optional, for cache busting/versioning).
    * @param quality Image quality (optional, default 90).
    */
-  getUserImageUrl(
-    userId: string,
-    tag?: string,
-    quality: number = 90
-  ): string {
+  getUserImageUrl(userId: string, tag?: string, quality: number = 90): string {
     let url = `${this.serverUrl}/emby/Users/${userId}/Images/Primary`;
     const params = new URLSearchParams();
     if (tag) params.append("tag", tag);
@@ -615,7 +611,10 @@ class JellyfinApi {
    * @param seriesId The series ID.
    * @param seasonId The season ID.
    */
-  async getEpisodes(seriesId: string, seasonId: string | undefined): Promise<MediaItem[]> {
+  async getEpisodes(
+    seriesId: string,
+    seasonId: string | undefined
+  ): Promise<MediaItem[]> {
     const data = await this.makeRequest<ItemsResponse>(
       "get",
       `/Shows/${seriesId}/Episodes`,
@@ -699,7 +698,10 @@ class JellyfinApi {
    * @param itemId The item ID to find similar items for.
    * @param limit Number of similar items to fetch.
    */
-  async getSimilarItems(itemId: string, limit: number = 12): Promise<ItemsResponse> {
+  async getSimilarItems(
+    itemId: string,
+    limit: number = 12
+  ): Promise<ItemsResponse> {
     return this.makeRequest<ItemsResponse>(
       "get",
       `/Items/${itemId}/Similar`,
@@ -719,21 +721,16 @@ class JellyfinApi {
    */
   async getSearchSuggestions(limit: number = 20): Promise<ItemsResponse> {
     if (!this.userId) throw new Error("User not authenticated");
-    return this.makeRequest<ItemsResponse>(
-      "get",
-      `/Items`,
-      undefined,
-      {
-        userId: this.userId,
-        limit,
-        recursive: true,
-        includeItemTypes: ["Movie", "Series"].join(","),
-        sortBy: ["IsFavoriteOrLiked", "Random"].join(","),
-        imageTypeLimit: 0,
-        enableTotalRecordCount: false,
-        enableImages: false,
-      }
-    );
+    return this.makeRequest<ItemsResponse>("get", `/Items`, undefined, {
+      userId: this.userId,
+      limit,
+      recursive: true,
+      includeItemTypes: ["Movie", "Series"].join(","),
+      sortBy: ["IsFavoriteOrLiked", "Random"].join(","),
+      imageTypeLimit: 0,
+      enableTotalRecordCount: false,
+      enableImages: false,
+    });
   }
 
   /**
@@ -743,17 +740,12 @@ class JellyfinApi {
    */
   async getStudios(limit: number = 100): Promise<ItemsResponse> {
     if (!this.userId) throw new Error("User not authenticated");
-    return this.makeRequest<ItemsResponse>(
-      "get",
-      `/Studios`,
-      undefined,
-      {
-        userId: this.userId,
-        limit,
-        recursive: true,
-        sortBy: "SortName",
-      }
-    );
+    return this.makeRequest<ItemsResponse>("get", `/Studios`, undefined, {
+      userId: this.userId,
+      limit,
+      recursive: true,
+      sortBy: "SortName",
+    });
   }
 
   /**
@@ -762,20 +754,18 @@ class JellyfinApi {
    * @param name Studio name (partial or full, case-insensitive)
    * @param limit Number of studios to fetch (optional)
    */
-  async getStudioByName(name: string, limit: number = 5): Promise<ItemsResponse> {
+  async getStudioByName(
+    name: string,
+    limit: number = 5
+  ): Promise<ItemsResponse> {
     if (!this.userId) throw new Error("User not authenticated");
-    return this.makeRequest<ItemsResponse>(
-      "get",
-      `/Studios`,
-      undefined,
-      {
-        userId: this.userId,
-        limit,
-        recursive: true,
-        sortBy: "SortName",
-        searchTerm: name,
-      }
-    );
+    return this.makeRequest<ItemsResponse>("get", `/Studios`, undefined, {
+      userId: this.userId,
+      limit,
+      recursive: true,
+      sortBy: "SortName",
+      searchTerm: name,
+    });
   }
 
   /**
@@ -784,7 +774,11 @@ class JellyfinApi {
    * @param limit Number of movies to fetch (default: 48)
    * @param startIndex Pagination start index (default: 0)
    */
-  async getItemsByStudioId(studioId: string, limit: number = 48, startIndex: number = 0): Promise<ItemsResponse> {
+  async getItemsByStudioId(
+    studioId: string,
+    limit: number = 48,
+    startIndex: number = 0
+  ): Promise<ItemsResponse> {
     if (!this.userId) throw new Error("User not authenticated");
     return this.makeRequest<ItemsResponse>(
       "get",
@@ -799,7 +793,7 @@ class JellyfinApi {
         StudioIds: studioId,
         SortOrder: "Ascending",
         ImageTypeLimit: 1,
-        IncludeItemTypes: "Movie, Series",  
+        IncludeItemTypes: "Movie, Series",
       }
     );
   }
@@ -845,23 +839,22 @@ class JellyfinApi {
     );
     const boxSets = boxSetsResp.Items ?? [];
 
-
     // Get the last word from the item's name (case-insensitive)
     const itemNameWords = item.Name.trim().split(/\s+/);
     // Ignore common words like 'the'
     const ignoreWords = ["the", "captain"];
-    let firstWord = itemNameWords.find(
-      (word) =>
-      !ignoreWords.includes(word.toLowerCase()) &&
-      isNaN(Number(word))
-    ) || itemNameWords[0];
+    let firstWord =
+      itemNameWords.find(
+        (word) =>
+          !ignoreWords.includes(word.toLowerCase()) && isNaN(Number(word))
+      ) || itemNameWords[0];
     // Remove trailing colon if present
     firstWord = firstWord.replace(/:$/, "");
     const searchWord = firstWord.toLowerCase();
     const boxSet = boxSets.find((boxSet) => {
       // console.log(`Checking BoxSet: ${boxSet.Name} against search word: ${searchWord}`);
       const boxSetNameWords = boxSet.Name.toLowerCase();
-     if(boxSetNameWords.includes(searchWord)) {
+      if (boxSetNameWords.includes(searchWord)) {
         return true;
       }
     });
@@ -917,11 +910,16 @@ class JellyfinApi {
    * @param file The image file (File or Blob).
    * @returns Promise<void>
    */
-  async uploadUserProfileImage(userId: string, file: File | Blob): Promise<void> {
+  async uploadUserProfileImage(
+    userId: string,
+    file: File | Blob
+  ): Promise<void> {
     const url = `${this.serverUrl}/emby/Users/${userId}/Images/Primary`;
 
     // Compose the authorization header as in the working curl
-    const authorization = `MediaBrowser Client="Jellyfin Web", Device="Chrome", DeviceId="${this.deviceId}", Version="10.10.7", Token="${this.accessToken ?? ""}"`;
+    const authorization = `MediaBrowser Client="Jellyfin Web", Device="Chrome", DeviceId="${
+      this.deviceId
+    }", Version="10.10.7", Token="${this.accessToken ?? ""}"`;
 
     // Read the file as base64 and send as body
     const base64 = await new Promise<string>((resolve, reject) => {
@@ -929,7 +927,7 @@ class JellyfinApi {
       reader.onload = () => {
         // Remove the data:*/*;base64, prefix if present
         const result = reader.result as string;
-        const base64Data = result.split(',')[1] || result;
+        const base64Data = result.split(",")[1] || result;
         resolve(base64Data);
       };
       reader.onerror = reject;
@@ -938,12 +936,12 @@ class JellyfinApi {
 
     await axios.post(url, base64, {
       headers: {
-        "accept": "*/*",
-        "authorization": authorization,
+        accept: "*/*",
+        authorization: authorization,
         "content-type": file.type || "application/octet-stream",
-        "origin": window.location.origin,
+        origin: window.location.origin,
         "cache-control": "no-cache",
-        "pragma": "no-cache",
+        pragma: "no-cache",
         "user-agent": navigator.userAgent,
       },
       withCredentials: false,
@@ -983,11 +981,7 @@ class JellyfinApi {
       IsHearingImpaired: isHearingImpaired,
       Language: language,
     };
-    await this.makeRequest(
-      "post",
-      `/Videos/${itemId}/Subtitles`,
-      payload
-    );
+    await this.makeRequest("post", `/Videos/${itemId}/Subtitles`, payload);
   }
 }
 

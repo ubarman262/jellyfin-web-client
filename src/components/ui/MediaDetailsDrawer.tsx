@@ -1,10 +1,6 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  isBrowser,
-  isMobile,
-  MobileView
-} from "react-device-detect";
+import { isBrowser, isMobile, MobileView } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRecoilState } from "recoil";
@@ -57,6 +53,17 @@ const MediaDetailsDrawer = () => {
 
   const isEpisode = typeEpisode(item);
   const isSeries = typeSeries(item);
+
+  // --- Item logo logic ---
+  let itemLogo: string | undefined = undefined;
+  if (api && item) {
+    if (isEpisode && item.SeriesId && item?.ParentLogoImageTag) {
+      itemLogo = api.getImageUrl(item.SeriesId, "Logo", 400);
+    } else if (!isEpisode && item.ImageTags?.Logo) {
+      itemLogo = api.getImageUrl(item.Id, "Logo", 400);
+    }
+  }
+  // -----------------------
 
   useEffect(() => {
     // Sync local watched state with item.UserData?.Played when item changes
@@ -456,89 +463,42 @@ const MediaDetailsDrawer = () => {
                   item={item}
                 />
 
-                {/* Play button over video, bottom left */}
-                {isBrowser && (
-                  <div className="absolute bottom-2 left-4 z-30 flex items-center gap-2 ml-4">
-                    <PlayButton
-                      itemId={
-                        isBoxSet && boxSetMovies.length > 0
-                          ? boxSetMovies[0].Id
-                          : item.Id
-                      }
-                      type={item.Type}
-                      width={200}
-                      height={50}
-                    />
-                    {/* Watched checkmark with transition */}
-                    <MarkWatchedButton
-                      item={item}
-                      isWatched={isWatched}
-                      setIsWatched={setIsWatched}
-                    />
-                    {/* Favourite button with transition */}
-                    <button
-                      type="button"
-                      className="relative bg-white/10 rounded-full p-2 ml-2 border-2 border-white flex items-center justify-center cursor-pointer"
-                      title={
-                        isFavourite
-                          ? "Remove from favorites"
-                          : "Add to favorites"
-                      }
-                      aria-pressed={isFavourite}
-                      aria-label={
-                        isFavourite
-                          ? "Remove from favorites"
-                          : "Add to favorites"
-                      }
+                {/* Item Logo or Name above play button */}
+                {itemLogo ? (
+                  <div className="absolute left-8 bottom-8 z-20 object-contain drop-shadow-lg"
+                  style={{
+                    width: "25%",
+                    height: "auto",
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                  >
+                    <img
+                      src={itemLogo}
+                      alt={`${item.Name} logo`}
+                      className=""
                       style={{
-                        lineHeight: 0,
-                        width: 37.2,
-                        height: 37.2,
-                        transition: "background 0.2s",
+                        background: "rgba(0,0,0,0.0)",
+                        pointerEvents: "none",
+                        // maxWidth: "60%",
                       }}
-                      onClick={async () => {
-                        try {
-                          await api.markAsFavourite(item.Id, !isFavourite);
-                          setIsFavourite((prev) => !prev);
-                        } catch (err) {
-                          console.error("Error toggling favorite:", err);
-                        }
-                      }}
-                      tabIndex={0}
-                    >
-                      {/* Outlined Heart icon */}
-                      <span
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity: isFavourite ? 0 : 1,
-                          transform: isFavourite ? "scale(0.7)" : "scale(1)",
-                          transition: "opacity 0.25s, transform 0.25s",
-                          pointerEvents: isFavourite ? "none" : "auto",
-                        }}
-                      >
-                        <Heart size={18} />
-                      </span>
-                      {/* Filled Heart icon */}
-                      <span
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity: isFavourite ? 1 : 0,
-                          transform: isFavourite ? "scale(1)" : "scale(0.7)",
-                          transition: "opacity 0.25s, transform 0.25s",
-                          pointerEvents: isFavourite ? "auto" : "none",
-                        }}
-                      >
-                        <Heart size={18} fill="#fff" />
-                      </span>
-                    </button>
+                      // width={200}
+                      // height="auto"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="absolute left-8 bottom-8 z-20 text-white font-bold md:text-4xl drop-shadow-lg"
+                    style={{
+                      pointerEvents: "none",
+                      maxWidth: "60%",
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      fontSize: isMobile ? "1.2rem" : "1.8rem",
+                    }}
+                  >
+                    {isEpisode ? item.SeriesName : item.Name}
                   </div>
                 )}
 
@@ -556,33 +516,119 @@ const MediaDetailsDrawer = () => {
               </div>
 
               {/* Details */}
-              <div className="relative p-8 pt-6 bg-neutral-900 rounded-b-lg">
+              <div className="relative p-8 pt-0 bg-neutral-900 rounded-b-lg">
                 <div className="flex flex-col md:flex-row gap-8">
                   {/* Left column: text details */}
                   <div className="flex-1 min-w-0">
                     {/* Title and episode info */}
-                    {isEpisode ? (
-                      <>
-                        <div className="text-3xl md:text-4xl font-bold mb-0">
-                          <span className="text-white">{item.SeriesName}</span>
+                    <h2 className="text-2xl md:text-4xl font-bold mb-2">
+                      {/* Play button over video, bottom left */}
+                      {isBrowser && (
+                        <div className="z-30 flex items-center mb-5">
+                          <PlayButton
+                            itemId={
+                              isBoxSet && boxSetMovies.length > 0
+                                ? boxSetMovies[0].Id
+                                : item.Id
+                            }
+                            type={item.Type}
+                            width={200}
+                            height={50}
+                          />
+                          {/* Watched checkmark with transition */}
+                          <MarkWatchedButton
+                            item={item}
+                            isWatched={isWatched}
+                            setIsWatched={setIsWatched}
+                          />
+                          {/* Favourite button with transition */}
+                          <button
+                            type="button"
+                            className="relative bg-white/10 rounded-full p-2 ml-2 border-2 border-white flex items-center justify-center cursor-pointer"
+                            title={
+                              isFavourite
+                                ? "Remove from favorites"
+                                : "Add to favorites"
+                            }
+                            aria-pressed={isFavourite}
+                            aria-label={
+                              isFavourite
+                                ? "Remove from favorites"
+                                : "Add to favorites"
+                            }
+                            style={{
+                              lineHeight: 0,
+                              width: 37.2,
+                              height: 37.2,
+                              transition: "background 0.2s",
+                            }}
+                            onClick={async () => {
+                              try {
+                                await api.markAsFavourite(
+                                  item.Id,
+                                  !isFavourite
+                                );
+                                setIsFavourite((prev) => !prev);
+                              } catch (err) {
+                                console.error("Error toggling favorite:", err);
+                              }
+                            }}
+                            tabIndex={0}
+                          >
+                            {/* Outlined Heart icon */}
+                            <span
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: isFavourite ? 0 : 1,
+                                transform: isFavourite
+                                  ? "scale(0.7)"
+                                  : "scale(1)",
+                                transition: "opacity 0.25s, transform 0.25s",
+                                pointerEvents: isFavourite ? "none" : "auto",
+                              }}
+                            >
+                              <Heart size={18} />
+                            </span>
+                            {/* Filled Heart icon */}
+                            <span
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: isFavourite ? 1 : 0,
+                                transform: isFavourite
+                                  ? "scale(1)"
+                                  : "scale(0.7)",
+                                transition: "opacity 0.25s, transform 0.25s",
+                                pointerEvents: isFavourite ? "auto" : "none",
+                              }}
+                            >
+                              <Heart size={18} fill="#fff" />
+                            </span>
+                          </button>
                         </div>
-                        <div className="text-base font-semibold text-white mt-1 mb-2">
-                          {item.ParentIndexNumber !== undefined &&
-                          item.IndexNumber !== undefined ? (
-                            <>
-                              S{item.ParentIndexNumber} -{" "}
-                              E{item.IndexNumber}. {item.Name}
-                            </>
-                          ) : (
-                            item.Name
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <h2 className="text-2xl md:text-4xl font-bold mb-2">
-                        {item.Name}
-                      </h2>
+                      )}
+                    </h2>
+                    {isEpisode && (
+                      <div className="text-base font-semibold text-white mt-1 mb-4">
+                        {item.ParentIndexNumber !== undefined &&
+                        item.IndexNumber !== undefined ? (
+                          <>
+                            S{item.ParentIndexNumber} - E{item.IndexNumber}.{" "}
+                            {item.Name}
+                          </>
+                        ) : (
+                          item.Name
+                        )}
+                      </div>
                     )}
+
                     <MobileView>
                       <div className="mt-5 mb-5 text-lg">
                         {/* Added text-lg for larger font on mobile */}
@@ -827,7 +873,7 @@ const MediaDetailsDrawer = () => {
                 {(isMovie || isSeries) && (
                   <div className="mt-10">
                     {/* Tabs */}
-                    {(collectionLoading || similarLoading) ? (
+                    {collectionLoading || similarLoading ? (
                       // Skeleton for the whole tabs section (tabs + content)
                       <div>
                         <div className="flex gap-4">

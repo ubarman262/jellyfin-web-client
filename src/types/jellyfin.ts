@@ -105,6 +105,7 @@ export interface MediaItem {
   ParentBackdropImageTags?: string[];
   ParentPrimaryImageTag?: string;
   ParentBackdropItemId?: string;
+  ParentLogoImageTag?: string;
   ParentId?: string;
   SeriesName?: string;
   ProductionYear?: number;
