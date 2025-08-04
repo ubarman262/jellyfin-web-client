@@ -953,7 +953,7 @@ const MediaDetailsDrawer = () => {
       <Sheet.Backdrop
         onTap={onClose}
         style={{
-          backgroundColor: "rgba(0, 0, 0, 0.55)",
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
           backdropFilter: "blur(2px)",
           WebkitBackdropFilter: "blur(2px)",
         }}

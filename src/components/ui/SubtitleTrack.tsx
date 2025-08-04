@@ -12,6 +12,7 @@ type SubtitleTrackProps = {
   currentTime: number;
   localSubtitleFileUrl?: string; // URL for the local subtitle file (object URL)
   subtitleDelayMs: number;
+  fontSize?: number; // <-- Add this prop for font size
 };
 
 const SubtitleTrack = ({
@@ -21,6 +22,7 @@ const SubtitleTrack = ({
   currentTime,
   localSubtitleFileUrl,
   subtitleDelayMs,
+  fontSize = 36, // <-- Default font size
 }: SubtitleTrackProps) => {
   interface SubtitleEvent {
     StartPositionTicks: number;
@@ -165,8 +167,21 @@ const SubtitleTrack = ({
   if (!activeSubtitle) return null;
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="absolute bottom-10 w-auto text-center text-white text-xl bg-black/50 p-2">
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div
+        className="absolute bottom-10 w-auto text-center text-white bg-black/50 p-2 rounded"
+        style={{
+          left: "50%",
+          transform: "translateX(-50%)",
+          fontSize: `${fontSize}px`, // <-- Use font size prop
+          maxWidth: "90vw",
+          lineHeight: 1.25,
+          wordBreak: "break-word",
+          pointerEvents: "none",
+          textShadow:
+            "0 2px 4px #000, 0 0px 2px #000, 0 0px 8px #000, 0 0px 16px #000",
+        }}
+      >
         <div
           dangerouslySetInnerHTML={{
             __html: sanitizeAndFormat(activeSubtitle.Text),

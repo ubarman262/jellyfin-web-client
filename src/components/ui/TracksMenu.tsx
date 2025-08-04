@@ -26,6 +26,11 @@ interface TracksMenuProps {
   resetSubtitleDelay: () => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  // Add these two props for font size control
+  subtitleFontSize?: number;
+  increaseSubtitleFontSize?: () => void;
+  decreaseSubtitleFontSize?: () => void;
+  resetSubtitleFontSize?: () => void;
 }
 
 const TracksMenu: React.FC<TracksMenuProps> = ({
@@ -45,6 +50,10 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
   resetSubtitleDelay,
   isOpen,
   setIsOpen,
+  subtitleFontSize,
+  increaseSubtitleFontSize,
+  decreaseSubtitleFontSize,
+  resetSubtitleFontSize,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -255,6 +264,37 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                       aria-label="Increase subtitle delay (subtitles appear later)"
                     >
                       +
+                    </button>
+                  </div>
+                  {/* Subtitle Font Size Controls */}
+                  <h4 className="text-xs uppercase tracking-wide text-neutral-400 px-2 pb-1 mt-3">
+                    Subtitle Font Size
+                  </h4>
+                  <div className="flex items-center justify-between px-3 py-1">
+                    <button
+                      type="button"
+                      onClick={() => decreaseSubtitleFontSize && decreaseSubtitleFontSize()}
+                      className="px-2 py-1 hover:bg-white/10 rounded"
+                      aria-label="Decrease subtitle font size"
+                      disabled={!decreaseSubtitleFontSize}
+                    >
+                      A-
+                    </button>
+                    <span
+                      className="text-xs tabular-nums cursor-pointer"
+                      onDoubleClick={() => resetSubtitleFontSize && resetSubtitleFontSize()}
+                      title="Double-click to reset font size"
+                    >
+                      {subtitleFontSize ? `${subtitleFontSize}px` : "Default"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => increaseSubtitleFontSize && increaseSubtitleFontSize()}
+                      className="px-2 py-1 hover:bg-white/10 rounded"
+                      aria-label="Increase subtitle font size"
+                      disabled={!increaseSubtitleFontSize}
+                    >
+                      A+
                     </button>
                   </div>
                 </div>

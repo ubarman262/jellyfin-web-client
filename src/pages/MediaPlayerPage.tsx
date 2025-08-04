@@ -55,6 +55,8 @@ const MediaPlayerPage: React.FC = () => {
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  // Add a state for controls hide delay (ms)
+  const [controlsHideDelay, setControlsHideDelay] = useState(3000);
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
@@ -130,12 +132,18 @@ const MediaPlayerPage: React.FC = () => {
   function isIntroChapter(name: string | undefined): boolean {
     const n = (name ?? "").toLowerCase();
     return (
+      n.includes("studio logo") ||
       n.includes("disclaimer") ||
       n.includes("intro") ||
       n.includes("opening") ||
-      n.includes("title sequence") ||
-      n.includes("opening credits")
+      n.includes("opening credits") ||
+      n.includes("title sequence")
     );
+  }
+
+  // Improved: returns true if chapter is a "real" scene (not intro-like)
+  function isNonIntroChapter(name: string | undefined): boolean {
+    return !isIntroChapter(name);
   }
 
   // Detect intro marker when item changes
@@ -143,29 +151,44 @@ const MediaPlayerPage: React.FC = () => {
     setHasSkippedIntro(false);
     if (item?.Chapters && Array.isArray(item.Chapters)) {
       // Find all intro-like chapters
-      const introChapters = item.Chapters.map((ch, idx) => ({
+      const chaptersWithIdx = item.Chapters.map((ch, idx) => ({
         ...ch,
         idx,
-      })).filter((ch) => isIntroChapter(ch.Name));
+      }));
+
+      // Find all intro chapters
+      const introChapters = chaptersWithIdx.filter((ch) => isIntroChapter(ch.Name));
       if (introChapters.length > 0) {
         const firstIntro = introChapters[0];
         const lastIntro = introChapters[introChapters.length - 1];
-        const start = Math.floor(
-          (firstIntro.StartPositionTicks ?? 0) / 10000000
-        );
+        const start = Math.floor((firstIntro.StartPositionTicks ?? 0) / 10000000);
 
-        // Find the next non-intro chapter after the last intro
+        // Find the first non-intro chapter that occurs after the *first* intro chapter
         let end: number | undefined;
-        for (let i = lastIntro.idx + 1; i < item.Chapters.length; ++i) {
+        for (let i = firstIntro.idx + 1; i < item.Chapters.length; ++i) {
           const ch = item.Chapters[i];
           if (
-            !isIntroChapter(ch.Name) &&
+            isNonIntroChapter(ch.Name) &&
             typeof ch.StartPositionTicks === "number"
           ) {
             end = Math.ceil(ch.StartPositionTicks / 10000000);
             break;
           }
         }
+        // If not found, fallback to after the last intro
+        if (!end) {
+          for (let i = lastIntro.idx + 1; i < item.Chapters.length; ++i) {
+            const ch = item.Chapters[i];
+            if (
+              isNonIntroChapter(ch.Name) &&
+              typeof ch.StartPositionTicks === "number"
+            ) {
+              end = Math.ceil(ch.StartPositionTicks / 10000000);
+              break;
+            }
+          }
+        }
+        // If still not found, fallback to runtime or default
         if (!end) {
           if (typeof item.RunTimeTicks === "number") {
             end = Math.ceil(item.RunTimeTicks / 10000000);
@@ -430,7 +453,7 @@ const MediaPlayerPage: React.FC = () => {
     }
 
     if (showControls) {
-      controlsTimeoutRef.current = setTimeout(hideControls, 3000);
+      controlsTimeoutRef.current = setTimeout(hideControls, controlsHideDelay);
     }
 
     return () => {
@@ -438,7 +461,7 @@ const MediaPlayerPage: React.FC = () => {
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [showControls, isPlaying, tracksMenuOpen, showEpisodesMenu]);
+  }, [showControls, isPlaying, tracksMenuOpen, showEpisodesMenu, controlsHideDelay]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -534,6 +557,11 @@ const MediaPlayerPage: React.FC = () => {
       0,
       Math.min(newTime, videoRef.current.duration)
     );
+    // Show controls and increase hide delay to 5s when skipping
+    setShowControls(true);
+    setControlsHideDelay(5000);
+    // Reset delay back to default after 5s so next auto-hide uses default
+    setTimeout(() => setControlsHideDelay(3000), 5000);
   }, []);
 
   const handlePlayerClick = () => {
@@ -686,6 +714,12 @@ const MediaPlayerPage: React.FC = () => {
     setSubtitleDelayMs(0);
   };
 
+  const [subtitleFontSize, setSubtitleFontSize] = useState<number>(36);
+
+  const increaseSubtitleFontSize = () => setSubtitleFontSize((prev) => Math.min(prev + 2, 72));
+  const decreaseSubtitleFontSize = () => setSubtitleFontSize((prev) => Math.max(prev - 2, 12));
+  const resetSubtitleFontSize = () => setSubtitleFontSize(36);
+
   const handleBack = () => {
     if (!item) return;
     let targetId = item.Id;
@@ -830,6 +864,17 @@ const MediaPlayerPage: React.FC = () => {
     };
   }, [item, api]);
 
+  // Add state to track if video is loaded
+  const [videoLoaded, setVideoLoaded] = useState(false);
+
+  // Get the best backdrop image URL
+  const backdropUrl =
+    item?.BackdropImageTags && item.BackdropImageTags.length > 0 && api
+      ? api.getImageUrl(item.Id, "Backdrop", 1920, 1080)
+      : item?.ImageTags?.Primary && api
+      ? api.getImageUrl(item.Id, "Primary", 600, 900)
+      : null;
+
   if (isLoading || !item || !api) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -848,6 +893,17 @@ const MediaPlayerPage: React.FC = () => {
       onClick={handlePlayerClick}
       onMouseMove={handleMouseMove}
     >
+      {/* Backdrop image as background while video loads */}
+      {!videoLoaded && backdropUrl && (
+        <img
+          src={backdropUrl}
+          alt="Backdrop"
+          className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none transition-opacity duration-500"
+          // style={{ opacity: 1, filter: "blur(8px) brightness(0.7)" }}
+          draggable={false}
+        />
+      )}
+
       {/* Loader overlay when switching audio */}
       {isSwitchingAudio && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -858,9 +914,10 @@ const MediaPlayerPage: React.FC = () => {
       {/* Video */}
       <video
         ref={videoRef}
-        className="w-full h-full"
+        className="w-full h-full relative z-10"
         autoPlay
         onClick={togglePlay}
+        onLoadedMetadata={() => setVideoLoaded(true)}
       >
         {/* Native track element removed, SubtitleTrack component will handle rendering */}
       </video>
@@ -894,6 +951,8 @@ const MediaPlayerPage: React.FC = () => {
               : undefined
           }
           subtitleDelayMs={subtitleDelayMs}
+          // Pass font size to SubtitleTrack
+          fontSize={subtitleFontSize}
         />
       )}
 
@@ -1096,6 +1155,11 @@ const MediaPlayerPage: React.FC = () => {
                 resetSubtitleDelay={resetSubtitleDelay}
                 isOpen={tracksMenuOpen}
                 setIsOpen={setTracksMenuOpen}
+                // Pass font size props
+                subtitleFontSize={subtitleFontSize}
+                increaseSubtitleFontSize={increaseSubtitleFontSize}
+                decreaseSubtitleFontSize={decreaseSubtitleFontSize}
+                resetSubtitleFontSize={resetSubtitleFontSize}
               />
               <button
                 onClick={toggleFullscreen}
