@@ -169,7 +169,7 @@ const SubtitleTrack = ({
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-24">
       <div
-        className="absolute bottom-14 w-auto text-center text-white p-2 rounded"
+        className="absolute bottom-10 w-auto text-center text-white p-2 rounded"
         style={{
           left: "50%",
           transform: "translateX(-50%)",
