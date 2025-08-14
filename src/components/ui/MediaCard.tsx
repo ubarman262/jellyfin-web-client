@@ -274,7 +274,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
   return (
     <div
       className={clsx(
-        "group relative transition-all duration-300 overflow-hidden rounded-md bg-gray-900 cursor-pointer",
+        "group relative transition-all duration-300 overflow-hidden bg-gray-900 cursor-pointer rounded-md",
         featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3]",
         isHovered && "z-10 scale-110 shadow-xl"
       )}
@@ -295,12 +295,12 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
           src={imageUrl}
           alt={title}
           className={clsx(
-            "w-full h-full object-cover transition-all duration-500",
+            "w-full h-full object-cover transition-all duration-500 rounded-md",
             isHovered && "brightness-30"
           )}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-800">
+        <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-md">
           <span className="text-gray-400">{title}</span>
         </div>
       )}

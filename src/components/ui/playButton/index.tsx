@@ -20,6 +20,14 @@ export default function PlayButton(props: Readonly<PlayButtonProps>) {
   const [targetId, setTargetId] = useState<string>(itemId);
   const location = useLocation();
 
+  // --- Determine if item has progress ---
+  const hasProgress =
+    !!item?.UserData?.PlaybackPositionTicks &&
+    !!item?.RunTimeTicks &&
+    item.UserData.PlaybackPositionTicks > 0 &&
+    item.RunTimeTicks > 0;
+  // --------------------------------------
+
   useEffect(() => {
     async function resolveTargetId() {
       if (type !== "Series" || !api || !item) {
@@ -73,7 +81,8 @@ export default function PlayButton(props: Readonly<PlayButtonProps>) {
             height: typeof height === "number" ? `${height}px` : height,
           }}
         >
-          <i className="fas fa-play"></i>Play
+          <i className="fas fa-play"></i>
+          {hasProgress ? "Resume" : "Play"}
         </span>
       </div>
     </button>

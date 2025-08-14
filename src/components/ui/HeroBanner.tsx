@@ -146,6 +146,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
       {items.map((item, index) => {
         const isActive = index === currentIndex;
         const genres = item.Genres ?? [];
+        const overview = item.Overview ?? "";
         const backdropUrl = item.BackdropImageTags?.length
           ? api.getImageUrl(item.Id, "Backdrop", 1920)
           : "";
@@ -229,16 +230,19 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                     )}
                   </div>
 
-                  {/* <p
+                  <p
                     className={clsx(
-                      "text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200",
+                      "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 w-160 md:w-3/5",
                       isActive
                         ? "translate-y-0 opacity-100"
                         : "translate-y-8 opacity-0"
                     )}
+                    style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
                   >
-                    {item.Overview}
-                  </p> */}
+                    {overview.split(" ").length > 20
+                      ? `${overview.split(" ").slice(0, 20).join(" ")}...`
+                      : overview}
+                  </p>
 
                   <div
                     className={clsx(
@@ -249,12 +253,12 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                         : "translate-y-8 opacity-0"
                     )}
                   >
-                    <PlayButton
+                    {/* <PlayButton
                       itemId={item.Id}
                       type={item.Type}
                       width={120}
                       height={45}
-                    />
+                    /> */}
                     {/* <MoreInfoButton
                       width={130}
                       height={45}

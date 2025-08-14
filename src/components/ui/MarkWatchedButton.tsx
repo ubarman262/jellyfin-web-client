@@ -22,7 +22,7 @@ export default function MarkWatchedButton({
   return (
     <div>
       <span
-        className="relative bg-white/10 rounded-full p-2 ml-2 border-2 border-white flex items-center justify-center cursor-pointer"
+        className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
         title={isWatched ? "Mark as unwatched" : "Mark as watched"}
         style={{
           lineHeight: 0,

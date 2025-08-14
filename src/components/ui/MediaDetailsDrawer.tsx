@@ -46,7 +46,8 @@ const MediaDetailsDrawer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
   // ---------------------------------------------------
-
+  const [trailerStarted, setTrailerStarted] = useState(false);
+  const [trailerEnded, setTrailerEnded] = useState(false);
   const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
   const [seriesDetails, setSeriesDetails] = useState<MediaItem | null>(null);
@@ -437,9 +438,7 @@ const MediaDetailsDrawer = () => {
             <div>
               {/* Close button */}
               <button
-                className={`absolute top-4 right-4 z-30 bg-black/30 border-2 rounded-full p-2 hover:bg-black/50 transition-colors flex items-center justify-center ${
-                  isMobile ? "p-1" : "p-2"
-                }`}
+                className={`absolute top-4 right-4 z-30 bg-black/30 border-2 rounded-full p-1 hover:bg-black/50 transition-colors flex items-center justify-center`}
                 style={{
                   borderColor: "rgb(255 255 255 / 32%)",
                   display: "inline-flex",
@@ -448,7 +447,7 @@ const MediaDetailsDrawer = () => {
                 aria-label="Close"
               >
                 <X
-                  size={isMobile ? 16 : 18}
+                  size={14}
                   strokeWidth={2}
                   color="rgb(255 255 255 / 60%)"
                 />
@@ -461,12 +460,16 @@ const MediaDetailsDrawer = () => {
                 <YouTubeWithProgressiveFallback
                   key={activeItemId}
                   item={item}
+                  trailerStarted={trailerStarted}
+                  trailerEnded={trailerEnded}
+                  setTrailerStarted={setTrailerStarted}
+                  setTrailerEnded={setTrailerEnded}
                 />
 
                 {/* Item Logo or Name above play button */}
                 {itemLogo ? (
                   <div
-                    className="absolute left-8 bottom-8 z-20 object-contain drop-shadow-lg"
+                    className="absolute left-8 bottom-[60px] z-20 object-contain drop-shadow-lg"
                     style={{
                       width: "25%",
                       height: "auto",
@@ -505,24 +508,27 @@ const MediaDetailsDrawer = () => {
 
                 {/* Fade overlay between video and details */}
                 <div
-                  className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+                  className="absolute bottom-12 left-0 right-0 h-[80px] pointer-events-none"
                   style={{
-                    background:
-                      "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                    // background:
+                    //   "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
                     zIndex: 10,
+                    // opacity: trailerStarted || trailerEnded ? 0 : 1,
+                    // height: trailerStarted || trailerEnded ? "50px" : "80px",
+                    // transition: "height 0.3s ease",
                   }}
                 />
               </div>
 
               {/* Details */}
-              <div className="relative p-8 pt-0 bg-neutral-900 rounded-b-lg">
+              <div className="relative bottom-[50px] p-8 pt-6 bg-neutral-900 rounded-b-lg z-[2]">
                 <div className="flex flex-col md:flex-row gap-8">
                   {/* Left column: text details */}
                   <div className="flex-1 min-w-0">
                     {/* Title and episode info */}
                     <h2 className="text-2xl md:text-4xl mb-2">
                       {/* Play button over video, bottom left */}
-                      {isBrowser && (
+                      {/* {isBrowser && ( */}
                         <div className="z-30 flex items-center mb-5">
                           <PlayButton
                             itemId={
@@ -531,7 +537,7 @@ const MediaDetailsDrawer = () => {
                                 : item.Id
                             }
                             type={item.Type}
-                            width={200}
+                            width={400}
                             height={50}
                           />
                           {/* Watched checkmark with transition */}
@@ -543,7 +549,7 @@ const MediaDetailsDrawer = () => {
                           {/* Favourite button with transition */}
                           <button
                             type="button"
-                            className="relative bg-white/10 rounded-full p-2 ml-2 border-2 border-white flex items-center justify-center cursor-pointer"
+                            className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
                             title={
                               isFavourite
                                 ? "Remove from favorites"
@@ -612,7 +618,7 @@ const MediaDetailsDrawer = () => {
                             </span>
                           </button>
                         </div>
-                      )}
+                      {/* )} */}
                     </h2>
                     {isEpisode && (
                       <div className="text-base font-semibold text-white mt-1 mb-4">
@@ -628,9 +634,8 @@ const MediaDetailsDrawer = () => {
                       </div>
                     )}
 
-                    <MobileView>
+                    {/* <MobileView>
                       <div className="mt-5 mb-5 text-lg">
-                        {/* Added text-lg for larger font on mobile */}
                         <PlayButton
                           itemId={
                             isBoxSet && boxSetMovies.length > 0
@@ -642,7 +647,7 @@ const MediaDetailsDrawer = () => {
                           height={50}
                         />
                       </div>
-                    </MobileView>
+                    </MobileView> */}
                     {/* Meta info */}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 mb-2">
                       {isEpisode && item.PremiereDate && (
@@ -734,107 +739,9 @@ const MediaDetailsDrawer = () => {
                       )}
                     </div>
                   </div>
-                  <MobileView>
-                    <div className="flex gap-6 ml-[-8px] text-base">
-                      {/* Added text-base for larger font on mobile */}
-                      {/* Watched checkmark with transition */}
-                      <div className="flex flex-col gap-2 items-center">
-                        <MarkWatchedButton
-                          item={item}
-                          isWatched={isWatched}
-                          setIsWatched={setIsWatched}
-                        />
-                        <span className="text-sm md:text-base">Watched</span>
-                      </div>
-                      {/* Favourite button with transition */}
-                      <div className="flex flex-col gap-2 items-center">
-                        <button
-                          type="button"
-                          className="relative bg-white/10 rounded-full p-2 border-2 border-white flex items-center justify-center cursor-pointer"
-                          title={
-                            isFavourite
-                              ? "Remove from favorites"
-                              : "Add to favorites"
-                          }
-                          aria-pressed={isFavourite}
-                          aria-label={
-                            isFavourite
-                              ? "Remove from favorites"
-                              : "Add to favorites"
-                          }
-                          style={{
-                            lineHeight: 0,
-                            width: 37.2,
-                            height: 37.2,
-                            transition: "background 0.2s",
-                          }}
-                          onClick={async () => {
-                            try {
-                              await api.markAsFavourite(item.Id, !isFavourite);
-                              setIsFavourite((prev) => !prev);
-                            } catch (err) {
-                              console.error("Error toggling favorite:", err);
-                            }
-                          }}
-                          tabIndex={0}
-                          onKeyDown={async (e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              try {
-                                await api.markAsFavourite(
-                                  item.Id,
-                                  !isFavourite
-                                );
-                                setIsFavourite((prev) => !prev);
-                              } catch (err) {
-                                console.error("Error toggling favorite:", err);
-                              }
-                            }
-                          }}
-                        >
-                          {/* Outlined Heart icon */}
-                          <span
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: isFavourite ? 0 : 1,
-                              transform: isFavourite
-                                ? "scale(0.7)"
-                                : "scale(1)",
-                              transition: "opacity 0.25s, transform 0.25s",
-                              pointerEvents: isFavourite ? "none" : "auto",
-                            }}
-                          >
-                            <Heart size={18} />
-                          </span>
-                          {/* Filled Heart icon */}
-                          <span
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: isFavourite ? 1 : 0,
-                              transform: isFavourite
-                                ? "scale(1)"
-                                : "scale(0.7)",
-                              transition: "opacity 0.25s, transform 0.25s",
-                              pointerEvents: isFavourite ? "auto" : "none",
-                            }}
-                          >
-                            <Heart size={18} fill="#fff" />
-                          </span>
-                        </button>
-                        <span className="text-sm md:text-base">Favourite</span>
-                      </div>
-                    </div>
-                  </MobileView>
+
                   {/* Right column: CastList */}
-                  {item.People && item.People.length > 0 && isBrowser && (
+                  {item.People && item.People.length > 0 && (
                     <div className="md:w-1/3 w-full mb-4 md:mb-0">
                       <CastList key={activeItemId} people={item.People} />
                     </div>
@@ -859,14 +766,14 @@ const MediaDetailsDrawer = () => {
                   </>
                 )}
 
-                {!isMovie &&
+                {/* {!isMovie &&
                   item.People &&
                   item.People.length > 0 &&
                   isMobile && (
                     <div className="md:w-full w-full mt-8 mb-4 md:mb-0">
                       <CastList people={item.People} />
                     </div>
-                  )}
+                  )} */}
 
                 {/* Movie Tabs Section */}
                 {(isMovie || isSeries) && (

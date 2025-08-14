@@ -22,7 +22,7 @@ export default function ReplayButton({
     <div>
       {trailerEnded && (
         <button
-          className="absolute bottom-4 right-4 z-30 bg-transparent rounded-full p-2 ml-2 border-2 flex items-center justify-center"
+          className="absolute bottom-14 right-4 z-30 bg-transparent rounded-full p-1 ml-1 border-2 flex items-center justify-center"
           style={{ borderColor: "rgb(255 255 255 / 32%)" }}
           onClick={() => {
             setTrailerEnded(false);
@@ -36,7 +36,7 @@ export default function ReplayButton({
           aria-label="Replay Trailer"
           type="button"
         >
-          <RotateCcw size={18} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
+          <RotateCcw size={14} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
         </button>
       )}
     </div>

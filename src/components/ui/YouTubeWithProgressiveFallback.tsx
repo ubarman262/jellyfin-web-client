@@ -15,15 +15,21 @@ import ReplayButton from "./ReplayButton";
 
 interface YouTubeWithProgressiveFallbackProps {
   item: MediaItem;
+  trailerStarted?: boolean;
+  trailerEnded?: boolean;
+  setTrailerStarted?: (value: boolean | ((prevState: boolean) => boolean)) => void;
+  setTrailerEnded?: (value: boolean | ((prevState: boolean) => boolean)) => void;
 }
 
 const YouTubeWithProgressiveFallback = ({
   item,
+  trailerStarted = false,
+  trailerEnded = false,
+  setTrailerStarted = () => {},
+  setTrailerEnded = () => {},
 }: YouTubeWithProgressiveFallbackProps) => {
   const { api } = useAuth();
   const [isMuted, setIsMuted] = useState(true);
-  const [trailerStarted, setTrailerStarted] = useState(false);
-  const [trailerEnded, setTrailerEnded] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
   const [player, setPlayer] = useState<YouTubePlayer>(null);
   const [backdropUrl, setBackdropUrl] = useState("");

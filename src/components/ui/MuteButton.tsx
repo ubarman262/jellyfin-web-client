@@ -22,9 +22,7 @@ function MuteButton({
     <div>
       {trailerStarted && (
         <button
-          className={`absolute bottom-4 right-4 z-30 bg-transparent rounded-full border-2 flex items-center justify-center ${
-            isMobile ? "p-1" : "p-2"
-          }`}
+          className="absolute bottom-14 right-4 z-30 bg-transparent rounded-full p-1 ml-1 border-2 flex items-center justify-center"
           style={{
             borderColor: "rgb(255 255 255 / 32%)",
             // Remove width/height/minWidth/minHeight from here
@@ -43,9 +41,9 @@ function MuteButton({
           type="button"
         >
           {isMuted ? (
-            <VolumeX size={isMobile ? 16 : 18} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
+            <VolumeX size={14} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
           ) : (
-            <Volume2 size={isMobile ? 16 : 18} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
+            <Volume2 size={14} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
           )}
         </button>
       )}
