@@ -28,7 +28,7 @@ import { MediaItem, MediaStream } from "../types/jellyfin";
 import SkipIntroButton from "../components/ui/skipIntroButton";
 import EpisodesList from "../components/ui/EpisodesList";
 import RewindIcon from "../assets/svg/rewind-10-seconds.svg";
-import ForwardIcon  from "../assets/svg/forward-10-seconds.svg";
+import ForwardIcon from "../assets/svg/forward-10-seconds.svg";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
@@ -157,11 +157,15 @@ const MediaPlayerPage: React.FC = () => {
       }));
 
       // Find all intro chapters
-      const introChapters = chaptersWithIdx.filter((ch) => isIntroChapter(ch.Name));
+      const introChapters = chaptersWithIdx.filter((ch) =>
+        isIntroChapter(ch.Name)
+      );
       if (introChapters.length > 0) {
         const firstIntro = introChapters[0];
         const lastIntro = introChapters[introChapters.length - 1];
-        const start = Math.floor((firstIntro.StartPositionTicks ?? 0) / 10000000);
+        const start = Math.floor(
+          (firstIntro.StartPositionTicks ?? 0) / 10000000
+        );
 
         // Find the first non-intro chapter that occurs after the *first* intro chapter
         let end: number | undefined;
@@ -461,7 +465,13 @@ const MediaPlayerPage: React.FC = () => {
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [showControls, isPlaying, tracksMenuOpen, showEpisodesMenu, controlsHideDelay]);
+  }, [
+    showControls,
+    isPlaying,
+    tracksMenuOpen,
+    showEpisodesMenu,
+    controlsHideDelay,
+  ]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -544,9 +554,16 @@ const MediaPlayerPage: React.FC = () => {
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    if (isNaN(seconds) || seconds < 0) return "0:00";
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const skip = React.useCallback((seconds: number) => {
@@ -716,8 +733,10 @@ const MediaPlayerPage: React.FC = () => {
 
   const [subtitleFontSize, setSubtitleFontSize] = useState<number>(36);
 
-  const increaseSubtitleFontSize = () => setSubtitleFontSize((prev) => Math.min(prev + 2, 72));
-  const decreaseSubtitleFontSize = () => setSubtitleFontSize((prev) => Math.max(prev - 2, 12));
+  const increaseSubtitleFontSize = () =>
+    setSubtitleFontSize((prev) => Math.min(prev + 2, 72));
+  const decreaseSubtitleFontSize = () =>
+    setSubtitleFontSize((prev) => Math.max(prev - 2, 12));
   const resetSubtitleFontSize = () => setSubtitleFontSize(36);
 
   const handleBack = () => {
@@ -996,61 +1015,117 @@ const MediaPlayerPage: React.FC = () => {
         </div>
 
         {/* Center controls - mobile layout */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+        {videoLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
             <div className="flex flex-row items-center justify-center gap-14 sm:gap-20 pointer-events-auto">
-            <button
-              onClick={() => skip(-10)}
-              onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
-              className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
-              style={{ touchAction: "manipulation", backdropFilter: "blur(5px) saturate(1.5)" }}
-              tabIndex={0}
-            >
-              {/* <ChevronsLeft size={28} /> */}
-              <img src={RewindIcon} alt="Rewind 10 seconds" className="w-8 h-8" />
-            </button>
-            <button
-              onClick={togglePlay}
-              onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
-              className="bg-white/20 hover:bg-white/30 rounded-full p-6 mx-2 transition-colors"
-              style={{ touchAction: "manipulation", backdropFilter: "blur(5px) saturate(1.5)" }}
-              tabIndex={0}
-            >
-              {isPlaying ? <Pause size={36} strokeWidth="1" /> : <Play size={36} strokeWidth="1" />}
-            </button>
-            <button
-              onClick={() => skip(10)}
-              onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
-              className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
-              style={{ touchAction: "manipulation", backdropFilter: "blur(5px) saturate(1.5)" }}
-              tabIndex={0}
-            >
-              {/* <ChevronsRight size={28} /> */}
-              <img src={ForwardIcon} alt="Rewind 10 seconds" className="w-8 h-8" />
-            </button>
+              <button
+                onClick={() => skip(-10)}
+                onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
+                className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
+                style={{
+                  touchAction: "manipulation",
+                  backdropFilter: "blur(5px) saturate(1.5)",
+                }}
+                tabIndex={0}
+              >
+                {/* <ChevronsLeft size={28} /> */}
+                <img
+                  src={RewindIcon}
+                  alt="Rewind 10 seconds"
+                  className="w-8 h-8"
+                />
+              </button>
+              <button
+                onClick={togglePlay}
+                onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
+                className="bg-white/20 hover:bg-white/30 rounded-full p-6 mx-2 transition-colors"
+                style={{
+                  touchAction: "manipulation",
+                  backdropFilter: "blur(5px) saturate(1.5)",
+                }}
+                tabIndex={0}
+              >
+                {isPlaying ? (
+                  <Pause size={36} strokeWidth="1" />
+                ) : (
+                  <Play size={36} strokeWidth="1" />
+                )}
+              </button>
+              <button
+                onClick={() => skip(10)}
+                onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
+                className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
+                style={{
+                  touchAction: "manipulation",
+                  backdropFilter: "blur(5px) saturate(1.5)",
+                }}
+                tabIndex={0}
+              >
+                {/* <ChevronsRight size={28} /> */}
+                <img
+                  src={ForwardIcon}
+                  alt="Rewind 10 seconds"
+                  className="w-8 h-8"
+                />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bottom controls */}
         <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2 z-20">
           {/* Progress bar */}
           <div className="flex items-center gap-2">
-            <span className="text-sm">{formatTime(currentTime)}</span>
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleProgressChange}
-              className="video-progress w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer"
-              style={{
-                ...(duration
-                  ? ({
-                      "--progress": `${(currentTime / duration) * 100}%`,
-                    } as React.CSSProperties)
-                  : {}),
-              }}
-            />
-            <span className="text-sm">{formatTime(duration)}</span>
+            {videoLoaded ? (
+              <>
+                <span className="text-sm">{formatTime(currentTime)}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 0}
+                  value={currentTime}
+                  onChange={handleProgressChange}
+                  className="video-progress w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    ...(duration
+                      ? ({
+                          "--progress": `${(currentTime / duration) * 100}%`,
+                        } as React.CSSProperties)
+                      : {}),
+                  }}
+                />
+                <span className="text-sm">{formatTime(duration)}</span>
+              </>
+            ) : (
+              // Linear indeterminate progress bar (Material UI style)
+              <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden relative">
+                <div
+                  className="absolute left-0 top-0 h-full bg-white/30 animate-indeterminate"
+                  style={{ width: "40%" }}
+                ></div>
+                <style>
+                  {`
+                  @keyframes indeterminate {
+                    0% {
+                      left: -40%;
+                      width: 40%;
+                    }
+                    60% {
+                      left: 100%;
+                      width: 60%;
+                    }
+                    100% {
+                      left: 100%;
+                      width: 60%;
+                    }
+                  }
+                  .animate-indeterminate {
+                    animation: indeterminate 1.2s infinite cubic-bezier(0.4,0,0.2,1);
+                  }
+                  `}
+                </style>
+              </div>
+            )}
           </div>
 
           {/* Controls row */}
@@ -1135,7 +1210,7 @@ const MediaPlayerPage: React.FC = () => {
                   ref={episodesButtonRef}
                   className="text-white hover:text-gray-300 transition-colors mr-2"
                   onClick={toggleEpsisodesMenu}
-                  onDoubleClick={e => e.stopPropagation()} // Prevent double click from bubbling up
+                  onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
                 >
                   <GalleryVerticalEnd size={24} />
                 </button>
