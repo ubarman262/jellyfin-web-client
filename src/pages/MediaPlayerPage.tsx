@@ -887,7 +887,8 @@ const MediaPlayerPage: React.FC = () => {
     <div
       ref={playerContainerRef}
       className={clsx(
-        "relative w-full h-screen bg-black text-white overflow-hidden",
+        // Use fixed positioning and 100vw/100vh to prevent scrollbars on iPad/square screens
+        "fixed inset-0 w-screen h-screen bg-black text-white overflow-hidden",
         { "cursor-none": !showControls && isPlaying }
       )}
       onClick={handlePlayerClick}
@@ -914,10 +915,12 @@ const MediaPlayerPage: React.FC = () => {
       {/* Video */}
       <video
         ref={videoRef}
-        className="w-full h-full relative z-10"
+        className="w-full h-full relative object-contain"
         autoPlay
-        onClick={togglePlay}
+        // onClick={togglePlay}
+        onDoubleClick={toggleFullscreen}
         onLoadedMetadata={() => setVideoLoaded(true)}
+        style={{ maxWidth: "100vw", maxHeight: "100vh" }}
       >
         {/* Native track element removed, SubtitleTrack component will handle rendering */}
       </video>

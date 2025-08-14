@@ -167,19 +167,20 @@ const SubtitleTrack = ({
   if (!activeSubtitle) return null;
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
       <div
-        className="absolute bottom-10 w-auto text-center text-white bg-black/50 p-2 rounded"
+        className="absolute bottom-24 w-auto text-center text-white p-2 rounded"
         style={{
           left: "50%",
           transform: "translateX(-50%)",
-          fontSize: `${fontSize}px`, // <-- Use font size prop
+          fontSize: `${fontSize}px`,
           maxWidth: "90vw",
           lineHeight: 1.25,
           wordBreak: "break-word",
           pointerEvents: "none",
+          // Remove background, keep strong text shadow for readability
           textShadow:
-            "0 2px 4px #000, 0 0px 2px #000, 0 0px 8px #000, 0 0px 16px #000",
+            "0 2px 8px #000, 0 0px 2px #000, 0 0px 8px #000, 0 0px 16px #000, 0 0px 32px #000",
         }}
       >
         <div
