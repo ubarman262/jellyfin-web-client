@@ -56,7 +56,7 @@ const YouTubeWithProgressiveFallback = ({
 
     fetchAndSetTrailer();
     fetchBackdropUrl();
-  }, [item, api]);
+  }, [item, api, setTrailerStarted, setTrailerEnded]);
 
   if (!item || !api) return null;
 
@@ -67,7 +67,7 @@ const YouTubeWithProgressiveFallback = ({
   };
 
   return (
-    <div className="relative w-full aspect-[16/8] bg-black rounded-t-xl overflow-hidden">
+    <div className="relative w-full aspect-[16/9] bg-black rounded-t-xl overflow-hidden">
       {/* Local Placeholder Image (Stage 1) */}
       {/* Backdrop image base */}
       {backdropUrl && (
@@ -84,15 +84,9 @@ const YouTubeWithProgressiveFallback = ({
       {youtubeId && !trailerEnded && backdropLoaded && (
         <YouTube
           style={{
-            // width: "100vw",
-            // height: "100vh",
-            // minWidth: "100%",
-            // minHeight: "100%",
             position: "absolute",
-            top: "44%",
-            left: "50%",
-            transform: "translate(-50%, -50%) scale(1.2)",
             pointerEvents: "auto",
+            transform: "scale(1.35)",
           }}
           videoId={youtubeId}
           opts={{

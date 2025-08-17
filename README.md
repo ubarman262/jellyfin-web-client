@@ -102,15 +102,19 @@ To build the app for production and serve it locally:
 - `npm run preview` - Preview production build
 - `npm run lint` - Lint code with ESLint
 
-## License
+## Release Notes
 
-[MIT](LICENSE)
+### v2.0-beta.1
 
----
-
-**Not affiliated with Jellyfin.**  
-For more information about Jellyfin, visit [jellyfin.org](https://jellyfin.org/).
-- `npm run lint` - Lint code with ESLint
+- Major UI redesign with improved responsiveness and modern look
+- New media details drawer with enhanced information and actions
+- Improved playback experience with HLS, subtitle, and audio track support
+- Added "More Like This" and collection/boxset browsing
+- Enhanced search and navigation
+- New "Mark as Watched" and "Favorite" features
+- Performance improvements and bug fixes
+- Refactored codebase for maintainability (React, TypeScript, Vite, Tailwind CSS)
+- Improved accessibility and mobile support
 
 ## License
 

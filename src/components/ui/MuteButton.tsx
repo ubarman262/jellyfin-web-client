@@ -22,7 +22,7 @@ function MuteButton({
     <div>
       {trailerStarted && (
         <button
-          className="absolute bottom-14 right-4 z-30 bg-transparent rounded-full p-1 ml-1 border-2 flex items-center justify-center"
+          className="absolute bottom-4 right-4 z-30 bg-transparent rounded-full p-1 ml-1 border-2 flex items-center justify-center"
           style={{
             borderColor: "rgb(255 255 255 / 32%)",
             // Remove width/height/minWidth/minHeight from here

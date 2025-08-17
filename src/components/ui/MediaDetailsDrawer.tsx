@@ -454,7 +454,7 @@ const MediaDetailsDrawer = () => {
               </button>
 
               {/* Trailer/Backdrop area */}
-              <div className="relative w-full aspect-[16/8] bg-black rounded-t-xl overflow-hidden">
+              <div className="relative w-full aspect-[16/9] bg-black rounded-t-xl overflow-hidden">
                 {/* Trailer video, only show if not ended */}
 
                 <YouTubeWithProgressiveFallback
@@ -468,28 +468,34 @@ const MediaDetailsDrawer = () => {
 
                 {/* Item Logo or Name above play button */}
                 {itemLogo ? (
-                  <div
-                    className="absolute left-8 bottom-[60px] z-20 object-contain drop-shadow-lg"
-                    style={{
-                      width: "25%",
-                      height: "auto",
-                      display: "flex",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <img
-                      src={itemLogo}
-                      alt={`${item.Name} logo`}
-                      className=""
+                    <div
+                      className="absolute left-8 bottom-[15px] z-20 flex items-end"
                       style={{
-                        background: "rgba(0,0,0,0.0)",
-                        pointerEvents: "none",
-                        // maxWidth: "60%",
+                        width: isMobile ? "50vw" : "32%",
+                        minWidth: 100,
+                        maxWidth: 400,
+                        height: "auto",
+                        aspectRatio: "4/1",
+                        justifyContent: "flex-start",
                       }}
-                      // width={200}
-                      // height="auto"
-                    />
-                  </div>
+                    >
+                      <img
+                        src={itemLogo}
+                        alt={`${item.Name} logo`}
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "90px",
+                          minHeight: "40px",
+                          width: "auto",
+                          height: "auto",
+                          objectFit: "contain",
+                          background: "rgba(0,0,0,0.0)",
+                          pointerEvents: "none",
+                          display: "block",
+                          margin: 0,
+                        }}
+                      />
+                    </div>
                 ) : (
                   <div
                     className="absolute left-8 bottom-8 z-20 text-white font-bold md:text-4xl drop-shadow-lg"
@@ -507,7 +513,7 @@ const MediaDetailsDrawer = () => {
                 )}
 
                 {/* Fade overlay between video and details */}
-                <div
+                {/* <div
                   className="absolute bottom-12 left-0 right-0 h-[80px] pointer-events-none"
                   style={{
                     // background:
@@ -517,11 +523,11 @@ const MediaDetailsDrawer = () => {
                     // height: trailerStarted || trailerEnded ? "50px" : "80px",
                     // transition: "height 0.3s ease",
                   }}
-                />
+                /> */}
               </div>
 
               {/* Details */}
-              <div className="relative bottom-[50px] p-8 pt-6 bg-neutral-900 rounded-b-lg z-[2]">
+              <div className="relative bottom-[0px] p-8 pt-6 bg-neutral-900 rounded-b-lg z-[2]">
                 <div className="flex flex-col md:flex-row gap-8">
                   {/* Left column: text details */}
                   <div className="flex-1 min-w-0">
