@@ -29,17 +29,36 @@ A modern, fast, beautiful web client for [Jellyfin](https://jellyfin.org/) built
 - [Node.js](https://nodejs.org/) (v18+ recommended)
 - [Yarn](https://yarnpkg.com/) or [npm](https://www.npmjs.com/)
 
-### Installation
+## Build & Run (Production)
+
+To build the app for production and serve it locally:
+
+1. **Install the `serve` package globally (if not already installed):**
+   ```sh
+   npm install -g serve
+   ```
+
+2. **Build the project:**
+   ```sh
+   npm run build
+   ```
+
+3. **Serve the production build:**
+   ```sh
+   npx serve -s dist
+   ```
+
+   By default, the app will be available at [http://localhost:3000](http://localhost:3000).
+
+### Installation & Running (Development)
 
 1. **Clone the repository:**
-
    ```sh
    git clone https://github.com/yourusername/jellyfin-web-client.git
    cd jellyfin-web-client
    ```
 
 2. **Install dependencies:**
-
    ```sh
    npm install
    # or
@@ -47,17 +66,13 @@ A modern, fast, beautiful web client for [Jellyfin](https://jellyfin.org/) built
    ```
 
 3. **Start the development server:**
-
    ```sh
    npm run dev
    # or
    yarn dev
    ```
 
-4. **Open your browser and go to:**
-   ```
-   http://localhost:5173
-   ```
+   The app will be available at [http://localhost:5173](http://localhost:5173).
 
 ## Usage
 
@@ -85,6 +100,16 @@ A modern, fast, beautiful web client for [Jellyfin](https://jellyfin.org/) built
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
+- `npm run lint` - Lint code with ESLint
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+**Not affiliated with Jellyfin.**  
+For more information about Jellyfin, visit [jellyfin.org](https://jellyfin.org/).
 - `npm run lint` - Lint code with ESLint
 
 ## License
