@@ -983,6 +983,26 @@ class JellyfinApi {
     };
     await this.makeRequest("post", `/Videos/${itemId}/Subtitles`, payload);
   }
+
+  /**
+   * Download a media item by opening the correct download URL in a new tab.
+   * Uses the raw serverUrl (not /emby).
+   */
+  downloadMediaItem(itemId: string, itemName?: string) {
+    // Use the raw serverUrl (no /emby)
+    const serverUrl = this.serverUrl;
+    const apiKey =
+      this.accessToken ||
+      (typeof (this as any).getAccessToken === "function"
+        ? (this as any).getAccessToken()
+        : undefined);
+    const url =
+      `${serverUrl}/Items/${itemId}/Download` +
+      (apiKey ? `?api_key=${apiKey}` : "");
+
+    // Open in new tab so cookies/session are sent
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 }
 
 export default JellyfinApi;

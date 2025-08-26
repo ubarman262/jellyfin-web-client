@@ -1,4 +1,5 @@
-import { Calendar, Clock, Heart, Star, X } from "lucide-react";
+import { Calendar, Clock, Heart, Star, X, Download } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isMobile } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
@@ -51,6 +52,7 @@ const MediaDetailsDrawer = () => {
   const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
   const [seriesDetails, setSeriesDetails] = useState<MediaItem | null>(null);
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   const isEpisode = typeEpisode(item);
   const isSeries = typeSeries(item);
@@ -516,6 +518,39 @@ const MediaDetailsDrawer = () => {
                             width={400}
                             height={50}
                           />
+                          {/* Download button */}
+                          <button
+                            type="button"
+                            className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
+                            title="Download"
+                            aria-label="Download"
+                            style={{
+                              lineHeight: 0,
+                              width: 37.2,
+                              height: 37.2,
+                              transition: "background 0.2s",
+                              opacity: downloadLoading ? 0.7 : 1,
+                              pointerEvents: downloadLoading ? "none" : "auto",
+                            }}
+                            onClick={async () => {
+                              if (!api || !item?.Id) return;
+                              setDownloadLoading(true);
+                              try {
+                                api.downloadMediaItem(item.Id, item.Name);
+                              } catch (err) {
+                                alert("Failed to start download.");
+                              } finally {
+                                setTimeout(() => setDownloadLoading(false), 1000);
+                              }
+                            }}
+                            tabIndex={0}
+                          >
+                            {downloadLoading ? (
+                              <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                              <Download size={18} />
+                            )}
+                          </button>
                           {/* Watched checkmark with transition */}
                           <MarkWatchedButton
                             item={item}
@@ -880,5 +915,6 @@ const MediaDetailsDrawer = () => {
     </Sheet>
   );
 };
+
 
 export default MediaDetailsDrawer;
