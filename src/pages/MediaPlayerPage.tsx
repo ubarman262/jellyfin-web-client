@@ -937,6 +937,69 @@ const MediaPlayerPage: React.FC = () => {
     };
   }, [videoRef.current]);
 
+  // --- Native subtitle track injection for PiP ---
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Remove all previous dynamic tracks
+    Array.from(video.querySelectorAll("track[data-dynamic='true']")).forEach((t) => t.remove());
+
+    // Only add if a subtitle is selected and PiP is active
+    if (
+      isPiP &&
+      (localSubtitleUrl || typeof selectedSubtitleIndex === "number") &&
+      (selectedSubtitleIndex !== null)
+    ) {
+      let trackUrl: string | undefined;
+      let kind = "subtitles";
+      let label = "Subtitle";
+      let srclang = "en";
+
+      if (selectedSubtitleIndex === "local" && localSubtitleUrl) {
+        // Only inject if the file is .vtt (WebVTT)
+        if (localSubtitleName && localSubtitleName.toLowerCase().endsWith(".vtt")) {
+          trackUrl = localSubtitleUrl;
+          label = localSubtitleName || "Local Subtitle";
+        }
+      } else if (
+        typeof selectedSubtitleIndex === "number" &&
+        subtitleTracks?.length
+      ) {
+        const track = subtitleTracks.find(
+          (t) => t.Index === selectedSubtitleIndex
+        );
+        if (track) {
+          // Only inject if the server provides a .vtt (WebVTT) subtitle
+          if (api?.getSubtitleUrl) {
+            trackUrl = api.getSubtitleUrl(item.Id, track.Index, "webvtt");
+            label = track.DisplayTitle || "Subtitle";
+            srclang = track.Language || "en";
+          }
+        }
+      }
+
+      if (trackUrl) {
+        const trackElem = document.createElement("track");
+        trackElem.setAttribute("data-dynamic", "true");
+        trackElem.kind = kind;
+        trackElem.label = label;
+        trackElem.srclang = srclang;
+        trackElem.src = trackUrl;
+        trackElem.default = true;
+        video.appendChild(trackElem);
+      }
+    }
+  }, [
+    isPiP,
+    localSubtitleUrl,
+    localSubtitleName,
+    selectedSubtitleIndex,
+    subtitleTracks,
+    api,
+    item,
+  ]);
+
   if (isLoading || !item || !api) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -956,8 +1019,23 @@ const MediaPlayerPage: React.FC = () => {
       onClick={handlePlayerClick}
       onMouseMove={handleMouseMove}
     >
+      {/* Show blurred backdrop in browser when PiP is active */}
+      {isPiP && backdropUrl && (
+        <img
+          src={backdropUrl}
+          alt="Backdrop"
+          className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none select-none"
+          style={{
+            filter: "blur(24px) brightness(0.5)",
+            transition: "opacity 0.5s",
+            opacity: 1,
+          }}
+          draggable={false}
+        />
+      )}
+
       {/* Backdrop image as background while video loads */}
-      {!videoLoaded && backdropUrl && (
+      {!videoLoaded && backdropUrl && !isPiP && (
         <img
           src={backdropUrl}
           alt="Backdrop"
@@ -974,21 +1052,38 @@ const MediaPlayerPage: React.FC = () => {
         </div>
       )}
 
-      {/* Video */}
-      <video
-        ref={videoRef}
-        className="w-full h-full relative object-contain"
-        autoPlay
-        // onClick={togglePlay}
-        onDoubleClick={toggleFullscreen}
-        onLoadedMetadata={() => setVideoLoaded(true)}
-        style={{ maxWidth: "100vw", maxHeight: "100vh" }}
-        // Add PiP attributes for better UX
-        controlsList="nodownload"
-      >
-        {/* Native track element removed, SubtitleTrack component will handle rendering */}
-      </video>
-
+      {/* Video + SubtitleTrack wrapper */}
+      <div className="w-full h-full relative">
+        <video
+          ref={videoRef}
+          className="w-full h-full relative object-contain"
+          autoPlay
+          // onClick={togglePlay}
+          onDoubleClick={toggleFullscreen}
+          onLoadedMetadata={() => setVideoLoaded(true)}
+          style={{ maxWidth: "100vw", maxHeight: "100vh" }}
+          // Add PiP attributes for better UX
+          controlsList="nodownload"
+        >
+          {/* Native <track> elements will be injected dynamically for PiP */}
+        </video>
+        {/* SubtitleTrack overlay for non-PiP mode only */}
+        {!isPiP && (localSubtitleUrl || selectedSubtitleIndex !== null) && (
+          <SubtitleTrack
+            subtitleTracks={subtitleTracks}
+            selectedSubtitleIndex={selectedSubtitleIndex}
+            itemId={item.Id}
+            currentTime={currentTime}
+            localSubtitleFileUrl={
+              selectedSubtitleIndex === "local"
+                ? localSubtitleUrl ?? undefined
+                : undefined
+            }
+            subtitleDelayMs={subtitleDelayMs}
+            fontSize={subtitleFontSize}
+          />
+        )}
+      </div>
       {/* Skip Intro Button */}
       {intro &&
         !hasSkippedIntro &&
@@ -1004,24 +1099,6 @@ const MediaPlayerPage: React.FC = () => {
             </div>
           </div>
         )}
-
-      {/* SubtitleTrack now handles fetching and displaying the active subtitle from server or local file */}
-      {(localSubtitleUrl || selectedSubtitleIndex !== null) && (
-        <SubtitleTrack
-          subtitleTracks={subtitleTracks}
-          selectedSubtitleIndex={selectedSubtitleIndex}
-          itemId={item.Id}
-          currentTime={currentTime}
-          localSubtitleFileUrl={
-            selectedSubtitleIndex === "local"
-              ? localSubtitleUrl ?? undefined
-              : undefined
-          }
-          subtitleDelayMs={subtitleDelayMs}
-          // Pass font size to SubtitleTrack
-          fontSize={subtitleFontSize}
-        />
-      )}
 
       {/* Next Episode Button Overlay */}
       {nextEpisode && duration > 0 && duration - currentTime < 30 && (
