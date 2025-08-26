@@ -9,7 +9,14 @@ type ProgressiveImageProps = {
 
 const ProgressiveImage: React.FC<ProgressiveImageProps> = ({ src, onLoad }) => {
   return (
-    <LazyLoadImage alt="trailer" effect="blur" src={src} onLoad={onLoad} />
+    <LazyLoadImage
+      alt="trailer"
+      effect="blur"
+      src={src}
+      onLoad={onLoad}
+      width="100%"
+      style={{ objectFit: "cover" }}
+    />
   );
 };
 

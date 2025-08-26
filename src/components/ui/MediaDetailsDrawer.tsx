@@ -1,6 +1,6 @@
 import { Calendar, Clock, Heart, Star, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { isBrowser, isMobile, MobileView } from "react-device-detect";
+import { isMobile } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRecoilState } from "recoil";
@@ -141,34 +141,6 @@ const MediaDetailsDrawer = () => {
 
   // Track if the movie has a BoxSet
   const [hasBoxSet, setHasBoxSet] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const checkBoxSet = async () => {
-      if (api && isMovie && item?.Id) {
-        try {
-          const boxSet = await api.findBoxSetForItem(item);
-          if (!cancelled) setHasBoxSet(!!boxSet);
-          // Set tab to "more" if no boxset, otherwise "collection"
-          if (!cancelled) {
-            setMovieTab(boxSet ? "collection" : "more");
-          }
-        } catch {
-          if (!cancelled) {
-            setHasBoxSet(false);
-            setMovieTab("more");
-          }
-        }
-      } else {
-        setHasBoxSet(false);
-        setMovieTab("more");
-      }
-    };
-    // checkBoxSet();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, isMovie, item]);
 
   // --- Collection (BoxSet) and MoreLikeThis (Similar) state and cache ---
   const [collectionItems, setCollectionItems] = useState<MediaItem[]>([]);
@@ -347,15 +319,13 @@ const MediaDetailsDrawer = () => {
         snapPoints={[1, 0]}
         initialSnap={0}
         disableDrag={false}
-        // tweenConfig={{ ease: "easeOut", duration: 0.3 }}
-        // modalEffectRootId="root"
       >
         <Sheet.Container className="!bg-neutral-900 !rounded-t-xl">
           <Sheet.Content className="!rounded-t-xl">
             <Sheet.Scroller className="rounded-t-xl scrollbar-hide">
               <div>
                 {/* Skeleton for backdrop */}
-                <div className="relative w-full aspect-[16/8] bg-gray-800 rounded-t-xl overflow-hidden animate-pulse">
+                <div className="relative w-full aspect-[16/9] bg-gray-800 rounded-t-xl overflow-hidden animate-pulse">
                   <div className="absolute bottom-6 left-8 flex items-center gap-4">
                     {/* Skeleton play button */}
                     <div className="w-16 h-16 bg-gray-700 rounded-full" />
@@ -772,15 +742,6 @@ const MediaDetailsDrawer = () => {
                   </>
                 )}
 
-                {/* {!isMovie &&
-                  item.People &&
-                  item.People.length > 0 &&
-                  isMobile && (
-                    <div className="md:w-full w-full mt-8 mb-4 md:mb-0">
-                      <CastList people={item.People} />
-                    </div>
-                  )} */}
-
                 {/* Movie Tabs Section */}
                 {(isMovie || isSeries) && (
                   <div className="mt-10">
@@ -789,9 +750,9 @@ const MediaDetailsDrawer = () => {
                       // Skeleton for the whole tabs section (tabs + content)
                       <div>
                         <div className="flex gap-4">
-                          {[...Array(5)].map((_, i) => (
+                          {["one", "two", "three", "four", "five"].map((label) => (
                             <div
-                              key={i}
+                              key={`skeleton-tab-${label}`}
                               className="w-[200px] h-[250px] bg-gray-800 rounded-lg animate-pulse"
                             />
                           ))}

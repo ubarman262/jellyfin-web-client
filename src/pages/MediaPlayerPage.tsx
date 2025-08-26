@@ -9,11 +9,12 @@ import {
   Minimize,
   Pause,
   Play,
-  SkipBack, // Added
-  SkipForward, // Added
+  SkipBack,
+  SkipForward,
   Volume1,
   Volume2,
   VolumeX,
+  PictureInPicture2, // Add PiP icon
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -894,6 +895,48 @@ const MediaPlayerPage: React.FC = () => {
       ? api.getImageUrl(item.Id, "Primary", 600, 900)
       : null;
 
+  // PiP state
+  const [isPiP, setIsPiP] = useState(false);
+
+  // PiP toggle handler
+  const togglePiP = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    // @ts-ignore
+    if (!document.pictureInPictureEnabled || video.disablePictureInPicture) return;
+    try {
+      if (!isPiP) {
+        // @ts-ignore
+        await video.requestPictureInPicture();
+      } else {
+        // @ts-ignore
+        await document.exitPictureInPicture();
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  };
+
+  // Listen for PiP events to update state
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // @ts-ignore
+    function onEnterPiP() { setIsPiP(true); }
+    // @ts-ignore
+    function onLeavePiP() { setIsPiP(false); }
+    // @ts-ignore
+    video.addEventListener("enterpictureinpicture", onEnterPiP);
+    // @ts-ignore
+    video.addEventListener("leavepictureinpicture", onLeavePiP);
+    return () => {
+      // @ts-ignore
+      video.removeEventListener("enterpictureinpicture", onEnterPiP);
+      // @ts-ignore
+      video.removeEventListener("leavepictureinpicture", onLeavePiP);
+    };
+  }, [videoRef.current]);
+
   if (isLoading || !item || !api) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -940,6 +983,8 @@ const MediaPlayerPage: React.FC = () => {
         onDoubleClick={toggleFullscreen}
         onLoadedMetadata={() => setVideoLoaded(true)}
         style={{ maxWidth: "100vw", maxHeight: "100vh" }}
+        // Add PiP attributes for better UX
+        controlsList="nodownload"
       >
         {/* Native track element removed, SubtitleTrack component will handle rendering */}
       </video>
@@ -1239,6 +1284,23 @@ const MediaPlayerPage: React.FC = () => {
                 decreaseSubtitleFontSize={decreaseSubtitleFontSize}
                 resetSubtitleFontSize={resetSubtitleFontSize}
               />
+              {/* PiP Button */}
+              <button
+                onClick={togglePiP}
+                className={clsx(
+                  "text-white hover:text-gray-300 transition-colors",
+                  isPiP && "opacity-70"
+                )}
+                title="Picture in Picture"
+                disabled={
+                  // @ts-ignore
+                  !document.pictureInPictureEnabled ||
+                  // @ts-ignore
+                  videoRef.current?.disablePictureInPicture
+                }
+              >
+                <PictureInPicture2 size={24} />
+              </button>
               <button
                 onClick={toggleFullscreen}
                 className="text-white hover:text-gray-300 transition-colors"
