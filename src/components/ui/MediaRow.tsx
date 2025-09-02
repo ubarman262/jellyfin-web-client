@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { MediaItem } from "../../types/jellyfin";
 import MediaCard from "./MediaCard";
 import MediaRowNavigation from "./MediaRowNavigation";
@@ -18,6 +18,12 @@ const MediaRow: React.FC<MediaRowProps> = ({
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [isNonTouchDevice, setIsNonTouchDevice] = useState(true);
+
+  useEffect(() => {
+    const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    setIsNonTouchDevice(!hasTouch);
+  }, []);
 
   const checkArrows = () => {
     if (!rowRef.current) return;
@@ -95,14 +101,16 @@ const MediaRow: React.FC<MediaRowProps> = ({
           ))}
         </div>
 
-        <MediaRowNavigation
-          showLeftArrow={showLeftArrow}
-          showRightArrow={showRightArrow}
-          isScrolling={isScrolling}
-          onScrollLeft={() => scroll("left")}
-          onScrollRight={() => scroll("right")}
-          itemsLength={items.length}
-        />
+        {isNonTouchDevice && (
+          <MediaRowNavigation
+            showLeftArrow={showLeftArrow}
+            showRightArrow={showRightArrow}
+            isScrolling={isScrolling}
+            onScrollLeft={() => scroll("left")}
+            onScrollRight={() => scroll("right")}
+            itemsLength={items.length}
+          />
+        )}
       </div>
     </div>
   );
