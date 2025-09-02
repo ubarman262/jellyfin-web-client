@@ -142,7 +142,7 @@ const YouTubeWithProgressiveFallback = ({
         setIsMuted={setIsMuted}
         player={player}
         size={buttonSize}
-        position={buttonPosition} // Pass down the prop
+        position={buttonPosition} 
       />
 
       <ReplayButton
@@ -151,6 +151,7 @@ const YouTubeWithProgressiveFallback = ({
         setTrailerEnded={setTrailerEnded}
         setTrailerStarted={setTrailerStarted}
         size={buttonSize}
+        position={buttonPosition}
       />
     </div>
   );
