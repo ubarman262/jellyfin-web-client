@@ -10,6 +10,7 @@ interface ReplayButtonProps {
   readonly setTrailerStarted: (
     value: boolean | ((prevState: boolean) => boolean)
   ) => void;
+  readonly size?: number; // Optional size prop with a default value
 }
 
 export default function ReplayButton({
@@ -17,6 +18,7 @@ export default function ReplayButton({
   setTrailerEnded,
   setTrailerStarted,
   player,
+  size
 }: ReplayButtonProps) {
   return (
     <div>
@@ -36,7 +38,7 @@ export default function ReplayButton({
           aria-label="Replay Trailer"
           type="button"
         >
-          <RotateCcw size={14} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
+          <RotateCcw size={size} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
         </button>
       )}
     </div>

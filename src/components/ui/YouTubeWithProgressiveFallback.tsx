@@ -13,20 +13,25 @@ import MuteButton from "./MuteButton";
 import ProgressiveImage from "./ProgressiveImage";
 import ReplayButton from "./ReplayButton";
 
+interface ButtonPositionProps {
+  top?: number | string;
+  right?: number | string;
+  bottom?: number | string;
+  left?: number | string;
+}
+
 interface YouTubeWithProgressiveFallbackProps {
   item: MediaItem;
-  trailerStarted?: boolean;
-  trailerEnded?: boolean;
-  setTrailerStarted?: (value: boolean | ((prevState: boolean) => boolean)) => void;
-  setTrailerEnded?: (value: boolean | ((prevState: boolean) => boolean)) => void;
+  aspectRatio?: string;
+  buttonSize?: number;
+  buttonPosition?: ButtonPositionProps; // New prop
 }
 
 const YouTubeWithProgressiveFallback = ({
   item,
-  trailerStarted = false,
-  trailerEnded = false,
-  setTrailerStarted = () => {},
-  setTrailerEnded = () => {},
+  aspectRatio = "16/9",
+  buttonSize = 14,
+  buttonPosition, // New prop
 }: YouTubeWithProgressiveFallbackProps) => {
   const { api } = useAuth();
   const [isMuted, setIsMuted] = useState(true);
@@ -34,7 +39,9 @@ const YouTubeWithProgressiveFallback = ({
   const [player, setPlayer] = useState<YouTubePlayer>(null);
   const [backdropUrl, setBackdropUrl] = useState("");
   const [backdropLoaded, setBackdropLoaded] = useState(false);
-  
+  const [trailerStarted, setTrailerStarted] = useState(false);
+  const [trailerEnded, setTrailerEnded] = useState(false);
+
   useEffect(() => {
     const fetchAndSetTrailer = async () => {
       setTrailerUrl(null);
@@ -67,7 +74,9 @@ const YouTubeWithProgressiveFallback = ({
   };
 
   return (
-    <div className="relative w-full aspect-[16/9] bg-black rounded-t-xl overflow-hidden">
+    <div
+      className={`relative w-full aspect-[${aspectRatio}] bg-black rounded-t-xl overflow-hidden`}
+    >
       {/* Local Placeholder Image (Stage 1) */}
       {/* Backdrop image base */}
       {backdropUrl && (
@@ -103,7 +112,7 @@ const YouTubeWithProgressiveFallback = ({
               iv_load_policy: 3,
               playsinline: 1,
               start: 6,
-              mute: 1
+              mute: 1,
             },
           }}
           className="w-full h-full"
@@ -132,6 +141,8 @@ const YouTubeWithProgressiveFallback = ({
         isMuted={isMuted}
         setIsMuted={setIsMuted}
         player={player}
+        size={buttonSize}
+        position={buttonPosition} // Pass down the prop
       />
 
       <ReplayButton
@@ -139,6 +150,7 @@ const YouTubeWithProgressiveFallback = ({
         player={player}
         setTrailerEnded={setTrailerEnded}
         setTrailerStarted={setTrailerStarted}
+        size={buttonSize}
       />
     </div>
   );

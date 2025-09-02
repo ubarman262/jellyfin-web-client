@@ -77,15 +77,13 @@ const MediaPlayerPage: React.FC = () => {
     function handleClickOutside(event: MouseEvent) {
       // If click is inside the menu, ignore
       if (
-        episodesMenuRef.current &&
-        episodesMenuRef.current.contains(event.target as Node)
+        episodesMenuRef.current?.contains(event.target as Node)
       ) {
         return;
       }
       // If click is on the button, ignore
       if (
-        episodesButtonRef.current &&
-        episodesButtonRef.current.contains(event.target as Node)
+        episodesButtonRef.current?.contains(event.target as Node)
       ) {
         return;
       }
@@ -130,7 +128,7 @@ const MediaPlayerPage: React.FC = () => {
   const [hasSkippedIntro, setHasSkippedIntro] = useState(false);
 
   // Helper: returns true if chapter name is an intro-like segment
-  function isIntroChapter(name: string | undefined): boolean {
+  const isIntroChapter = React.useCallback((name: string | undefined): boolean => {
     const n = (name ?? "").toLowerCase();
     return (
       n.includes("studio logo") ||
@@ -140,12 +138,13 @@ const MediaPlayerPage: React.FC = () => {
       n.includes("opening credits") ||
       n.includes("title sequence")
     );
-  }
+  }, []);
 
   // Improved: returns true if chapter is a "real" scene (not intro-like)
-  function isNonIntroChapter(name: string | undefined): boolean {
-    return !isIntroChapter(name);
-  }
+  const isNonIntroChapter = React.useCallback(
+    (name: string | undefined): boolean => !isIntroChapter(name),
+    [isIntroChapter]
+  );
 
   // Detect intro marker when item changes
   useEffect(() => {
@@ -206,7 +205,7 @@ const MediaPlayerPage: React.FC = () => {
       }
     }
     setIntro(null);
-  }, [item]);
+  }, [item, isNonIntroChapter, isIntroChapter]);
 
   // Reset hasSkippedIntro if user seeks back before intro.start
   useEffect(() => {
@@ -732,13 +731,13 @@ const MediaPlayerPage: React.FC = () => {
     setSubtitleDelayMs(0);
   };
 
-  const [subtitleFontSize, setSubtitleFontSize] = useState<number>(36);
+  const [subtitleFontSize, setSubtitleFontSize] = useState<number>(28);
 
   const increaseSubtitleFontSize = () =>
     setSubtitleFontSize((prev) => Math.min(prev + 2, 72));
   const decreaseSubtitleFontSize = () =>
     setSubtitleFontSize((prev) => Math.max(prev - 2, 12));
-  const resetSubtitleFontSize = () => setSubtitleFontSize(36);
+  const resetSubtitleFontSize = () => setSubtitleFontSize(28);
 
   const handleBack = () => {
     if (!item) return;
@@ -870,7 +869,7 @@ const MediaPlayerPage: React.FC = () => {
         details.fastSeek &&
         "fastSeek" in videoRef.current
       ) {
-        (videoRef.current as any).fastSeek(details.seekTime);
+        (videoRef.current).fastSeek(details.seekTime);
       } else if (videoRef.current) {
         videoRef.current.currentTime = details.seekTime;
       }
@@ -888,12 +887,12 @@ const MediaPlayerPage: React.FC = () => {
   const [videoLoaded, setVideoLoaded] = useState(false);
 
   // Get the best backdrop image URL
-  const backdropUrl =
-    item?.BackdropImageTags && item.BackdropImageTags.length > 0 && api
-      ? api.getImageUrl(item.Id, "Backdrop", 1920, 1080)
-      : item?.ImageTags?.Primary && api
-      ? api.getImageUrl(item.Id, "Primary", 600, 900)
-      : null;
+  let backdropUrl: string | null = null;
+  if (item?.BackdropImageTags && item.BackdropImageTags.length > 0 && api) {
+    backdropUrl = api.getImageUrl(item.Id, "Backdrop", 1920, 1080);
+  } else if (item?.ImageTags?.Primary && api) {
+    backdropUrl = api.getImageUrl(item.Id, "Primary", 600, 900);
+  }
 
   // PiP state
   const [isPiP, setIsPiP] = useState(false);
@@ -902,18 +901,15 @@ const MediaPlayerPage: React.FC = () => {
   const togglePiP = async () => {
     const video = videoRef.current;
     if (!video) return;
-    // @ts-ignore
     if (!document.pictureInPictureEnabled || video.disablePictureInPicture) return;
     try {
       if (!isPiP) {
-        // @ts-ignore
         await video.requestPictureInPicture();
       } else {
-        // @ts-ignore
         await document.exitPictureInPicture();
       }
     } catch (e) {
-      // Ignore errors
+      console.error("Error toggling Picture-in-Picture:", e);
     }
   };
 
@@ -921,21 +917,15 @@ const MediaPlayerPage: React.FC = () => {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    // @ts-ignore
     function onEnterPiP() { setIsPiP(true); }
-    // @ts-ignore
     function onLeavePiP() { setIsPiP(false); }
-    // @ts-ignore
     video.addEventListener("enterpictureinpicture", onEnterPiP);
-    // @ts-ignore
     video.addEventListener("leavepictureinpicture", onLeavePiP);
     return () => {
-      // @ts-ignore
       video.removeEventListener("enterpictureinpicture", onEnterPiP);
-      // @ts-ignore
       video.removeEventListener("leavepictureinpicture", onLeavePiP);
     };
-  }, [videoRef.current]);
+  }, []);
 
   // --- Native subtitle track injection for PiP ---
   useEffect(() => {
@@ -952,30 +942,15 @@ const MediaPlayerPage: React.FC = () => {
       (selectedSubtitleIndex !== null)
     ) {
       let trackUrl: string | undefined;
-      let kind = "subtitles";
       let label = "Subtitle";
-      let srclang = "en";
+      const kind = "subtitles";
+      const srclang = "en";
 
       if (selectedSubtitleIndex === "local" && localSubtitleUrl) {
         // Only inject if the file is .vtt (WebVTT)
-        if (localSubtitleName && localSubtitleName.toLowerCase().endsWith(".vtt")) {
+        if (localSubtitleName?.toLowerCase().endsWith(".vtt")) {
           trackUrl = localSubtitleUrl;
           label = localSubtitleName || "Local Subtitle";
-        }
-      } else if (
-        typeof selectedSubtitleIndex === "number" &&
-        subtitleTracks?.length
-      ) {
-        const track = subtitleTracks.find(
-          (t) => t.Index === selectedSubtitleIndex
-        );
-        if (track) {
-          // Only inject if the server provides a .vtt (WebVTT) subtitle
-          if (api?.getSubtitleUrl) {
-            trackUrl = api.getSubtitleUrl(item.Id, track.Index, "webvtt");
-            label = track.DisplayTitle || "Subtitle";
-            srclang = track.Language || "en";
-          }
         }
       }
 
@@ -1200,7 +1175,7 @@ const MediaPlayerPage: React.FC = () => {
           <div className="flex items-center gap-2">
             {videoLoaded ? (
               <>
-                <span className="text-sm">{formatTime(currentTime)}</span>
+                <span className="text-sm w-10">{formatTime(currentTime)}</span>
                 <input
                   type="range"
                   min="0"
@@ -1220,7 +1195,7 @@ const MediaPlayerPage: React.FC = () => {
               </>
             ) : (
               // Linear indeterminate progress bar (Material UI style)
-              <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden relative">
+              <div className="w-full h-[3px] bg-white/20 rounded-full overflow-hidden relative">
                 <div
                   className="absolute left-0 top-0 h-full bg-white/30 animate-indeterminate"
                   style={{ width: "40%" }}
@@ -1370,9 +1345,7 @@ const MediaPlayerPage: React.FC = () => {
                 )}
                 title="Picture in Picture"
                 disabled={
-                  // @ts-ignore
                   !document.pictureInPictureEnabled ||
-                  // @ts-ignore
                   videoRef.current?.disablePictureInPicture
                 }
               >

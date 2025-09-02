@@ -44,7 +44,7 @@ const HomePage: React.FC = () => {
         setFeaturedItems(latestItems);
       }
     }
-  }, [latestItems, moviesItems]);
+  }, [latestItems]);
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
@@ -54,7 +54,7 @@ const HomePage: React.FC = () => {
       {featuredItems ? (
         <HeroBanner items={featuredItems} />
       ) : (
-        <div className="w-full h-[70vh] bg-neutral-800 animate-pulse"></div>
+        <div className="w-full h-[85vh] bg-neutral-800 animate-pulse"></div>
       )}
 
       {/* Content Rows */}

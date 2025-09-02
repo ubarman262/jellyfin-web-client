@@ -243,8 +243,9 @@ class JellyfinApi {
 
   async getMediaByType(
     mediaType: string,
+    genres?: string,
     limit: number = 20,
-    startIndex: number = 0
+    startIndex: number = 0,
   ): Promise<ItemsResponse> {
     return this.makeRequest<ItemsResponse>(
       "get",
@@ -259,6 +260,7 @@ class JellyfinApi {
         SortOrder: "Ascending",
         Fields:
           "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
+        Genres: genres
       }
     );
   }

@@ -95,13 +95,13 @@ input[type="range"].video-progress {
 
 /* Webkit browsers (Chrome, Safari, Edge) */
 input[type="range"].video-progress::-webkit-slider-runnable-track {
-  height: 4px;
+  height: 3px;
   background: linear-gradient(
     to right,
     var(--accent) 0%,
     var(--accent) var(--progress, 0%),
-    #374151 var(--progress, 0%),
-    #374151 100%
+    rgb(255 255 255 / 0.3) var(--progress, 0%),
+    rgb(255 255 255 / 0.3) 100%
   );
   border-radius: 2px;
 }
@@ -176,14 +176,14 @@ input[type="range"].volume-slider {
   width: 100%;
   background: transparent;
   appearance: none;
-  height: 4px;
+  height: 3px;
   margin: 0;
   padding: 0;
 }
 
 /* Webkit browsers */
 input[type="range"].volume-slider::-webkit-slider-runnable-track {
-  height: 4px;
+  height: 3px;
   background: linear-gradient(
     to right,
     var(--accent) 0%,

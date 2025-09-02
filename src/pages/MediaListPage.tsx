@@ -1,15 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
-import YouTubeWithProgressiveFallback from "../components/ui/YouTubeWithProgressiveFallback";
-import { useAuth } from "../context/AuthContext";
 import { useMediaData } from "../hooks/useMediaData";
-import { FUNNY_ENDING_LINES_MOVIES, MediaItem } from "../types/jellyfin";
+import { FUNNY_ENDING_LINES, MediaItem, MediaType } from "../types/jellyfin";
 
 const PAGE_SIZE = 24;
 
-const MoviesPage: React.FC = () => {
-  const { api } = useAuth();
+interface MediaListPageProps {
+  mediaType: MediaType;
+}
+
+const MediaListPage: React.FC<MediaListPageProps> = ({ mediaType }) => {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -18,40 +19,28 @@ const MoviesPage: React.FC = () => {
   const [genreMenuOpen, setGenreMenuOpen] = useState(false);
   const genreMenuRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
-  const genres = useMediaData("genres", { mediaType: "Movie" }).items.map(
-    (g) => g.Name
-  );
-
-  const { items: latestItems } = useMediaData("latest", {
-    mediaType: "Movie",
-    limit: 5,
-  });
-
-  // Persist the random item for the session
-  const itemRef = useRef<MediaItem | null>(null);
-  useEffect(() => {
-    if (!itemRef.current && latestItems.length > 0) {
-      const randomIdx = Math.floor(Math.random() * Math.min(latestItems.length, 5));
-      itemRef.current = latestItems[randomIdx];
-    }
-  }, [latestItems]);
-  const item = itemRef.current;
-
-  const officialRating = item?.OfficialRating ?? [];
-  const overview = item?.Overview ?? "";
+  const genres = useMediaData("genres", { mediaType }).items.map((g) => g.Name);
 
   // Fetch movies for current page/genre(s)
   const {
     items: fetchedItems,
     isLoading,
     totalItems,
-  } = useMediaData("movies", {
+  } = useMediaData(mediaType, {
     limit: PAGE_SIZE,
     startIndex: page * PAGE_SIZE,
     genres: selectedGenres.length > 0 ? selectedGenres : undefined,
   });
 
-  // Reset items when genres change
+  // Reset everything when mediaType changes (route change)
+  useEffect(() => {
+    setItems([]);
+    setPage(0);
+    setHasMore(true);
+    setSelectedGenres([]);
+  }, [mediaType]);
+
+  // Reset items/page/hasMore when genres change (but not mediaType)
   useEffect(() => {
     setItems([]);
     setPage(0);
@@ -122,14 +111,26 @@ const MoviesPage: React.FC = () => {
   // Pick a random funny line for the end message
   const endLine = React.useMemo(() => {
     if (!hasMore && !isLoading && items.length > 0) {
-      const idx = Math.floor(Math.random() * FUNNY_ENDING_LINES_MOVIES.length);
-      return FUNNY_ENDING_LINES_MOVIES[idx].replace(
-        "{count}",
-        totalItems.toString()
-      );
+      if (mediaType === "movies") {
+        const idx = Math.floor(
+          Math.random() * FUNNY_ENDING_LINES.movies.length
+        );
+        return FUNNY_ENDING_LINES.movies[idx].replace(
+          "{count}",
+          totalItems.toString()
+        );
+      } else if (mediaType === "series") {
+        const idx = Math.floor(
+          Math.random() * FUNNY_ENDING_LINES.series.length
+        );
+        return FUNNY_ENDING_LINES.series[idx].replace(
+          "{count}",
+          totalItems.toString()
+        );
+      }
     }
     return null;
-  }, [hasMore, isLoading, items.length, totalItems]);
+  }, [hasMore, isLoading, items.length, totalItems, mediaType]);
 
   // Handle genre checkbox toggle
   const toggleGenre = (genre: string) => {
@@ -147,21 +148,14 @@ const MoviesPage: React.FC = () => {
     setGenreMenuOpen(false);
   };
 
-  if (!api) return null;
-
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <Navbar />
-      {/* Featured Section */}
-      <div className="relative w-full">
+      <div className="container mx-auto px-4 pt-24 pb-16 pl-16 pr-16">
         {/* Genre Dropdown Menu */}
-        <div
-          className="absolute top-20 left-16 z-10 flex items-center gap-4"
-          ref={genreMenuRef}
-        >
-          <span className="font-bold text-4xl text-white">Movie</span>
+        <div className="relative mb-8" ref={genreMenuRef}>
           <button
-            className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-400 rounded text-lg font-semibold focus:outline-none"
+            className="flex items-center gap-2 px-6 py-2 bg-neutral-900 border border-gray-400 rounded text-lg font-semibold focus:outline-none"
             onClick={() => setGenreMenuOpen((open) => !open)}
           >
             Genres
@@ -187,7 +181,7 @@ const MoviesPage: React.FC = () => {
             )}
           </button>
           {genreMenuOpen && (
-            <div className="absolute z-20 top-[52px] left-[123px] bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[540px] max-h-96 overflow-y-auto">
+            <div className="absolute z-20 mt-2 left-0 bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[340px] max-h-96 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
                 <button
                   className={`text-left py-1 px-2 rounded hover:bg-gray-800 ${
@@ -230,64 +224,6 @@ const MoviesPage: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="w-full relative">
-          <YouTubeWithProgressiveFallback
-            key={item?.Id}
-            item={item}
-            aspectRatio="16/8"
-            buttonSize={34}
-            buttonPosition={{ bottom: "17rem", right: "12rem" }}
-          />
-          {/* Logo and Overview overlay */}
-          {api && item && (
-            <div className="absolute left-16 bottom-64 z-10 max-w-2xl">
-              {item.ImageTags?.Logo ? (
-                <img
-                  src={api.getImageUrl(item.Id, "Logo", 400)}
-                  alt={item.Name}
-                  className="max-h-20 md:max-h-28 w-auto object-contain mb-4"
-                  style={{ display: "inline-block" }}
-                />
-              ) : (
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                  {item.Name}
-                </h1>
-              )}
-            </div>
-          )}
-          <div>
-            <span
-              className="absolute right-0 bottom-[17rem] z-10 max-w-2xl w-40"
-              style={{
-                background: "rgba(55, 65, 81, 0.55)", // bg-gray-700/55
-                color: "#fff",
-                // borderRadius: "0.375rem", // rounded
-                padding: "0.5rem 1.25rem", // px-5 py-2
-                fontWeight: 500,
-                fontSize: "1.25rem", // text-lg
-                letterSpacing: "0.01em",
-                display: "inline-block",
-                borderLeft: "4px solid rgba(255,255,255,0.5)",
-                backdropFilter: "blur(2px)",
-              }}
-            >
-              {officialRating}
-            </span>
-          </div>
-        </div>
-        {/* Fade overlay between video and details */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[200px] pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
-            zIndex: 10,
-            transition: "height 0.3s ease",
-          }}
-        />
-      </div>
-
-      <div className="container mx-auto px-4 -mt-24 pb-16 pl-16 pr-16">
         {(() => {
           if (items.length === 0 && isLoading) {
             return (
@@ -338,4 +274,4 @@ const MoviesPage: React.FC = () => {
   );
 };
 
-export default MoviesPage;
+export default MediaListPage;

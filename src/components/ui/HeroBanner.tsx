@@ -1,12 +1,10 @@
 import clsx from "clsx";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { MediaItem } from "../../types/jellyfin";
-import MoreInfoButton from "./moreInfoButton";
-import PlayButton from "./playButton";
 import { useRecoilState, useSetRecoilState } from "recoil";
-import drawerState from "../../states/atoms/DrawerOpen";
+import { useAuth } from "../../context/AuthContext";
 import activeItem from "../../states/atoms/ActiveItem";
+import drawerState from "../../states/atoms/DrawerOpen";
+import { MediaItem } from "../../types/jellyfin";
 
 interface HeroBannerProps {
   items: MediaItem[];
@@ -98,7 +96,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
 
   return (
     <div
-      className="relative w-full h-[70vh] overflow-hidden mb-8"
+      className="relative w-full h-[85vh] overflow-hidden mb-8"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -253,20 +251,6 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
                         : "translate-y-8 opacity-0"
                     )}
                   >
-                    {/* <PlayButton
-                      itemId={item.Id}
-                      type={item.Type}
-                      width={120}
-                      height={45}
-                    /> */}
-                    {/* <MoreInfoButton
-                      width={130}
-                      height={45}
-                      onClick={() => {
-                        setActiveTiemId(item.Id);
-                        setIsDrawerOpen(true);
-                      }}
-                    /> */}
                   </div>
                 </div>
               </div>

@@ -275,7 +275,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
     <div
       className={clsx(
         "group relative transition-all duration-300 overflow-hidden bg-gray-900 cursor-pointer rounded-md",
-        featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3]",
+        featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3] z-10",
         isHovered && "z-10 scale-110 shadow-xl"
       )}
       onMouseEnter={() => {
@@ -306,7 +306,7 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
       )}
 
       {progressPercent > 0 && (
-        <div className="absolute left-0 right-0 bottom-0 h-1.5 bg-black/40 z-20">
+        <div className="absolute left-0 right-0 bottom-0 h-1.5 bg-black/40 z-10">
           <div
             className="h-full bg-[var(--accent-secondary)] transition-all"
             style={{ width: `${progressPercent}%` }}

@@ -1,5 +1,4 @@
-import { Calendar, Clock, Heart, Star, X, Download } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { Calendar, Clock, Download, Heart, Loader2, Star, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isMobile } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
@@ -47,8 +46,6 @@ const MediaDetailsDrawer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
   // ---------------------------------------------------
-  const [trailerStarted, setTrailerStarted] = useState(false);
-  const [trailerEnded, setTrailerEnded] = useState(false);
   const [isWatched, setIsWatched] = useState<boolean>(false);
   const [isFavourite, setIsFavourite] = useState<boolean>(false);
   const [seriesDetails, setSeriesDetails] = useState<MediaItem | null>(null);
@@ -428,14 +425,10 @@ const MediaDetailsDrawer = () => {
               {/* Trailer/Backdrop area */}
               <div className="relative w-full aspect-[16/9] bg-black rounded-t-xl overflow-hidden">
                 {/* Trailer video, only show if not ended */}
-
                 <YouTubeWithProgressiveFallback
                   key={activeItemId}
                   item={item}
-                  trailerStarted={trailerStarted}
-                  trailerEnded={trailerEnded}
-                  setTrailerStarted={setTrailerStarted}
-                  setTrailerEnded={setTrailerEnded}
+                  aspectRatio="16/9"
                 />
 
                 {/* Item Logo or Name above play button */}
@@ -537,7 +530,7 @@ const MediaDetailsDrawer = () => {
                               setDownloadLoading(true);
                               try {
                                 api.downloadMediaItem(item.Id, item.Name);
-                              } catch (err) {
+                              } catch {
                                 alert("Failed to start download.");
                               } finally {
                                 setTimeout(() => setDownloadLoading(false), 1000);

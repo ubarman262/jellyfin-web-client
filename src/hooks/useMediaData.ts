@@ -1,19 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { MediaItem, ItemsResponse } from "../types/jellyfin";
+import { MediaItem, ItemsResponse, MediaType } from "../types/jellyfin";
 
 export const useMediaData = (
-  type:
-    | "latest"
-    | "movies"
-    | "series"
-    | "recommended"
-    | "genre"
-    | "resume"
-    | "nextup"
-    | "favourites"
-    | "collections",
-  options?: { limit?: number; genreId?: string; startIndex?: number }
+  type: MediaType,
+  options?: { genres?: string[]; limit?: number; startIndex?: number; mediaType?: string }
 ) => {
   const { api, isAuthenticated } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -33,8 +24,10 @@ export const useMediaData = (
 
       try {
         let result: MediaItem[] | ItemsResponse;
+        const genres = (options?.genres ?? []).join('|');
         const limit = options?.limit ?? 20;
         const startIndex = options?.startIndex ?? 0;
+        const mediaType = options?.mediaType ?? "";
 
         switch (type) {
           case "resume":
@@ -48,7 +41,7 @@ export const useMediaData = (
             setTotalItems(result.length);
             break;
           case "latest":
-            result = await api.getLatestMedia("", limit);
+            result = await api.getLatestMedia(mediaType, limit);
             setItems(result);
             setTotalItems(result.length);
             break;
@@ -58,12 +51,12 @@ export const useMediaData = (
             setTotalItems(result.length);
             break;
           case "movies":
-            result = await api.getMediaByType("Movie", limit, startIndex);
+            result = await api.getMediaByType("Movie", genres, limit, startIndex);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
           case "series":
-            result = await api.getMediaByType("Series", limit, startIndex);
+            result = await api.getMediaByType("Series", genres, limit, startIndex);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
@@ -77,11 +70,8 @@ export const useMediaData = (
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
-          case "genre":
-            if (!options?.genreId) {
-              throw new Error("Genre ID is required for genre type");
-            }
-            result = await api.getMediaByGenre(options.genreId, "", limit);
+          case "genres":
+            result = await api.getGenres(mediaType);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
@@ -103,9 +93,10 @@ export const useMediaData = (
     api,
     isAuthenticated,
     type,
+    options?.genres,
     options?.limit,
-    options?.genreId,
     options?.startIndex,
+    options?.mediaType,
   ]);
 
   return { items, isLoading, error, totalItems };
