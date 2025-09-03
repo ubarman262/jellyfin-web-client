@@ -63,7 +63,7 @@ const SearchPage: React.FC = () => {
     <div className="min-h-screen bg-neutral-900 text-white">
       <Navbar />
 
-      <div className="container mx-auto px-4 pt-24 pb-16">
+      <div className="px-14 pt-24 pb-16">
         {/* Search Form */}
         <div className="mb-8">
           <form

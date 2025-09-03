@@ -80,7 +80,7 @@ const StudioDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-16">
+      <div className="px-14 pt-24 pb-16">
         <button
           className="mb-4 flex items-center text-gray-300 hover:text-white transition-colors"
           onClick={() => navigate("/home")}

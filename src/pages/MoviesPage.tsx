@@ -5,8 +5,11 @@ import YouTubeWithProgressiveFallback from "../components/ui/YouTubeWithProgress
 import { useAuth } from "../context/AuthContext";
 import { useMediaData } from "../hooks/useMediaData";
 import { FUNNY_ENDING_LINES_MOVIES, MediaItem } from "../types/jellyfin";
+import PlayButton from "../components/ui/playButton";
+import clsx from "clsx";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 30;
+const FILTERED_PAGE_SIZE = 1000;
 
 const MoviesPage: React.FC = () => {
   const { api } = useAuth();
@@ -22,20 +25,50 @@ const MoviesPage: React.FC = () => {
     (g) => g.Name
   );
 
-  const { items: latestItems } = useMediaData("latest", {
+  const featureFilter = "latest";
+
+  const { items: defaultFeaturedItems } = useMediaData(featureFilter, {
     mediaType: "Movie",
-    limit: 5,
+    limit: 10,
   });
 
-  // Persist the random item for the session
-  const itemRef = useRef<MediaItem | null>(null);
+  // Compute featuredItems based on selectedGenres
+  const featuredItems =
+    selectedGenres.length > 0
+      ? items // no limit when genre filter is present
+      : defaultFeaturedItems;
+
+  // Remove itemRef logic and use a state for the preview item
+  const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
+
+  // Track previous featuredItems and selectedGenres to detect real changes
+  const prevFeaturedItemsRef = useRef<MediaItem[]>([]);
+  const prevGenresRef = useRef<string[]>([]);
+
   useEffect(() => {
-    if (!itemRef.current && latestItems.length > 0) {
-      const randomIdx = Math.floor(Math.random() * Math.min(latestItems.length, 5));
-      itemRef.current = latestItems[randomIdx];
+    // Only update preview if:
+    // - The genre filter changes
+    // - The featuredItems array changes (by length or content)
+    const prevGenres = prevGenresRef.current;
+    const prevFeaturedItems = prevFeaturedItemsRef.current;
+
+    const genresChanged =
+      prevGenres.length !== selectedGenres.length ||
+      prevGenres.some((g, i) => g !== selectedGenres[i]);
+    const itemsChanged =
+      prevFeaturedItems.length !== featuredItems.length ||
+      prevFeaturedItems.some((item, i) => item.Id !== featuredItems[i]?.Id);
+
+    if ((genresChanged || itemsChanged) && featuredItems.length > 0) {
+      const randomIdx = Math.floor(Math.random() * featuredItems.length);
+      setPreviewItem(featuredItems[randomIdx]);
     }
-  }, [latestItems]);
-  const item = itemRef.current;
+    // Update refs for next effect run
+    prevGenresRef.current = [...selectedGenres];
+    prevFeaturedItemsRef.current = [...featuredItems];
+  }, [featuredItems, selectedGenres]);
+
+  const item = previewItem;
 
   const officialRating = item?.OfficialRating ?? [];
   const overview = item?.Overview ?? "";
@@ -46,8 +79,9 @@ const MoviesPage: React.FC = () => {
     isLoading,
     totalItems,
   } = useMediaData("movies", {
-    limit: PAGE_SIZE,
-    startIndex: page * PAGE_SIZE,
+    limit: selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE,
+    startIndex:
+      page * (selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE),
     genres: selectedGenres.length > 0 ? selectedGenres : undefined,
   });
 
@@ -147,7 +181,7 @@ const MoviesPage: React.FC = () => {
     setGenreMenuOpen(false);
   };
 
-  if (!api) return null;
+  if (!api || !item) return null;
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
@@ -156,10 +190,10 @@ const MoviesPage: React.FC = () => {
       <div className="relative w-full">
         {/* Genre Dropdown Menu */}
         <div
-          className="absolute top-20 left-16 z-10 flex items-center gap-4"
+          className="px-14 absolute top-20 z-10 flex items-center gap-4"
           ref={genreMenuRef}
         >
-          <span className="font-bold text-4xl text-white">Movie</span>
+          <span className="font-bold text-4xl text-white">Movies</span>
           <button
             className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-400 rounded text-lg font-semibold focus:outline-none"
             onClick={() => setGenreMenuOpen((open) => !open)}
@@ -240,7 +274,7 @@ const MoviesPage: React.FC = () => {
           />
           {/* Logo and Overview overlay */}
           {api && item && (
-            <div className="absolute left-16 bottom-64 z-10 max-w-2xl">
+            <div className="absolute px-14 bottom-80 z-10 max-w-2xl">
               {item.ImageTags?.Logo ? (
                 <img
                   src={api.getImageUrl(item.Id, "Logo", 400)}
@@ -255,6 +289,39 @@ const MoviesPage: React.FC = () => {
               )}
             </div>
           )}
+          <div
+            className={clsx(
+              "flex items-center gap-3 text-sm text-gray-300 transition-transform duration-700 delay-100 absolute px-14 bottom-72 z-10 max-w-2xl mb-2",
+              "translate-y-0 opacity-100"
+            )}
+          >
+            {item.ProductionYear && <span>{item.ProductionYear}</span>}
+            {genres?.length > 0 && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-gray-500" />
+                <span>{genres.slice(0, 3).join(", ")}</span>
+              </>
+            )}
+          </div>
+          <p
+            className={clsx(
+              "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 w-160 md:w-3/5 absolute px-14 bottom-60 z-10 max-w-2xl mb-2",
+              "translate-y-0 opacity-100"
+            )}
+            style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
+          >
+            {overview.split(" ").length > 20
+              ? `${overview.split(" ").slice(0, 20).join(" ")}...`
+              : overview}
+          </p>
+          <div className="absolute px-14 bottom-44 z-10 max-w-2xl">
+            <PlayButton
+              itemId={item.Id}
+              type={item.Type}
+              width={200}
+              height={50}
+            />
+          </div>
           <div>
             <span
               className="absolute right-0 bottom-[17rem] z-10 max-w-2xl w-40"
@@ -287,7 +354,7 @@ const MoviesPage: React.FC = () => {
         />
       </div>
 
-      <div className="container mx-auto px-4 -mt-24 pb-16 pl-16 pr-16">
+      <div className="px-14 -mt-12 pb-16 pl-2 pr-2">
         {(() => {
           if (items.length === 0 && isLoading) {
             return (
@@ -306,7 +373,7 @@ const MoviesPage: React.FC = () => {
           } else if (items.length > 0) {
             return (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <div className="px-14 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-6">
                   {items.map((item) => (
                     <MediaCard key={item.Id} item={item} />
                   ))}

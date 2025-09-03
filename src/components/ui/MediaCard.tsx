@@ -276,7 +276,9 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
       className={clsx(
         "group relative transition-all duration-300 overflow-hidden bg-gray-900 cursor-pointer rounded-md",
         featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3] z-10",
-        isHovered && "z-10 scale-110 shadow-xl"
+        isHovered && "z-10 scale-110 shadow-xl",
+        // Add max width and height for the card
+        "max-w-[200px] max-h-[300px]"
       )}
       onMouseEnter={() => {
         if (!touchDevice) setIsHovered(true);
@@ -296,11 +298,13 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
           alt={title}
           className={clsx(
             "w-full h-full object-cover transition-all duration-500 rounded-md",
-            isHovered && "brightness-30"
+            isHovered && "brightness-30",
+            // Add max width and height for the image
+            "max-w-[200px] max-h-[300px]"
           )}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-md">
+        <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-md max-w-[200px] max-h-[300px]">
           <span className="text-gray-400">{title}</span>
         </div>
       )}

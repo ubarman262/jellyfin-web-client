@@ -3,10 +3,16 @@ import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
 import { useMediaData } from "../hooks/useMediaData";
 import { FUNNY_ENDING_LINES_SHOWS, MediaItem } from "../types/jellyfin";
+import { useAuth } from "../context/AuthContext";
+import YouTubeWithProgressiveFallback from "../components/ui/YouTubeWithProgressiveFallback";
+import PlayButton from "../components/ui/playButton";
+import clsx from "clsx";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 30;
+const FILTERED_PAGE_SIZE = 1000;
 
 const ShowsPage: React.FC = () => {
+  const { api } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -15,24 +21,78 @@ const ShowsPage: React.FC = () => {
   const [genreMenuOpen, setGenreMenuOpen] = useState(false);
   const genreMenuRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
-    const genres = useMediaData("genres", { mediaType: "Movie" }).items.map(g => g.Name);
+  const genres = useMediaData("genres", { mediaType: "Series" }).items.map(
+    (g) => g.Name
+  );
 
+  const featureFilter = "latest";
+
+  const { items: defaultFeaturedItems } = useMediaData(featureFilter, {
+    mediaType: "Series",
+    limit: 10,
+  });
+
+  // Compute featuredItems based on selectedGenres
+  const featuredItems =
+    selectedGenres.length > 0
+      ? items // no limit when genre filter is present
+      : defaultFeaturedItems;
+
+  // Remove itemRef logic and use a state for the preview item
+  const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
+
+  // Track previous featuredItems and selectedGenres to detect real changes
+  const prevFeaturedItemsRef = useRef<MediaItem[]>([]);
+  const prevGenresRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    // Only update preview if:
+    // - The genre filter changes
+    // - The featuredItems array changes (by length or content)
+    const prevGenres = prevGenresRef.current;
+    const prevFeaturedItems = prevFeaturedItemsRef.current;
+
+    const genresChanged =
+      prevGenres.length !== selectedGenres.length ||
+      prevGenres.some((g, i) => g !== selectedGenres[i]);
+    const itemsChanged =
+      prevFeaturedItems.length !== featuredItems.length ||
+      prevFeaturedItems.some((item, i) => item.Id !== featuredItems[i]?.Id);
+
+    if ((genresChanged || itemsChanged) && featuredItems.length > 0) {
+      const randomIdx = Math.floor(Math.random() * featuredItems.length);
+      setPreviewItem(featuredItems[randomIdx]);
+    }
+    // Update refs for next effect run
+    prevGenresRef.current = [...selectedGenres];
+    prevFeaturedItemsRef.current = [...featuredItems];
+  }, [featuredItems, selectedGenres]);
+
+  const item = previewItem;
+
+  const officialRating = item?.OfficialRating ?? [];
+  const overview = item?.Overview ?? "";
+
+  // Fetch Series for current page/genre(s)
   const {
     items: fetchedItems,
     isLoading,
     totalItems,
   } = useMediaData("series", {
-    limit: PAGE_SIZE,
-    startIndex: page * PAGE_SIZE,
+    limit: selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE,
+    startIndex:
+      page * (selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE),
     genres: selectedGenres.length > 0 ? selectedGenres : undefined,
   });
 
+  // Reset items when genres change
   useEffect(() => {
     setItems([]);
     setPage(0);
     setHasMore(true);
   }, [selectedGenres]);
 
+  // Append new items when fetched, deduplicating by Id
   useEffect(() => {
     if (page === 0) {
       setItems(fetchedItems);
@@ -45,6 +105,7 @@ const ShowsPage: React.FC = () => {
         return [...prev, ...newItems];
       });
     }
+    // Use totalItems to determine if there are more items
     if (items.length + fetchedItems.length >= totalItems) {
       setHasMore(false);
     } else {
@@ -53,6 +114,7 @@ const ShowsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedItems, page, totalItems]);
 
+  // Infinite scroll observer
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const target = entries[0];
@@ -73,6 +135,7 @@ const ShowsPage: React.FC = () => {
     };
   }, [handleObserver, items.length, hasMore]);
 
+  // Close genre menu on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -112,20 +175,27 @@ const ShowsPage: React.FC = () => {
 
   // Handle "All" click
   const handleAllGenres = () => {
-    if(selectedGenres.length === 0) return;
+    if (selectedGenres.length === 0) return;
     setSelectedGenres([]);
     setPage(0);
     setGenreMenuOpen(false);
   };
 
+  if (!api || !item) return null;
+
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-16 pl-16 pr-16">
+      {/* Featured Section */}
+      <div className="relative w-full">
         {/* Genre Dropdown Menu */}
-        <div className="relative mb-8" ref={genreMenuRef}>
+        <div
+          className="px-14 absolute top-20 z-10 flex items-center gap-4"
+          ref={genreMenuRef}
+        >
+          <span className="font-bold text-4xl text-white">Shows</span>
           <button
-            className="flex items-center gap-2 px-6 py-2 bg-neutral-900 border border-gray-400 rounded text-lg font-semibold focus:outline-none"
+            className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-400 rounded text-lg font-semibold focus:outline-none"
             onClick={() => setGenreMenuOpen((open) => !open)}
           >
             Genres
@@ -151,7 +221,7 @@ const ShowsPage: React.FC = () => {
             )}
           </button>
           {genreMenuOpen && (
-            <div className="absolute z-20 mt-2 left-0 bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[340px] max-h-96 overflow-y-auto">
+            <div className="absolute z-20 top-[52px] left-[123px] bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[540px] max-h-96 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
                 <button
                   className={`text-left py-1 px-2 rounded hover:bg-gray-800 ${
@@ -194,12 +264,103 @@ const ShowsPage: React.FC = () => {
             </div>
           )}
         </div>
+        <div className="w-full relative">
+          <YouTubeWithProgressiveFallback
+            key={item?.Id}
+            item={item}
+            aspectRatio="16/8"
+            buttonSize={34}
+            buttonPosition={{ bottom: "17rem", right: "12rem" }}
+          />
+          {/* Logo and Overview overlay */}
+          {api && item && (
+            <div className="absolute px-14 bottom-80 z-10 max-w-2xl">
+              {item.ImageTags?.Logo ? (
+                <img
+                  src={api.getImageUrl(item.Id, "Logo", 400)}
+                  alt={item.Name}
+                  className="max-h-20 md:max-h-28 w-auto object-contain mb-4"
+                  style={{ display: "inline-block" }}
+                />
+              ) : (
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  {item.Name}
+                </h1>
+              )}
+            </div>
+          )}
+          <div
+            className={clsx(
+              "flex items-center gap-3 text-sm text-gray-300 transition-transform duration-700 delay-100 absolute px-14 bottom-72 z-10 max-w-2xl mb-2",
+              "translate-y-0 opacity-100"
+            )}
+          >
+            {item.ProductionYear && <span>{item.ProductionYear}</span>}
+            {genres?.length > 0 && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-gray-500" />
+                <span>{genres.slice(0, 3).join(", ")}</span>
+              </>
+            )}
+          </div>
+          <p
+            className={clsx(
+              "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 w-160 md:w-3/5 absolute px-14 bottom-60 z-10 max-w-2xl mb-2",
+              "translate-y-0 opacity-100"
+            )}
+            style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
+          >
+            {overview.split(" ").length > 20
+              ? `${overview.split(" ").slice(0, 20).join(" ")}...`
+              : overview}
+          </p>
+          <div className="absolute px-14 bottom-44 z-10 max-w-2xl">
+            <PlayButton
+              itemId={item.Id}
+              type={item.Type}
+              width={200}
+              height={50}
+            />
+          </div>
+          <div>
+            <span
+              className="absolute right-0 bottom-[17rem] z-10 max-w-2xl w-40"
+              style={{
+                background: "rgba(55, 65, 81, 0.55)", // bg-gray-700/55
+                color: "#fff",
+                // borderRadius: "0.375rem", // rounded
+                padding: "0.5rem 1.25rem", // px-5 py-2
+                fontWeight: 500,
+                fontSize: "1.25rem", // text-lg
+                letterSpacing: "0.01em",
+                display: "inline-block",
+                borderLeft: "4px solid rgba(255,255,255,0.5)",
+                backdropFilter: "blur(2px)",
+              }}
+            >
+              {officialRating}
+            </span>
+          </div>
+        </div>
+        {/* Fade overlay between video and details */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-[200px] pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+            zIndex: 10,
+            transition: "height 0.3s ease",
+          }}
+        />
+      </div>
+
+      <div className="px-14 -mt-12 pb-16 pl-2 pr-2">
         {(() => {
           if (items.length === 0 && isLoading) {
             return (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {Array.from({ length: PAGE_SIZE }).map((_, i) => {
-                  const skeletonKey = `skeleton-${i}-${PAGE_SIZE}`;
+                  const skeletonKey = `skeleton-${page}-${i}`;
                   return (
                     <div
                       key={skeletonKey}
@@ -212,11 +373,12 @@ const ShowsPage: React.FC = () => {
           } else if (items.length > 0) {
             return (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <div className="px-14 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-6">
                   {items.map((item) => (
                     <MediaCard key={item.Id} item={item} />
                   ))}
                 </div>
+                {/* Loader for infinite scroll */}
                 <div ref={loaderRef} />
                 {isLoading && (
                   <div className="flex justify-center mt-8">
@@ -233,7 +395,7 @@ const ShowsPage: React.FC = () => {
           } else {
             return (
               <div className="text-center py-12 text-gray-400">
-                No TV shows found.
+                No shows found.
               </div>
             );
           }

@@ -58,7 +58,7 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Content Rows */}
-      <div className="container mx-auto px-4 mt-[20px] relative z-10 sm:mt-[-4rem] mb-16">
+      <div className="px-14 mt-[20px] relative z-10 sm:mt-[-4rem] mb-16">
         <MediaRow
           title="Continue Watching"
           items={resumeItems}
