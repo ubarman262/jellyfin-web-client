@@ -245,7 +245,7 @@ class JellyfinApi {
     mediaType: string,
     genres?: string,
     limit: number = 20,
-    startIndex: number = 0,
+    startIndex: number = 0
   ): Promise<ItemsResponse> {
     return this.makeRequest<ItemsResponse>(
       "get",
@@ -260,7 +260,7 @@ class JellyfinApi {
         SortOrder: "Ascending",
         Fields:
           "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
-        Genres: genres
+        Genres: genres,
       }
     );
   }
@@ -854,7 +854,6 @@ class JellyfinApi {
     firstWord = firstWord.replace(/:$/, "");
     const searchWord = firstWord.toLowerCase();
     const boxSet = boxSets.find((boxSet) => {
-      // console.log(`Checking BoxSet: ${boxSet.Name} against search word: ${searchWord}`);
       const boxSetNameWords = boxSet.Name.toLowerCase();
       if (boxSetNameWords.includes(searchWord)) {
         return true;
@@ -864,24 +863,6 @@ class JellyfinApi {
     if (boxSet) {
       return boxSet;
     }
-
-    // 2. For each BoxSet, check if the item is a child
-    // for (const boxSet of boxSets) {
-    //   const childrenResp = await this.makeRequest<ItemsResponse>(
-    //     "get",
-    //     `/Users/${this.userId}/Items`,
-    //     undefined,
-    //     {
-    //       ParentId: boxSet.Id,
-    //       IncludeItemTypes: "Movie",
-    //       Recursive: false,
-    //       Fields: "PrimaryImageTag,SortName",
-    //     }
-    //   );
-    //   if ((childrenResp.Items ?? []).some((child) => child.Id === itemId)) {
-    //     return boxSet;
-    //   }
-    // }
     return null;
   }
 
@@ -990,14 +971,10 @@ class JellyfinApi {
    * Download a media item by opening the correct download URL in a new tab.
    * Uses the raw serverUrl (not /emby).
    */
-  downloadMediaItem(itemId: string, itemName?: string) {
+  downloadMediaItem(itemId: string) {
     // Use the raw serverUrl (no /emby)
     const serverUrl = this.serverUrl;
-    const apiKey =
-      this.accessToken ||
-      (typeof (this as any).getAccessToken === "function"
-        ? (this as any).getAccessToken()
-        : undefined);
+    const apiKey = this.accessToken;
     const url =
       `${serverUrl}/Items/${itemId}/Download` +
       (apiKey ? `?api_key=${apiKey}` : "");

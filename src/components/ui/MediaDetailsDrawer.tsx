@@ -1,4 +1,12 @@
-import { Calendar, Clock, Download, Heart, Loader2, Star, X } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Download,
+  Heart,
+  Loader2,
+  Star,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isMobile } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
@@ -415,11 +423,7 @@ const MediaDetailsDrawer = () => {
                 onClick={onClose}
                 aria-label="Close"
               >
-                <X
-                  size={14}
-                  strokeWidth={2}
-                  color="rgb(255 255 255 / 60%)"
-                />
+                <X size={14} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
               </button>
 
               {/* Trailer/Backdrop area */}
@@ -433,34 +437,34 @@ const MediaDetailsDrawer = () => {
 
                 {/* Item Logo or Name above play button */}
                 {itemLogo ? (
-                    <div
-                      className="absolute left-8 bottom-[15px] z-20 flex items-end"
+                  <div
+                    className="absolute left-8 bottom-[15px] z-20 flex items-end"
+                    style={{
+                      width: isMobile ? "50vw" : "32%",
+                      minWidth: 100,
+                      maxWidth: 400,
+                      height: "auto",
+                      aspectRatio: "4/1",
+                      justifyContent: "flex-start",
+                    }}
+                  >
+                    <img
+                      src={itemLogo}
+                      alt={`${item.Name} logo`}
                       style={{
-                        width: isMobile ? "50vw" : "32%",
-                        minWidth: 100,
-                        maxWidth: 400,
+                        maxWidth: "100%",
+                        maxHeight: "90px",
+                        minHeight: "40px",
+                        width: "auto",
                         height: "auto",
-                        aspectRatio: "4/1",
-                        justifyContent: "flex-start",
+                        objectFit: "contain",
+                        background: "rgba(0,0,0,0.0)",
+                        pointerEvents: "none",
+                        display: "block",
+                        margin: 0,
                       }}
-                    >
-                      <img
-                        src={itemLogo}
-                        alt={`${item.Name} logo`}
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "90px",
-                          minHeight: "40px",
-                          width: "auto",
-                          height: "auto",
-                          objectFit: "contain",
-                          background: "rgba(0,0,0,0.0)",
-                          pointerEvents: "none",
-                          display: "block",
-                          margin: 0,
-                        }}
-                      />
-                    </div>
+                    />
+                  </div>
                 ) : (
                   <div
                     className="absolute left-8 bottom-8 z-20 text-white font-bold md:text-4xl drop-shadow-lg"
@@ -500,18 +504,19 @@ const MediaDetailsDrawer = () => {
                     <h2 className="text-2xl md:text-4xl mb-2">
                       {/* Play button over video, bottom left */}
                       {/* {isBrowser && ( */}
-                        <div className="z-30 flex items-center mb-5">
-                          <PlayButton
-                            itemId={
-                              isBoxSet && boxSetMovies.length > 0
-                                ? boxSetMovies[0].Id
-                                : item.Id
-                            }
-                            type={item.Type}
-                            width={400}
-                            height={50}
-                          />
-                          {/* Download button */}
+                      <div className="z-30 flex items-center mb-5">
+                        <PlayButton
+                          itemId={
+                            isBoxSet && boxSetMovies.length > 0
+                              ? boxSetMovies[0].Id
+                              : item.Id
+                          }
+                          type={item.Type}
+                          width={400}
+                          height={50}
+                        />
+                        {/* Download button */}
+                        {typeSeries(item) ? null : (
                           <button
                             type="button"
                             className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
@@ -529,11 +534,14 @@ const MediaDetailsDrawer = () => {
                               if (!api || !item?.Id) return;
                               setDownloadLoading(true);
                               try {
-                                api.downloadMediaItem(item.Id, item.Name);
+                                api.downloadMediaItem(item.Id);
                               } catch {
                                 alert("Failed to start download.");
                               } finally {
-                                setTimeout(() => setDownloadLoading(false), 1000);
+                                setTimeout(
+                                  () => setDownloadLoading(false),
+                                  1000
+                                );
                               }
                             }}
                             tabIndex={0}
@@ -544,84 +552,83 @@ const MediaDetailsDrawer = () => {
                               <Download size={18} />
                             )}
                           </button>
-                          {/* Watched checkmark with transition */}
-                          <MarkWatchedButton
-                            item={item}
-                            isWatched={isWatched}
-                            setIsWatched={setIsWatched}
-                          />
-                          {/* Favourite button with transition */}
-                          <button
-                            type="button"
-                            className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
-                            title={
-                              isFavourite
-                                ? "Remove from favorites"
-                                : "Add to favorites"
+                        )}
+
+                        {/* Watched checkmark with transition */}
+                        <MarkWatchedButton
+                          item={item}
+                          isWatched={isWatched}
+                          setIsWatched={setIsWatched}
+                        />
+                        {/* Favourite button with transition */}
+                        <button
+                          type="button"
+                          className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
+                          title={
+                            isFavourite
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                          aria-pressed={isFavourite}
+                          aria-label={
+                            isFavourite
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                          style={{
+                            lineHeight: 0,
+                            width: 37.2,
+                            height: 37.2,
+                            transition: "background 0.2s",
+                          }}
+                          onClick={async () => {
+                            try {
+                              await api.markAsFavourite(item.Id, !isFavourite);
+                              setIsFavourite((prev) => !prev);
+                            } catch (err) {
+                              console.error("Error toggling favorite:", err);
                             }
-                            aria-pressed={isFavourite}
-                            aria-label={
-                              isFavourite
-                                ? "Remove from favorites"
-                                : "Add to favorites"
-                            }
+                          }}
+                          tabIndex={0}
+                        >
+                          {/* Outlined Heart icon */}
+                          <span
                             style={{
-                              lineHeight: 0,
-                              width: 37.2,
-                              height: 37.2,
-                              transition: "background 0.2s",
+                              position: "absolute",
+                              inset: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              opacity: isFavourite ? 0 : 1,
+                              transform: isFavourite
+                                ? "scale(0.7)"
+                                : "scale(1)",
+                              transition: "opacity 0.25s, transform 0.25s",
+                              pointerEvents: isFavourite ? "none" : "auto",
                             }}
-                            onClick={async () => {
-                              try {
-                                await api.markAsFavourite(
-                                  item.Id,
-                                  !isFavourite
-                                );
-                                setIsFavourite((prev) => !prev);
-                              } catch (err) {
-                                console.error("Error toggling favorite:", err);
-                              }
-                            }}
-                            tabIndex={0}
                           >
-                            {/* Outlined Heart icon */}
-                            <span
-                              style={{
-                                position: "absolute",
-                                inset: 0,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                opacity: isFavourite ? 0 : 1,
-                                transform: isFavourite
-                                  ? "scale(0.7)"
-                                  : "scale(1)",
-                                transition: "opacity 0.25s, transform 0.25s",
-                                pointerEvents: isFavourite ? "none" : "auto",
-                              }}
-                            >
-                              <Heart size={18} />
-                            </span>
-                            {/* Filled Heart icon */}
-                            <span
-                              style={{
-                                position: "absolute",
-                                inset: 0,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                opacity: isFavourite ? 1 : 0,
-                                transform: isFavourite
-                                  ? "scale(1)"
-                                  : "scale(0.7)",
-                                transition: "opacity 0.25s, transform 0.25s",
-                                pointerEvents: isFavourite ? "auto" : "none",
-                              }}
-                            >
-                              <Heart size={18} fill="#fff" />
-                            </span>
-                          </button>
-                        </div>
+                            <Heart size={18} />
+                          </span>
+                          {/* Filled Heart icon */}
+                          <span
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              opacity: isFavourite ? 1 : 0,
+                              transform: isFavourite
+                                ? "scale(1)"
+                                : "scale(0.7)",
+                              transition: "opacity 0.25s, transform 0.25s",
+                              pointerEvents: isFavourite ? "auto" : "none",
+                            }}
+                          >
+                            <Heart size={18} fill="#fff" />
+                          </span>
+                        </button>
+                      </div>
                       {/* )} */}
                     </h2>
                     {isEpisode && (
@@ -778,12 +785,14 @@ const MediaDetailsDrawer = () => {
                       // Skeleton for the whole tabs section (tabs + content)
                       <div>
                         <div className="flex gap-4">
-                          {["one", "two", "three", "four", "five"].map((label) => (
-                            <div
-                              key={`skeleton-tab-${label}`}
-                              className="w-[200px] h-[250px] bg-gray-800 rounded-lg animate-pulse"
-                            />
-                          ))}
+                          {["one", "two", "three", "four", "five"].map(
+                            (label) => (
+                              <div
+                                key={`skeleton-tab-${label}`}
+                                className="w-[200px] h-[250px] bg-gray-800 rounded-lg animate-pulse"
+                              />
+                            )
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -908,6 +917,5 @@ const MediaDetailsDrawer = () => {
     </Sheet>
   );
 };
-
 
 export default MediaDetailsDrawer;
