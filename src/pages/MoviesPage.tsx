@@ -29,7 +29,7 @@ const MoviesPage: React.FC = () => {
 
   const { items: defaultFeaturedItems } = useMediaData(featureFilter, {
     mediaType: "Movie",
-    limit: 10,
+    limit: 2,
   });
 
   // Compute featuredItems based on selectedGenres
@@ -190,7 +190,7 @@ const MoviesPage: React.FC = () => {
       <div className="relative w-full">
         {/* Genre Dropdown Menu */}
         <div
-          className="px-14 absolute top-20 z-10 flex items-center gap-4"
+          className="px-14 absolute top-20 z-30 flex items-center gap-4"
           ref={genreMenuRef}
         >
           <span className="font-bold text-4xl text-white">Movies</span>
@@ -221,7 +221,7 @@ const MoviesPage: React.FC = () => {
             )}
           </button>
           {genreMenuOpen && (
-            <div className="absolute z-20 top-[52px] left-[123px] bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[540px] max-h-96 overflow-y-auto">
+            <div className="absolute z-40 top-[52px] left-[143px] bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[540px] max-h-96 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
                 <button
                   className={`text-left py-1 px-2 rounded hover:bg-gray-800 ${

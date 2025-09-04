@@ -128,6 +128,7 @@ export interface MediaItem {
   Studios?: Array<Studios>;
   RemoteTrailers?: Array<{
     Url: string;
+    Name: string;
   }>;
   UserData: {
     PlaybackPositionTicks?: number;

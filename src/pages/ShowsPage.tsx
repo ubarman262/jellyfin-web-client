@@ -29,7 +29,7 @@ const ShowsPage: React.FC = () => {
 
   const { items: defaultFeaturedItems } = useMediaData(featureFilter, {
     mediaType: "Series",
-    limit: 10,
+    limit: 3,
   });
 
   // Compute featuredItems based on selectedGenres
@@ -190,7 +190,7 @@ const ShowsPage: React.FC = () => {
       <div className="relative w-full">
         {/* Genre Dropdown Menu */}
         <div
-          className="px-14 absolute top-20 z-10 flex items-center gap-4"
+          className="px-14 absolute top-20 z-30 flex items-center gap-4"
           ref={genreMenuRef}
         >
           <span className="font-bold text-4xl text-white">Shows</span>
