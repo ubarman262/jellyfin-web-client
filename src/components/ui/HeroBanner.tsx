@@ -96,7 +96,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
 
   return (
     <div
-      className="relative w-full h-[85vh] overflow-hidden mb-8"
+      className="relative w-full h-[95vh] overflow-hidden mb-8"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -187,7 +187,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
             )}
 
             <div className="absolute inset-0 flex items-end md:items-end bottom-32">
-              <div className="container mx-auto">
+              <div className="container pl-6 md:pl-12"> {/* Added left padding */}
                 <div className="max-w-2xl space-y-4">
                   <h1
                     className={clsx(

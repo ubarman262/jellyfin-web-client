@@ -432,6 +432,7 @@ const MediaDetailsDrawer = () => {
                 <YouTubeWithProgressiveFallback
                   key={activeItemId}
                   item={item}
+                  buttonSize={24}
                   aspectRatio="16/9"
                 />
 
@@ -482,17 +483,15 @@ const MediaDetailsDrawer = () => {
                 )}
 
                 {/* Fade overlay between video and details */}
-                {/* <div
-                  className="absolute bottom-12 left-0 right-0 h-[80px] pointer-events-none"
+                <div
+                  className="absolute -bottom-4 left-0 right-0 h-[200px] pointer-events-none"
                   style={{
-                    // background:
-                    //   "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                    background:
+                      "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
                     zIndex: 10,
-                    // opacity: trailerStarted || trailerEnded ? 0 : 1,
-                    // height: trailerStarted || trailerEnded ? "50px" : "80px",
-                    // transition: "height 0.3s ease",
+                    transition: "height 0.3s ease",
                   }}
-                /> */}
+                />
               </div>
 
               {/* Details */}

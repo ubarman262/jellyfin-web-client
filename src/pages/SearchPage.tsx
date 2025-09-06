@@ -1,4 +1,4 @@
-import { Search as SearchIcon } from "lucide-react";
+import { Search as SearchIcon, Shuffle as ShuffleIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
@@ -17,7 +17,7 @@ const SearchPage: React.FC = () => {
     typeof setTimeout
   > | null>(null);
 
-  const { results, isLoading, totalResults, suggestions } =
+  const { results, isLoading, totalResults, suggestions, reloadSuggestions } =
     useSearch(searchQuery);
 
   useEffect(() => {
@@ -99,22 +99,29 @@ const SearchPage: React.FC = () => {
         {/* Suggestions when searchQuery is empty */}
         {!searchQuery && suggestions.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-xl font-medium mb-4 text-center">
-              Suggestions
-            </h2>
-            <ul className="flex flex-col items-center text-center space-y-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-medium text-left">Suggestions</h2>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
+                onClick={reloadSuggestions}
+                aria-label="Shuffle suggestions"
+              >
+                <ShuffleIcon size={20} className="text-red-500" />
+                <span className="text-sm text-white">Shuffle</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {suggestions.map((item) => (
-                <li key={item.Id} className="w-full max-w-xs">
-                  <button
-                    type="button"
-                    className="w-full text-center text-red-500 cursor-pointer hover:text-red-500 hover:underline transition-colors bg-transparent border-none p-0 m-0"
-                    onClick={() => handleItemClick(item.Id)}
-                  >
-                    {item.Name}
-                  </button>
-                </li>
+                <div
+                  key={item.Id}
+                  onClick={() => handleItemClick(item.Id)}
+                  className="cursor-pointer"
+                >
+                  <MediaCard item={item} />
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 

@@ -145,6 +145,12 @@ export const useSearch = (searchTerm: string, limit: number = 100) => {
   const [totalResults, setTotalResults] = useState(0);
   const [suggestions, setSuggestions] = useState<MediaItem[]>([]);
 
+  const reloadSuggestions = async () => {
+    if (!api) return;
+    const items = await api.getSearchSuggestions();
+    setSuggestions(items.Items ?? []);
+  };
+
   useEffect(() => {
     if (!api || !isAuthenticated || !searchTerm.trim()) {
       setResults([]);
@@ -205,7 +211,7 @@ export const useSearch = (searchTerm: string, limit: number = 100) => {
     return () => clearTimeout(timeoutId);
   }, [api, isAuthenticated, searchTerm]);
 
-  return { results, isLoading, error, totalResults, suggestions };
+  return { results, isLoading, error, totalResults, suggestions, reloadSuggestions };
 };
 
 export const useGenres = (mediaType: string = "") => {

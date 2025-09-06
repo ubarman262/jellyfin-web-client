@@ -17,17 +17,16 @@ const HomePage: React.FC = () => {
     "nextup",
     { limit: 20 }
   );
-  const { items: latestItems, isLoading: latestLoading } = useMediaData(
+
+  const { items: latestItems } = useMediaData("latest", { limit: 20 });
+
+  const { items: latestMovies, isLoading: LatestMoviesLoading } = useMediaData(
     "latest",
-    { limit: 20 }
+    { limit: 20, mediaType: "Movie" }
   );
-  const { items: moviesItems, isLoading: moviesLoading } = useMediaData(
-    "movies",
-    { limit: 20 }
-  );
-  const { items: seriesItems, isLoading: seriesLoading } = useMediaData(
-    "series",
-    { limit: 20 }
+  const { items: latestShows, isLoading: LatestShowsLoading } = useMediaData(
+    "latest",
+    { limit: 20, mediaType: "Series" }
   );
 
   useEffect(() => {
@@ -72,21 +71,15 @@ const HomePage: React.FC = () => {
         />
 
         <MediaRow
-          title="Latest Additions"
-          items={latestItems}
-          isLoading={latestLoading}
+          title="Latest Movies"
+          items={latestMovies}
+          isLoading={LatestMoviesLoading}
         />
 
         <MediaRow
-          title="Movies"
-          items={moviesItems}
-          isLoading={moviesLoading}
-        />
-
-        <MediaRow
-          title="TV Shows"
-          items={seriesItems}
-          isLoading={seriesLoading}
+          title="Latest Shows"
+          items={latestShows}
+          isLoading={LatestShowsLoading}
         />
 
         {/* Studios Section */}

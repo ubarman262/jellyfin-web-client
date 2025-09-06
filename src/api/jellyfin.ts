@@ -729,9 +729,9 @@ class JellyfinApi {
       recursive: true,
       includeItemTypes: ["Movie", "Series"].join(","),
       sortBy: ["IsFavoriteOrLiked", "Random"].join(","),
-      imageTypeLimit: 0,
+      imageTypeLimit: 1,
       enableTotalRecordCount: false,
-      enableImages: false,
+      enableImages: true,
     });
   }
 
@@ -849,7 +849,7 @@ class JellyfinApi {
       itemNameWords.find(
         (word) =>
           !ignoreWords.includes(word.toLowerCase()) && isNaN(Number(word))
-      ) || itemNameWords[0];
+      ) ?? itemNameWords[0];
     // Remove trailing colon if present
     firstWord = firstWord.replace(/:$/, "");
     const searchWord = firstWord.toLowerCase();

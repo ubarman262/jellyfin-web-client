@@ -1,12 +1,17 @@
+import clsx from "clsx";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useRecoilState, useSetRecoilState } from "recoil";
+import { useLocation } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
+import MoreInfoButton from "../components/ui/moreInfoButton";
+import PlayButton from "../components/ui/playButton";
 import YouTubeWithProgressiveFallback from "../components/ui/YouTubeWithProgressiveFallback";
 import { useAuth } from "../context/AuthContext";
 import { useMediaData } from "../hooks/useMediaData";
+import activeItem from "../states/atoms/ActiveItem";
+import drawerState from "../states/atoms/DrawerOpen";
 import { FUNNY_ENDING_LINES_MOVIES, MediaItem } from "../types/jellyfin";
-import PlayButton from "../components/ui/playButton";
-import clsx from "clsx";
 
 const PAGE_SIZE = 30;
 const FILTERED_PAGE_SIZE = 1000;
@@ -181,13 +186,51 @@ const MoviesPage: React.FC = () => {
     setGenreMenuOpen(false);
   };
 
-  if (!api || !item) return null;
+  const setActiveTiemId = useSetRecoilState(activeItem);
+  const [IsDrawerOpen, setIsDrawerOpen] = useRecoilState(drawerState);
+  const playerRef = useRef<{ play: () => void; pause: () => void }>(null);
+  const youtubeSectionRef = useRef<HTMLDivElement>(null);
+  const [isYoutubeVisible, setIsYoutubeVisible] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (playerRef.current) {
+      if (IsDrawerOpen || !isYoutubeVisible) {
+        playerRef.current.pause();
+      } else {
+        playerRef.current.play();
+      }
+    }
+  }, [IsDrawerOpen, isYoutubeVisible]);
+
+  useEffect(() => {
+    const observer = new window.IntersectionObserver(
+      ([entry]) => {
+        setIsYoutubeVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    const el = youtubeSectionRef.current;
+    if (el) observer.observe(el);
+    return () => {
+      if (el) observer.unobserve(el);
+    };
+  }, []);
+
+  if (!api || !item) {
+    return (
+      <div className="min-h-screen bg-neutral-900 text-white">
+        <Navbar />
+        <div className="w-full h-[85vh] bg-neutral-800 animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <Navbar />
       {/* Featured Section */}
-      <div className="relative w-full">
+      <div className="relative w-full" ref={youtubeSectionRef}>
         {/* Genre Dropdown Menu */}
         <div
           className="px-14 absolute top-20 z-30 flex items-center gap-4"
@@ -266,11 +309,12 @@ const MoviesPage: React.FC = () => {
         </div>
         <div className="w-full relative">
           <YouTubeWithProgressiveFallback
-            key={item?.Id}
+            key={`${location.pathname}-${item?.Id}`}
             item={item}
             aspectRatio="16/8"
             buttonSize={34}
-            buttonPosition={{ bottom: "17rem", right: "12rem" }}
+            buttonPosition={{ bottom: "14rem", right: "12rem" }}
+            playerRef={playerRef}
           />
           {/* Logo and Overview overlay */}
           {api && item && (
@@ -305,7 +349,7 @@ const MoviesPage: React.FC = () => {
           </div>
           <p
             className={clsx(
-              "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 w-160 md:w-3/5 absolute px-14 bottom-60 z-10 max-w-2xl mb-2",
+              "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 md:w-3/5 absolute px-14 bottom-60 z-10 max-w-2xl mb-2",
               "translate-y-0 opacity-100"
             )}
             style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
@@ -314,17 +358,25 @@ const MoviesPage: React.FC = () => {
               ? `${overview.split(" ").slice(0, 20).join(" ")}...`
               : overview}
           </p>
-          <div className="absolute px-14 bottom-44 z-10 max-w-2xl">
+          <div className="absolute px-14 bottom-44 z-10 max-w-2xl flex gap-4">
             <PlayButton
               itemId={item.Id}
               type={item.Type}
               width={200}
               height={50}
             />
+            <MoreInfoButton
+              onClick={() => {
+                setActiveTiemId(item.Id);
+                setIsDrawerOpen(true);
+              }}
+              width={200}
+              height={50}
+            />
           </div>
           <div>
             <span
-              className="absolute right-0 bottom-[17rem] z-10 max-w-2xl w-40"
+              className="absolute right-0 bottom-[14rem] z-10 max-w-2xl w-40"
               style={{
                 background: "rgba(55, 65, 81, 0.55)", // bg-gray-700/55
                 color: "#fff",
@@ -373,7 +425,7 @@ const MoviesPage: React.FC = () => {
           } else if (items.length > 0) {
             return (
               <>
-                <div className="px-14 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 px-14">
                   {items.map((item) => (
                     <MediaCard key={item.Id} item={item} />
                   ))}

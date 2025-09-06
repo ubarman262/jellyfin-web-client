@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useImperativeHandle } from "react";
 import YouTube, { YouTubeEvent, YouTubePlayer } from "react-youtube";
 
 import clsx from "clsx";
@@ -24,14 +24,16 @@ interface YouTubeWithProgressiveFallbackProps {
   item: MediaItem;
   aspectRatio?: string;
   buttonSize?: number;
-  buttonPosition?: ButtonPositionProps; // New prop
+  buttonPosition?: ButtonPositionProps;
+  playerRef?: React.Ref<{ play: () => void; pause: () => void }>; // Add this line
 }
 
 const YouTubeWithProgressiveFallback = ({
   item,
   aspectRatio = "16/9",
   buttonSize = 14,
-  buttonPosition, // New prop
+  buttonPosition,
+  playerRef, // Add this line
 }: YouTubeWithProgressiveFallbackProps) => {
   const { api } = useAuth();
   const [isMuted, setIsMuted] = useState(true);
@@ -41,6 +43,15 @@ const YouTubeWithProgressiveFallback = ({
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [trailerStarted, setTrailerStarted] = useState(false);
   const [trailerEnded, setTrailerEnded] = useState(false);
+
+  useImperativeHandle(playerRef, () => ({
+    play: () => {
+      if (player) player.playVideo();
+    },
+    pause: () => {
+      if (player) player.pauseVideo();
+    },
+  }), [player]);
 
   useEffect(() => {
     const fetchAndSetTrailer = async () => {

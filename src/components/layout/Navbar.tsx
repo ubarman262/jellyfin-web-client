@@ -26,6 +26,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     // Close menus when location changes
@@ -44,6 +45,14 @@ const Navbar: React.FC = () => {
     }
   }, [isAuthenticated, user]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const handleSearch = () => {
     navigate(`/search`);
   };
@@ -60,8 +69,11 @@ const Navbar: React.FC = () => {
   return (
     <header
       className={clsx(
-        "absolute top-0 left-0 right-0 z-20 transition-all duration-300",
-        "bg-gradient-to-b from-black/80 to-transparent"
+        "sticky top-0 z-20 transition-all duration-300",
+        isScrolled
+          ? "bg-black"
+          : "bg-gradient-to-b from-black/80 to-transparent",
+        "-mb-16"
       )}
     >
       <div className="px-14">
