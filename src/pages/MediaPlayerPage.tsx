@@ -35,6 +35,18 @@ interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
 }
 
+// Helper to detect iOS Safari
+function isIOSSafari() {
+  const ua = window.navigator.userAgent;
+  return (
+    /iPad|iPhone|iPod/.test(ua) &&
+    !('MSStream' in window) &&
+    /Safari/.test(ua) &&
+    !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua)
+  );
+}
+const isIOS = isIOSSafari();
+
 const MediaPlayerPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
   const { item, isLoading } = useMediaItem(itemId);
@@ -72,19 +84,55 @@ const MediaPlayerPage: React.FC = () => {
   const episodesMenuRef = useRef<HTMLDivElement | null>(null);
   const episodesButtonRef = useRef<HTMLButtonElement | null>(null); // <-- add ref for the button
 
+  const [showOrientationOverlay, setShowOrientationOverlay] = useState(false);
+
+  // Detect orientation for mobile devices
+  useEffect(() => {
+    function checkOrientation() {
+      // Only enforce for iPhone/iPad
+      if (!isIOS) {
+        setShowOrientationOverlay(false);
+        return;
+      }
+      // Use window.orientation or matchMedia
+      const landscape = window.matchMedia("(orientation: landscape)").matches;
+      setShowOrientationOverlay(!landscape);
+    }
+    checkOrientation();
+    window.addEventListener("orientationchange", checkOrientation);
+    window.addEventListener("resize", checkOrientation);
+    return () => {
+      window.removeEventListener("orientationchange", checkOrientation);
+      window.removeEventListener("resize", checkOrientation);
+    };
+  }, []);
+
+  // Move togglePlay definition above safeTogglePlay
+  const togglePlay = React.useCallback(() => {
+    if (!videoRef.current) return;
+
+    if (isPlaying) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
+    }
+  }, [isPlaying]);
+
+  // Prevent play if not landscape on mobile
+  const safeTogglePlay = React.useCallback(() => {
+    if (showOrientationOverlay) return;
+    togglePlay();
+  }, [showOrientationOverlay, togglePlay]);
+
   useEffect(() => {
     if (!showEpisodesMenu) return;
     function handleClickOutside(event: MouseEvent) {
       // If click is inside the menu, ignore
-      if (
-        episodesMenuRef.current?.contains(event.target as Node)
-      ) {
+      if (episodesMenuRef.current?.contains(event.target as Node)) {
         return;
       }
       // If click is on the button, ignore
-      if (
-        episodesButtonRef.current?.contains(event.target as Node)
-      ) {
+      if (episodesButtonRef.current?.contains(event.target as Node)) {
         return;
       }
       setShowEpisodesMenu(false);
@@ -128,17 +176,20 @@ const MediaPlayerPage: React.FC = () => {
   const [hasSkippedIntro, setHasSkippedIntro] = useState(false);
 
   // Helper: returns true if chapter name is an intro-like segment
-  const isIntroChapter = React.useCallback((name: string | undefined): boolean => {
-    const n = (name ?? "").toLowerCase();
-    return (
-      n.includes("studio logo") ||
-      n.includes("disclaimer") ||
-      n.includes("intro") ||
-      n.includes("opening") ||
-      n.includes("opening credits") ||
-      n.includes("title sequence")
-    );
-  }, []);
+  const isIntroChapter = React.useCallback(
+    (name: string | undefined): boolean => {
+      const n = (name ?? "").toLowerCase();
+      return (
+        n.includes("studio logo") ||
+        n.includes("disclaimer") ||
+        n.includes("intro") ||
+        n.includes("opening") ||
+        n.includes("opening credits") ||
+        n.includes("title sequence")
+      );
+    },
+    []
+  );
 
   // Improved: returns true if chapter is a "real" scene (not intro-like)
   const isNonIntroChapter = React.useCallback(
@@ -497,16 +548,6 @@ const MediaPlayerPage: React.FC = () => {
       console.error("Error fetching subtitles:", error);
     }
   };
-
-  const togglePlay = React.useCallback(() => {
-    if (!videoRef.current) return;
-
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
-    }
-  }, [isPlaying]);
 
   const toggleMute = () => {
     if (!videoRef.current) return;
@@ -869,7 +910,7 @@ const MediaPlayerPage: React.FC = () => {
         details.fastSeek &&
         "fastSeek" in videoRef.current
       ) {
-        (videoRef.current).fastSeek(details.seekTime);
+        videoRef.current.fastSeek(details.seekTime);
       } else if (videoRef.current) {
         videoRef.current.currentTime = details.seekTime;
       }
@@ -901,7 +942,8 @@ const MediaPlayerPage: React.FC = () => {
   const togglePiP = async () => {
     const video = videoRef.current;
     if (!video) return;
-    if (!document.pictureInPictureEnabled || video.disablePictureInPicture) return;
+    if (!document.pictureInPictureEnabled || video.disablePictureInPicture)
+      return;
     try {
       if (!isPiP) {
         await video.requestPictureInPicture();
@@ -917,8 +959,12 @@ const MediaPlayerPage: React.FC = () => {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    function onEnterPiP() { setIsPiP(true); }
-    function onLeavePiP() { setIsPiP(false); }
+    function onEnterPiP() {
+      setIsPiP(true);
+    }
+    function onLeavePiP() {
+      setIsPiP(false);
+    }
     video.addEventListener("enterpictureinpicture", onEnterPiP);
     video.addEventListener("leavepictureinpicture", onLeavePiP);
     return () => {
@@ -933,13 +979,15 @@ const MediaPlayerPage: React.FC = () => {
     if (!video) return;
 
     // Remove all previous dynamic tracks
-    Array.from(video.querySelectorAll("track[data-dynamic='true']")).forEach((t) => t.remove());
+    Array.from(video.querySelectorAll("track[data-dynamic='true']")).forEach(
+      (t) => t.remove()
+    );
 
     // Only add if a subtitle is selected and PiP is active
     if (
       isPiP &&
       (localSubtitleUrl || typeof selectedSubtitleIndex === "number") &&
-      (selectedSubtitleIndex !== null)
+      selectedSubtitleIndex !== null
     ) {
       let trackUrl: string | undefined;
       let label = "Subtitle";
@@ -993,20 +1041,27 @@ const MediaPlayerPage: React.FC = () => {
       )}
       onClick={handlePlayerClick}
       onMouseMove={handleMouseMove}
+      // Add responsive font size for controls
+      style={{
+        fontSize: "clamp(14px, 2vw, 18px)",
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "manipulation",
+      }}
     >
-      {/* Show blurred backdrop in browser when PiP is active */}
-      {isPiP && backdropUrl && (
-        <img
-          src={backdropUrl}
-          alt="Backdrop"
-          className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none select-none"
-          style={{
-            filter: "blur(24px) brightness(0.5)",
-            transition: "opacity 0.5s",
-            opacity: 1,
-          }}
-          draggable={false}
-        />
+      {/* Orientation overlay for mobile portrait */}
+      {showOrientationOverlay && (
+        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90">
+          <div className="text-white text-center px-8 py-6 rounded-lg bg-black/80 shadow-lg">
+            <div className="mb-4">
+              <svg width="48" height="48" fill="none" viewBox="0 0 48 48">
+                <rect x="10" y="14" width="28" height="20" rx="4" fill="#ef4444" />
+                <path d="M24 6v6M24 42v-6M6 24h6M42 24h-6" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="text-lg font-semibold mb-2">Rotate your device</div>
+            <div className="text-base">For the best experience, please rotate your device to landscape mode.</div>
+          </div>
+        </div>
       )}
 
       {/* Backdrop image as background while video loads */}
@@ -1015,7 +1070,6 @@ const MediaPlayerPage: React.FC = () => {
           src={backdropUrl}
           alt="Backdrop"
           className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none transition-opacity duration-500"
-          // style={{ opacity: 1, filter: "blur(8px) brightness(0.7)" }}
           draggable={false}
         />
       )}
@@ -1036,11 +1090,17 @@ const MediaPlayerPage: React.FC = () => {
           // onClick={togglePlay}
           onDoubleClick={toggleFullscreen}
           onLoadedMetadata={() => setVideoLoaded(true)}
-          style={{ maxWidth: "100vw", maxHeight: "100vh" }}
-          // Add PiP attributes for better UX
+          style={{
+            maxWidth: "100vw",
+            maxHeight: "100vh",
+            backgroundColor: "#000",
+            borderRadius: "0.5rem",
+            outline: "none",
+          }}
           controlsList="nodownload"
+          // playsInline
         >
-          {/* Native <track> elements will be injected dynamically for PiP */}
+          <track kind="captions" /> {/* Placeholder for captions if needed */}
         </video>
         {/* SubtitleTrack overlay for non-PiP mode only */}
         {!isPiP && (localSubtitleUrl || selectedSubtitleIndex !== null) && (
@@ -1092,21 +1152,45 @@ const MediaPlayerPage: React.FC = () => {
         role="button"
         tabIndex={0}
         className={clsx(
-          "absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 transition-opacity duration-300 select-none cursor-default",
+          "absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 transition-opacity duration-300 select-none cursor-default",
           showControls ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onDoubleClick={toggleFullscreen}
         onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling to the video
+        style={{
+          // Make controls more visible on mobile
+          padding:
+            "env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)",
+        }}
       >
         {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex items-center z-20">
+        <div
+          className="absolute top-0 left-0 right-0 p-4 flex items-center z-20"
+          style={{
+            gap: "1rem",
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+            minHeight: "56px",
+          }}
+        >
           <button
             onClick={() => handleBack()}
-            className="flex items-center gap-2 text-white bg-black/40 rounded-full p-2 hover:bg-black/60 transition-colors"
+            className="flex items-center gap-2 text-white bg-black/60 rounded-full p-3 hover:bg-black/80 transition-colors"
+            style={{
+              minWidth: "44px",
+              minHeight: "44px",
+              fontSize: "1.2rem",
+              outline: "none",
+            }}
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={24} />
           </button>
-          <h1 className="text-xl font-medium text-white ml-3 truncate">
+          <h1
+            className="text-xl font-medium text-white ml-3 truncate"
+            style={{
+              fontSize: "clamp(1rem, 2vw, 1.25rem)",
+              maxWidth: "70vw",
+            }}
+          >
             {item.Name}
           </h1>
         </div>
@@ -1114,18 +1198,26 @@ const MediaPlayerPage: React.FC = () => {
         {/* Center controls - mobile layout */}
         {videoLoaded && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-            <div className="flex flex-row items-center justify-center gap-14 sm:gap-20 pointer-events-auto">
+            <div
+              className="flex flex-row items-center justify-center gap-10 sm:gap-20 pointer-events-auto"
+              style={{
+                marginBottom: "2rem",
+              }}
+            >
               <button
                 onClick={() => skip(-10)}
-                onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
-                className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
+                onDoubleClick={(e) => e.stopPropagation()}
+                className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
                 style={{
                   touchAction: "manipulation",
+                  minWidth: "56px",
+                  minHeight: "56px",
+                  outline: "none",
                   backdropFilter: "blur(5px) saturate(1.5)",
                 }}
                 tabIndex={0}
+                disabled={showOrientationOverlay}
               >
-                {/* <ChevronsLeft size={28} /> */}
                 <img
                   src={RewindIcon}
                   alt="Rewind 10 seconds"
@@ -1133,35 +1225,42 @@ const MediaPlayerPage: React.FC = () => {
                 />
               </button>
               <button
-                onClick={togglePlay}
-                onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
-                className="bg-white/20 hover:bg-white/30 rounded-full p-6 mx-2 transition-colors"
+                onClick={safeTogglePlay}
+                onDoubleClick={(e) => e.stopPropagation()}
+                className="bg-white/30 hover:bg-white/40 rounded-full p-7 mx-2 transition-colors shadow-lg"
                 style={{
                   touchAction: "manipulation",
+                  minWidth: "72px",
+                  minHeight: "72px",
+                  outline: "none",
                   backdropFilter: "blur(5px) saturate(1.5)",
                 }}
                 tabIndex={0}
+                disabled={showOrientationOverlay}
               >
                 {isPlaying ? (
-                  <Pause size={36} strokeWidth="1" />
+                  <Pause size={40} strokeWidth="1.5" />
                 ) : (
-                  <Play size={36} strokeWidth="1" />
+                  <Play size={40} strokeWidth="1.5" />
                 )}
               </button>
               <button
                 onClick={() => skip(10)}
-                onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
-                className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
+                onDoubleClick={(e) => e.stopPropagation()}
+                className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
                 style={{
                   touchAction: "manipulation",
+                  minWidth: "56px",
+                  minHeight: "56px",
+                  outline: "none",
                   backdropFilter: "blur(5px) saturate(1.5)",
                 }}
                 tabIndex={0}
+                disabled={showOrientationOverlay}
               >
-                {/* <ChevronsRight size={28} /> */}
                 <img
                   src={ForwardIcon}
-                  alt="Rewind 10 seconds"
+                  alt="Forward 10 seconds"
                   className="w-8 h-8"
                 />
               </button>
@@ -1170,31 +1269,52 @@ const MediaPlayerPage: React.FC = () => {
         )}
 
         {/* Bottom controls */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2 z-20">
+        <div
+          className="absolute bottom-0 left-0 right-0 p-4 space-y-2 z-20"
+          style={{
+            // background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
+            minHeight: "80px",
+            // Increase fallback padding for iPhone landscape
+            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 32px)",
+            boxSizing: "border-box",
+          }}
+        >
           {/* Progress bar */}
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2"
+            style={{
+              minHeight: "32px",
+            }}
+          >
             {videoLoaded ? (
               <>
-                <span className="text-sm w-10">{formatTime(currentTime)}</span>
+                <span
+                  className="text-sm w-12 text-white font-mono"
+                  style={{ fontSize: "1rem", textShadow: "0 1px 4px #000" }}
+                >
+                  {formatTime(currentTime)}
+                </span>
                 <input
                   type="range"
                   min="0"
                   max={duration || 0}
                   value={currentTime}
                   onChange={handleProgressChange}
-                  className="video-progress w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer"
+                  className="video-progress w-full h-2 bg-white/40 rounded-full appearance-none cursor-pointer"
                   style={{
-                    ...(duration
-                      ? ({
-                          "--progress": `${(currentTime / duration) * 100}%`,
-                        } as React.CSSProperties)
-                      : {}),
+                    accentColor: "#ef4444",
+                    height: "2.5px",
+                    borderRadius: "2px",
                   }}
                 />
-                <span className="text-sm">{formatTime(duration)}</span>
+                <span
+                  className="text-sm text-white font-mono"
+                  style={{ fontSize: "1rem", textShadow: "0 1px 4px #000" }}
+                >
+                  {formatTime(duration)}
+                </span>
               </>
             ) : (
-              // Linear indeterminate progress bar (Material UI style)
               <div className="w-full h-[3px] bg-white/20 rounded-full overflow-hidden relative">
                 <div
                   className="absolute left-0 top-0 h-full bg-white/30 animate-indeterminate"
@@ -1226,8 +1346,17 @@ const MediaPlayerPage: React.FC = () => {
           </div>
 
           {/* Controls row */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+          <div
+            className="flex items-center justify-between flex-wrap gap-2"
+            style={{
+              minHeight: "48px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start"
+              style={{ flexWrap: "wrap" }}
+            >
               {previousEpisode && (
                 <button
                   onClick={playPreviousEpisode}
@@ -1240,20 +1369,38 @@ const MediaPlayerPage: React.FC = () => {
               <button
                 onClick={() => skip(-10)}
                 className="text-white hover:text-gray-300 transition-colors"
+                style={{
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  fontSize: "1.1rem",
+                  outline: "none",
+                }}
               >
-                <ChevronsLeft size={26} />
+                <ChevronsLeft size={28} />
               </button>
               <button
                 onClick={togglePlay}
                 className="text-white hover:text-gray-300 transition-colors"
+                style={{
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  fontSize: "1.1rem",
+                  outline: "none",
+                }}
               >
-                {isPlaying ? <Pause size={22} /> : <Play size={22} />}
+                {isPlaying ? <Pause size={28} /> : <Play size={28} />}
               </button>
               <button
                 onClick={() => skip(10)}
                 className="text-white hover:text-gray-300 transition-colors"
+                style={{
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  fontSize: "1.1rem",
+                  outline: "none",
+                }}
               >
-                <ChevronsRight size={24} />
+                <ChevronsRight size={28} />
               </button>
               {nextEpisode && (
                 <button
@@ -1264,19 +1411,27 @@ const MediaPlayerPage: React.FC = () => {
                   <SkipForward size={22} />
                 </button>
               )}
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2"
+                style={{ minWidth: "120px" }}
+              >
                 <button
                   onClick={toggleMute}
                   className="text-white hover:text-gray-300 transition-colors"
+                  style={{
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    outline: "none",
+                  }}
                 >
                   {(() => {
                     let volumeIcon;
                     if (isMuted) {
-                      volumeIcon = <VolumeX size={24} />;
+                      volumeIcon = <VolumeX size={28} />;
                     } else if (volume > 0.5) {
-                      volumeIcon = <Volume2 size={24} />;
+                      volumeIcon = <Volume2 size={28} />;
                     } else {
-                      volumeIcon = <Volume1 size={24} />;
+                      volumeIcon = <Volume1 size={28} />;
                     }
                     return volumeIcon;
                   })()}
@@ -1288,20 +1443,19 @@ const MediaPlayerPage: React.FC = () => {
                   step="0.1"
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
-                  className="volume-slider w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer"
+                  className="volume-slider w-24 h-2 bg-white/40 rounded-full appearance-none cursor-pointer"
                   style={{
-                    ...(typeof volume === "number"
-                      ? ({
-                          "--volume-progress": `${
-                            (isMuted ? 0 : volume) * 100
-                          }%`,
-                        } as React.CSSProperties)
-                      : {}),
+                    accentColor: "#ef4444",
+                    height: "2.5px",
+                    borderRadius: "2px",
                   }}
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
+            <div
+              className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end"
+              style={{ flexWrap: "wrap" }}
+            >
               {item.Type !== "Movie" && (
                 <button
                   ref={episodesButtonRef}
@@ -1348,14 +1502,24 @@ const MediaPlayerPage: React.FC = () => {
                   !document.pictureInPictureEnabled ||
                   videoRef.current?.disablePictureInPicture
                 }
+                style={{
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  outline: "none",
+                }}
               >
-                <PictureInPicture2 size={24} />
+                <PictureInPicture2 size={28} />
               </button>
               <button
                 onClick={toggleFullscreen}
                 className="text-white hover:text-gray-300 transition-colors"
+                style={{
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  outline: "none",
+                }}
               >
-                {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
+                {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
               </button>
             </div>
           </div>

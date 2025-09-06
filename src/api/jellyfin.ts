@@ -457,6 +457,20 @@ class JellyfinApi {
     return response.TrackEvents;
   }
 
+  /**
+   * Get the VTT subtitle stream URL for a given item and subtitle track.
+   * @param itemId The media item ID.
+   * @param subtitleIndex The subtitle track index.
+   * @returns The VTT stream URL.
+   */
+  getVTTStream(itemId: string, subtitleIndex: number): string {
+    return `${this.serverUrl}/Videos/${itemId}/${itemId}/Subtitles/${subtitleIndex}/stream.vtt?api_key=${this.apiKey}`;
+  }
+
+  getVideoTracks(itemId: string): string {
+    return `${this.serverUrl}/Videos/${itemId}/master.m3u8??MediaSourceId=${itemId}&api_key=${this.apiKey}`;
+  }
+
   async reportPlaybackProgress(
     itemId: string,
     positionSeconds: number,
