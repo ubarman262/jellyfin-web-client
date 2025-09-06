@@ -34,7 +34,7 @@ const MoviesPage: React.FC = () => {
 
   const { items: defaultFeaturedItems } = useMediaData(featureFilter, {
     mediaType: "Movie",
-    limit: 2,
+    limit: 3,
   });
 
   // Compute featuredItems based on selectedGenres
