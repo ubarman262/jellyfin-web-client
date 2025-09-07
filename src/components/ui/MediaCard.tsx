@@ -12,6 +12,7 @@ import activeItem from "../../states/atoms/ActiveItem";
 interface MediaCardProps {
   item: MediaItem;
   featured?: boolean;
+  onSelectItem?: (itemId: string) => void; // <-- add prop
 }
 
 function getImageUrl(
@@ -187,7 +188,7 @@ const CardContent: React.FC<CardContentProps & { touchDevice?: boolean }> = ({
   );
 };
 
-const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
+const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false, onSelectItem }) => {
   const { api } = useAuth();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
@@ -263,8 +264,12 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false }) => {
   }, [api, isBoxSet, item]);
 
   const handleCardClick = (id: string) => {
-    setActiveTiemId(id);
-    setIsDrawerOpen(true);
+    if (onSelectItem) {
+      onSelectItem(id);
+    } else {
+      setActiveTiemId(id);
+      setIsDrawerOpen(true);
+    }
   };
 
   useEffect(() => {

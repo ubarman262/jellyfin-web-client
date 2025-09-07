@@ -6,12 +6,14 @@ interface MoreLikeThisSectionProps {
   item: MediaItem;
   items: MediaItem[];
   isLoading: boolean;
+  onSelectItem?: (itemId: string) => void; // <-- add prop
 }
 
 const MoreLikeThisSection: React.FC<MoreLikeThisSectionProps> = ({
   item,
   items,
   isLoading,
+  onSelectItem,
 }) => {
   return (
     <div>
@@ -20,7 +22,12 @@ const MoreLikeThisSection: React.FC<MoreLikeThisSectionProps> = ({
           More like this
         </h3>
       )}
-      <MediaRow title="" items={items} isLoading={isLoading} />
+      <MediaRow
+        title=""
+        items={items}
+        isLoading={isLoading}
+        onSelectItem={onSelectItem} // <-- pass handler
+      />
     </div>
   );
 };

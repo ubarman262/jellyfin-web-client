@@ -7,12 +7,14 @@ interface MediaRowProps {
   title: string;
   items: MediaItem[];
   isLoading?: boolean;
+  onSelectItem?: (itemId: string) => void; // <-- add prop
 }
 
 const MediaRow: React.FC<MediaRowProps> = ({
   title,
   items,
   isLoading = false,
+  onSelectItem, // <-- add prop
 }) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -95,6 +97,14 @@ const MediaRow: React.FC<MediaRowProps> = ({
             <div
               key={item.Id}
               className="flex-none w-[160px] sm:w-[180px] md:w-[200px] transition-transform"
+              onClick={() => {
+                if (onSelectItem) {
+                  onSelectItem(item.Id);
+                }
+              }}
+              role={onSelectItem ? "button" : undefined}
+              tabIndex={onSelectItem ? 0 : undefined}
+              style={onSelectItem ? { cursor: "pointer" } : undefined}
             >
               <MediaCard key={item.Id} item={item} />
             </div>

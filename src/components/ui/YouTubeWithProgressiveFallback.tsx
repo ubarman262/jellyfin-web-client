@@ -46,10 +46,10 @@ const YouTubeWithProgressiveFallback = ({
 
   useImperativeHandle(playerRef, () => ({
     play: () => {
-      if (player) player.playVideo();
+      if (player && typeof player.playVideo === "function") player.playVideo();
     },
     pause: () => {
-      if (player) player.pauseVideo();
+      if (player && typeof player.pauseVideo === "function") player.pauseVideo();
     },
   }), [player]);
 

@@ -6,6 +6,7 @@ import {
   Loader2,
   Star,
   X,
+  ChevronLeft,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isMobile } from "react-device-detect";
@@ -41,7 +42,7 @@ const MediaDetailsDrawer = () => {
 
   const [activeItemId, setActiveItemId] = useRecoilState(activeItem);
   const [open, isOpen] = useRecoilState(isDrawerOpen);
-  const { item } = useMediaItem(activeItemId);
+  const { item, isLoading } = useMediaItem(activeItemId);
 
   // --- Fix: Sync activeItem atom with URL on mount ---
   useEffect(() => {
@@ -311,74 +312,74 @@ const MediaDetailsDrawer = () => {
     };
   }, [api, item, isBoxSet]);
 
-  if (!activeItemId) return null;
+  // --- Item stack for back navigation ---
+  const [itemStack, setItemStack] = useState<string[]>([]);
+
+  // When drawer opens for the first time, initialize stack with activeItemId
+  useEffect(() => {
+    if (open && activeItemId && itemStack.length === 0) {
+      setItemStack([activeItemId]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activeItemId]);
+
+  // When activeItemId changes from outside (URL), reset stack
+  useEffect(() => {
+    if (
+      open &&
+      activeItemId &&
+      itemStack[itemStack.length - 1] !== activeItemId
+    ) {
+      setItemStack([activeItemId]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  // Function to handle internal item selection (from inside drawer)
+  const handleSelectItem = (newItemId: string) => {
+    if (newItemId && newItemId !== activeItemId) {
+      setItemStack((prev) => [...prev, newItemId]);
+      setActiveItemId(newItemId);
+    }
+  };
+
+  // Back button handler
+  const handleBack = () => {
+    if (itemStack.length > 1) {
+      const newStack = itemStack.slice(0, -1);
+      const prevItemId = newStack[newStack.length - 1];
+      setItemStack(newStack);
+      setActiveItemId(prevItemId);
+    }
+  };
+
+  // Ref for Sheet.Scroller
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll to top when activeItemId changes, after content is loaded
+  useEffect(() => {
+    if (!item || !api) return;
+    // Try to scroll after next paint
+    requestAnimationFrame(() => {
+      if (scrollerRef.current) {
+        scrollerRef.current.scrollTop = 0;
+      }
+    });
+  }, [activeItemId, item, api]);
+
+  // Defensive: Only call getDirectors/getWriters/getStudios if item is not null
+  const directors = item ? getDirectors(item) : [];
+  const writers = item ? getWriters(item) : [];
+  const studios = item ? getStudios(item) : [];
+
+  // Defensive: Use optional chaining and fallback values everywhere item is used in JSX
+  // Remove the early return that closes the Sheet
+  // if (!item || !api || !isCorrectItem) {
+  //   return null;
+  // }
+
   // Only render content when the loaded item's ID matches the activeItemId
   const isCorrectItem = !!item && !!activeItemId && item.Id === activeItemId;
-
-  if (!item || !api || !isCorrectItem) {
-    // Show a skeleton structure while waiting for the correct item
-    return open ? (
-      <Sheet
-        key={activeItemId}
-        className="w-full max-w-4xl mx-auto"
-        isOpen={open}
-        onClose={() => isOpen(false)}
-        snapPoints={[1, 0]}
-        initialSnap={0}
-        disableDrag={false}
-      >
-        <Sheet.Container className="!bg-neutral-900 !rounded-t-xl">
-          <Sheet.Content className="!rounded-t-xl">
-            <Sheet.Scroller className="rounded-t-xl scrollbar-hide">
-              <div>
-                {/* Skeleton for backdrop */}
-                <div className="relative w-full aspect-[16/9] bg-gray-800 rounded-t-xl overflow-hidden animate-pulse">
-                  <div className="absolute bottom-6 left-8 flex items-center gap-4">
-                    {/* Skeleton play button */}
-                    <div className="w-16 h-16 bg-gray-700 rounded-full" />
-                    {/* Skeleton for watched/fav buttons */}
-                    <div className="w-10 h-10 bg-gray-700 rounded-full" />
-                    <div className="w-10 h-10 bg-gray-700 rounded-full" />
-                  </div>
-                </div>
-                {/* Skeleton for details */}
-                <div className="p-8 pt-6">
-                  <div className="h-8 w-2/3 bg-gray-700 rounded mb-4 animate-pulse" />
-                  <div className="h-4 w-1/3 bg-gray-700 rounded mb-2 animate-pulse" />
-                  <div className="h-4 w-1/2 bg-gray-700 rounded mb-2 animate-pulse" />
-                  <div className="h-4 w-1/4 bg-gray-700 rounded mb-6 animate-pulse" />
-                  <div className="flex gap-2 mb-4">
-                    <div className="h-6 w-16 bg-gray-800 rounded" />
-                    <div className="h-6 w-16 bg-gray-800 rounded" />
-                    <div className="h-6 w-16 bg-gray-800 rounded" />
-                  </div>
-                  <div className="h-4 w-full bg-gray-800 rounded mb-2 animate-pulse" />
-                  <div className="h-4 w-5/6 bg-gray-800 rounded mb-2 animate-pulse" />
-                  <div className="h-4 w-2/3 bg-gray-800 rounded mb-2 animate-pulse" />
-                  <div className="h-4 w-1/2 bg-gray-800 rounded mb-2 animate-pulse" />
-                </div>
-              </div>
-            </Sheet.Scroller>
-          </Sheet.Content>
-        </Sheet.Container>
-        <Sheet.Backdrop
-          onTap={() => isOpen(false)}
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.55)",
-          }}
-        />
-      </Sheet>
-    ) : null;
-  }
-
-  // Get director(s)
-  const directors = getDirectors(item);
-
-  // Get writers
-  const writers = getWriters(item);
-
-  // Get studios
-  const studios = getStudios(item);
 
   const onClose = () => {
     isOpen(false);
@@ -388,7 +389,6 @@ const MediaDetailsDrawer = () => {
 
   return (
     <Sheet
-      key={activeItemId}
       className="w-full max-w-4xl mx-auto"
       isOpen={open}
       onClose={onClose}
@@ -404,512 +404,541 @@ const MediaDetailsDrawer = () => {
           backfaceVisibility: "hidden",
         }}
       >
-        <Sheet.Content
-          className="!rounded-t-xl"
-          style={{ WebkitOverflowScrolling: "touch", willChange: "transform" }}
-        >
-          <Sheet.Scroller
-            draggableAt="top"
-            className="rounded-t-xl scrollbar-hide"
-          >
-            <div>
-              {/* Close button */}
-              <button
-                className={`absolute top-4 right-4 z-30 bg-black/30 border-2 rounded-full p-1 hover:bg-black/50 transition-colors flex items-center justify-center`}
-                style={{
-                  borderColor: "rgb(255 255 255 / 32%)",
-                  display: "inline-flex",
-                }}
-                onClick={onClose}
-                aria-label="Close"
-              >
-                <X size={14} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
-              </button>
-
-              {/* Trailer/Backdrop area */}
-              <div className="relative w-full aspect-[16/9] bg-black rounded-t-xl overflow-hidden">
-                {/* Trailer video, only show if not ended */}
-                <YouTubeWithProgressiveFallback
-                  key={activeItemId}
-                  item={item}
-                  buttonSize={24}
-                  aspectRatio="16/9"
-                />
-
-                {/* Item Logo or Name above play button */}
-                {itemLogo ? (
-                  <div
-                    className="absolute left-8 bottom-[15px] z-20 flex items-end"
+        <Sheet.Content className="!rounded-t-xl">
+          {/* If not loaded, show nothing or a loading skeleton */}
+          {!item || !api || !isCorrectItem ? (
+            <div style={{ minHeight: 400 }} />
+          ) : (
+            <Sheet.Scroller
+              draggableAt="top"
+              className="rounded-t-xl scrollbar-hide"
+              ref={(el) => {
+                scrollerRef.current = el;
+              }}
+            >
+              <div>
+                {/* Back button (top left) */}
+                {itemStack.length > 1 && (
+                  <button
+                    className="absolute top-4 left-4 z-30 bg-black/20 border-1 rounded-full p-1 hover:bg-black/30 transition-colors flex items-center justify-center"
                     style={{
-                      width: isMobile ? "50vw" : "32%",
-                      minWidth: 100,
-                      maxWidth: 400,
-                      height: "auto",
-                      aspectRatio: "4/1",
-                      justifyContent: "flex-start",
+                      display: "inline-flex",
+                      backdropFilter: "blur(4px)",
                     }}
+                    onClick={handleBack}
+                    aria-label="Back"
                   >
-                    <img
-                      src={itemLogo}
-                      alt={`${item.Name} logo`}
-                      style={{
-                        maxWidth: "100%",
-                        maxHeight: "90px",
-                        minHeight: "40px",
-                        width: "auto",
-                        height: "auto",
-                        objectFit: "contain",
-                        background: "rgba(0,0,0,0.0)",
-                        pointerEvents: "none",
-                        display: "block",
-                        margin: 0,
-                      }}
+                    <ChevronLeft
+                      size={18}
+                      strokeWidth={2}
+                      color="rgb(255 255 255 / 60%)"
                     />
-                  </div>
-                ) : (
-                  <div
-                    className="absolute left-8 bottom-8 z-20 text-white font-bold md:text-4xl drop-shadow-lg"
-                    style={{
-                      pointerEvents: "none",
-                      maxWidth: "60%",
-                      whiteSpace: "nowrap",
-                      textOverflow: "ellipsis",
-                      overflow: "hidden",
-                      fontSize: isMobile ? "1.2rem" : "1.8rem",
-                    }}
-                  >
-                    {isEpisode ? item.SeriesName : item.Name}
-                  </div>
+                  </button>
                 )}
 
-                {/* Fade overlay between video and details */}
-                <div
-                  className="absolute -bottom-4 left-0 right-0 h-[200px] pointer-events-none"
+                {/* Close button */}
+                <button
+                  className={`absolute top-4 right-4 z-30 bg-black/20 border-1 rounded-full p-1 hover:bg-black/30 transition-colors flex items-center justify-center`}
                   style={{
-                    background:
-                      "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
-                    zIndex: 10,
-                    transition: "height 0.3s ease",
+                    display: "inline-flex",
+                    backdropFilter: "blur(4px)",
                   }}
-                />
-              </div>
+                  onClick={onClose}
+                  aria-label="Close"
+                >
+                  <X size={18} strokeWidth={2} color="rgb(255 255 255 / 60%)" />
+                </button>
 
-              {/* Details */}
-              <div className="relative bottom-[0px] p-8 pt-6 bg-neutral-900 rounded-b-lg z-[2]">
-                <div className="flex flex-col md:flex-row gap-8">
-                  {/* Left column: text details */}
-                  <div className="flex-1 min-w-0">
-                    {/* Title and episode info */}
-                    <h2 className="text-2xl md:text-4xl mb-2">
-                      {/* Play button over video, bottom left */}
-                      {/* {isBrowser && ( */}
-                      <div className="z-30 flex items-center mb-5">
-                        <PlayButton
-                          itemId={
-                            isBoxSet && boxSetMovies.length > 0
-                              ? boxSetMovies[0].Id
-                              : item.Id
-                          }
-                          type={item.Type}
-                          // width={400}
-                          height={50}
-                        />
-                        <div className="flex">
-                          {/* Download button */}
-                          {typeSeries(item) ? null : (
+                {/* Trailer/Backdrop area */}
+                <div className="relative w-full aspect-[16/9] bg-black rounded-t-xl overflow-hidden">
+                  {/* Trailer video, only show if not ended */}
+                  <YouTubeWithProgressiveFallback
+                    key={activeItemId}
+                    item={item}
+                    buttonSize={24}
+                    aspectRatio="16/9"
+                  />
+
+                  {/* Item Logo or Name above play button */}
+                  {itemLogo ? (
+                    <div
+                      className="absolute left-8 bottom-[15px] z-20 flex items-end"
+                      style={{
+                        width: isMobile ? "50vw" : "32%",
+                        minWidth: 100,
+                        maxWidth: 400,
+                        height: "auto",
+                        aspectRatio: "4/1",
+                        justifyContent: "flex-start",
+                      }}
+                    >
+                      <img
+                        src={itemLogo}
+                        alt={item ? `${item.Name} logo` : "logo"}
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "90px",
+                          minHeight: "40px",
+                          width: "auto",
+                          height: "auto",
+                          objectFit: "contain",
+                          background: "rgba(0,0,0,0.0)",
+                          pointerEvents: "none",
+                          display: "block",
+                          margin: 0,
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="absolute left-8 bottom-8 z-20 text-white font-bold md:text-4xl drop-shadow-lg"
+                      style={{
+                        pointerEvents: "none",
+                        maxWidth: "60%",
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        fontSize: isMobile ? "1.2rem" : "1.8rem",
+                      }}
+                    >
+                      {item ? (isEpisode ? item.SeriesName : item.Name) : ""}
+                    </div>
+                  )}
+
+                  {/* Fade overlay between video and details */}
+                  <div
+                    className="absolute -bottom-4 left-0 right-0 h-[200px] pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                      zIndex: 10,
+                      transition: "height 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                {/* Details */}
+                <div className="relative bottom-[0px] p-8 pt-6 bg-neutral-900 rounded-b-lg z-[2]">
+                  <div className="flex flex-col md:flex-row gap-8">
+                    {/* Left column: text details */}
+                    <div className="flex-1 min-w-0">
+                      {/* Title and episode info */}
+                      <h2 className="text-2xl md:text-4xl mb-2">
+                        {/* Play button over video, bottom left */}
+                        {/* {isBrowser && ( */}
+                        <div className="z-30 flex items-center mb-5">
+                          <PlayButton
+                            itemId={
+                              isBoxSet && boxSetMovies.length > 0
+                                ? boxSetMovies[0].Id
+                                : item?.Id ?? ""
+                            }
+                            type={item?.Type ?? ""}
+                            // width={400}
+                            height={50}
+                          />
+                          <div className="flex">
+                            {/* Download button */}
+                            {typeSeries(item) ? null : (
+                              <button
+                                type="button"
+                                className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
+                                title="Download"
+                                aria-label="Download"
+                                style={{
+                                  lineHeight: 0,
+                                  width: 37.2,
+                                  height: 37.2,
+                                  transition: "background 0.2s",
+                                  opacity: downloadLoading ? 0.7 : 1,
+                                  pointerEvents: downloadLoading
+                                    ? "none"
+                                    : "auto",
+                                }}
+                                onClick={async () => {
+                                  if (!api || !item?.Id) return;
+                                  setDownloadLoading(true);
+                                  try {
+                                    api.downloadMediaItem(item.Id);
+                                  } catch {
+                                    alert("Failed to start download.");
+                                  } finally {
+                                    setTimeout(
+                                      () => setDownloadLoading(false),
+                                      1000
+                                    );
+                                  }
+                                }}
+                                tabIndex={0}
+                              >
+                                {downloadLoading ? (
+                                  <Loader2 size={18} className="animate-spin" />
+                                ) : (
+                                  <Download size={18} />
+                                )}
+                              </button>
+                            )}
+
+                            {/* Watched checkmark with transition */}
+                            <MarkWatchedButton
+                              item={item}
+                              isWatched={isWatched}
+                              setIsWatched={setIsWatched}
+                            />
+                            {/* Favourite button with transition */}
                             <button
                               type="button"
                               className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
-                              title="Download"
-                              aria-label="Download"
+                              title={
+                                isFavourite
+                                  ? "Remove from favorites"
+                                  : "Add to favorites"
+                              }
+                              aria-pressed={isFavourite}
+                              aria-label={
+                                isFavourite
+                                  ? "Remove from favorites"
+                                  : "Add to favorites"
+                              }
                               style={{
                                 lineHeight: 0,
                                 width: 37.2,
                                 height: 37.2,
                                 transition: "background 0.2s",
-                                opacity: downloadLoading ? 0.7 : 1,
-                                pointerEvents: downloadLoading
-                                  ? "none"
-                                  : "auto",
                               }}
                               onClick={async () => {
-                                if (!api || !item?.Id) return;
-                                setDownloadLoading(true);
                                 try {
-                                  api.downloadMediaItem(item.Id);
-                                } catch {
-                                  alert("Failed to start download.");
-                                } finally {
-                                  setTimeout(
-                                    () => setDownloadLoading(false),
-                                    1000
+                                  await api.markAsFavourite(
+                                    item.Id,
+                                    !isFavourite
+                                  );
+                                  setIsFavourite((prev) => !prev);
+                                } catch (err) {
+                                  console.error(
+                                    "Error toggling favorite:",
+                                    err
                                   );
                                 }
                               }}
                               tabIndex={0}
                             >
-                              {downloadLoading ? (
-                                <Loader2 size={18} className="animate-spin" />
-                              ) : (
-                                <Download size={18} />
-                              )}
+                              {/* Outlined Heart icon */}
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  opacity: isFavourite ? 0 : 1,
+                                  transform: isFavourite
+                                    ? "scale(0.7)"
+                                    : "scale(1)",
+                                  transition: "opacity 0.25s, transform 0.25s",
+                                  pointerEvents: isFavourite ? "none" : "auto",
+                                }}
+                              >
+                                <Heart size={18} />
+                              </span>
+                              {/* Filled Heart icon */}
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  opacity: isFavourite ? 1 : 0,
+                                  transform: isFavourite
+                                    ? "scale(1)"
+                                    : "scale(0.7)",
+                                  transition: "opacity 0.25s, transform 0.25s",
+                                  pointerEvents: isFavourite ? "auto" : "none",
+                                }}
+                              >
+                                <Heart size={18} fill="#fff" />
+                              </span>
                             </button>
-                          )}
-
-                          {/* Watched checkmark with transition */}
-                          <MarkWatchedButton
-                            item={item}
-                            isWatched={isWatched}
-                            setIsWatched={setIsWatched}
-                          />
-                          {/* Favourite button with transition */}
-                          <button
-                            type="button"
-                            className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
-                            title={
-                              isFavourite
-                                ? "Remove from favorites"
-                                : "Add to favorites"
-                            }
-                            aria-pressed={isFavourite}
-                            aria-label={
-                              isFavourite
-                                ? "Remove from favorites"
-                                : "Add to favorites"
-                            }
-                            style={{
-                              lineHeight: 0,
-                              width: 37.2,
-                              height: 37.2,
-                              transition: "background 0.2s",
-                            }}
-                            onClick={async () => {
-                              try {
-                                await api.markAsFavourite(
-                                  item.Id,
-                                  !isFavourite
-                                );
-                                setIsFavourite((prev) => !prev);
-                              } catch (err) {
-                                console.error("Error toggling favorite:", err);
-                              }
-                            }}
-                            tabIndex={0}
-                          >
-                            {/* Outlined Heart icon */}
-                            <span
-                              style={{
-                                position: "absolute",
-                                inset: 0,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                opacity: isFavourite ? 0 : 1,
-                                transform: isFavourite
-                                  ? "scale(0.7)"
-                                  : "scale(1)",
-                                transition: "opacity 0.25s, transform 0.25s",
-                                pointerEvents: isFavourite ? "none" : "auto",
-                              }}
-                            >
-                              <Heart size={18} />
-                            </span>
-                            {/* Filled Heart icon */}
-                            <span
-                              style={{
-                                position: "absolute",
-                                inset: 0,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                opacity: isFavourite ? 1 : 0,
-                                transform: isFavourite
-                                  ? "scale(1)"
-                                  : "scale(0.7)",
-                                transition: "opacity 0.25s, transform 0.25s",
-                                pointerEvents: isFavourite ? "auto" : "none",
-                              }}
-                            >
-                              <Heart size={18} fill="#fff" />
-                            </span>
-                          </button>
+                          </div>
                         </div>
-                      </div>
-                      {/* )} */}
-                    </h2>
-                    {isEpisode && (
-                      <div className="text-base font-semibold text-white mt-1 mb-4">
-                        {item.ParentIndexNumber !== undefined &&
-                        item.IndexNumber !== undefined ? (
-                          <>
-                            S{item.ParentIndexNumber} - E{item.IndexNumber}.{" "}
-                            {item.Name}
-                          </>
-                        ) : (
-                          item.Name
+                        {/* )} */}
+                      </h2>
+                      {isEpisode && (
+                        <div className="text-base font-semibold text-white mt-1 mb-4">
+                          {item.ParentIndexNumber !== undefined &&
+                          item.IndexNumber !== undefined ? (
+                            <>
+                              S{item.ParentIndexNumber} - E{item.IndexNumber}.{" "}
+                              {item.Name}
+                            </>
+                          ) : (
+                            item.Name
+                          )}
+                        </div>
+                      )}
+
+                      {/* <MobileView>
+                        <div className="mt-5 mb-5 text-lg">
+                          <PlayButton
+                            itemId={
+                              isBoxSet && boxSetMovies.length > 0
+                                ? boxSetMovies[0].Id
+                                : item.Id
+                            }
+                            type={item.Type}
+                            width="100%"
+                            height={50}
+                          />
+                        </div>
+                      </MobileView> */}
+                      {/* Meta info */}
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 mb-2">
+                        {isEpisode && item.PremiereDate && (
+                          <span className="flex items-center gap-1">
+                            <Calendar size={16} />
+                            {new Date(item.PremiereDate).toLocaleDateString(
+                              undefined,
+                              {
+                                year: "numeric",
+                                month: "numeric",
+                                day: "numeric",
+                              }
+                            )}
+                          </span>
+                        )}
+                        {item.ProductionYear && !isEpisode && (
+                          <span className="flex items-center gap-1">
+                            <Calendar size={16} />
+                            {item.ProductionYear}
+                          </span>
+                        )}
+                        {!isSeries && item.RunTimeTicks && (
+                          <span className="flex items-center gap-1">
+                            <Clock size={16} />
+                            {isEpisode
+                              ? `${Math.round(item.RunTimeTicks / 600000000)}m`
+                              : formatRuntime(item.RunTimeTicks)}
+                          </span>
+                        )}
+                        {item.OfficialRating && (
+                          <span className="px-2 py-0.5 bg-gray-800 rounded text-xs">
+                            {item.OfficialRating}
+                          </span>
+                        )}
+                        {item.CommunityRating && (
+                          <span className="flex items-center gap-1">
+                            <Star
+                              size={16}
+                              className="text-yellow-500 fill-yellow-500"
+                            />
+                            {item.CommunityRating.toFixed(1)}
+                          </span>
+                        )}
+                        {item.CriticRating && (
+                          <span className="flex items-center gap-1">
+                            <img src={Rotten} alt="Rotten Tomato" width={16} />
+                            {item.CriticRating}%
+                          </span>
                         )}
                       </div>
-                    )}
+                      {item.Genres && item.Genres.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {item.Genres.slice(0, 4).map((genre) => (
+                            <span
+                              key={genre}
+                              className="px-2 py-1 bg-gray-800 text-gray-300 text-xs rounded"
+                            >
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
-                    {/* <MobileView>
-                      <div className="mt-5 mb-5 text-lg">
-                        <PlayButton
-                          itemId={
-                            isBoxSet && boxSetMovies.length > 0
-                              ? boxSetMovies[0].Id
-                              : item.Id
-                          }
-                          type={item.Type}
-                          width="100%"
-                          height={50}
-                        />
+                      <p className="text-gray-200 mb-4">{item.Overview}</p>
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-2">
+                        {directors && directors.length > 0 && (
+                          <div>
+                            <span className="font-semibold text-white">
+                              Director:
+                            </span>{" "}
+                            {directors.join(", ")}
+                          </div>
+                        )}
+                        {writers && writers.length > 0 && (
+                          <div>
+                            <span className="font-semibold text-white">
+                              Writers:
+                            </span>{" "}
+                            {writers.join(", ")}
+                          </div>
+                        )}
+                        {studios && studios.length > 0 && (
+                          <div>
+                            <span className="font-semibold text-white">
+                              Studios:
+                            </span>{" "}
+                            {studios.join(", ")}
+                          </div>
+                        )}
                       </div>
-                    </MobileView> */}
-                    {/* Meta info */}
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 mb-2">
-                      {isEpisode && item.PremiereDate && (
-                        <span className="flex items-center gap-1">
-                          <Calendar size={16} />
-                          {new Date(item.PremiereDate).toLocaleDateString(
-                            undefined,
-                            {
-                              year: "numeric",
-                              month: "numeric",
-                              day: "numeric",
-                            }
-                          )}
-                        </span>
-                      )}
-                      {item.ProductionYear && !isEpisode && (
-                        <span className="flex items-center gap-1">
-                          <Calendar size={16} />
-                          {item.ProductionYear}
-                        </span>
-                      )}
-                      {!isSeries && item.RunTimeTicks && (
-                        <span className="flex items-center gap-1">
-                          <Clock size={16} />
-                          {isEpisode
-                            ? `${Math.round(item.RunTimeTicks / 600000000)}m`
-                            : formatRuntime(item.RunTimeTicks)}
-                        </span>
-                      )}
-                      {item.OfficialRating && (
-                        <span className="px-2 py-0.5 bg-gray-800 rounded text-xs">
-                          {item.OfficialRating}
-                        </span>
-                      )}
-                      {item.CommunityRating && (
-                        <span className="flex items-center gap-1">
-                          <Star
-                            size={16}
-                            className="text-yellow-500 fill-yellow-500"
-                          />
-                          {item.CommunityRating.toFixed(1)}
-                        </span>
-                      )}
-                      {item.CriticRating && (
-                        <span className="flex items-center gap-1">
-                          <img src={Rotten} alt="Rotten Tomato" width={16} />
-                          {item.CriticRating}%
-                        </span>
-                      )}
                     </div>
-                    {item.Genres && item.Genres.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {item.Genres.slice(0, 4).map((genre) => (
-                          <span
-                            key={genre}
-                            className="px-2 py-1 bg-gray-800 text-gray-300 text-xs rounded"
-                          >
-                            {genre}
-                          </span>
-                        ))}
+
+                    {/* Right column: CastList */}
+                    {item.People && item.People.length > 0 && (
+                      <div className="md:w-1/3 w-full mb-4 md:mb-0">
+                        <CastList key={activeItemId} people={item.People} />
                       </div>
                     )}
-
-                    <p className="text-gray-200 mb-4">{item.Overview}</p>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-2">
-                      {directors && directors.length > 0 && (
-                        <div>
-                          <span className="font-semibold text-white">
-                            Director:
-                          </span>{" "}
-                          {directors.join(", ")}
-                        </div>
-                      )}
-                      {writers && writers.length > 0 && (
-                        <div>
-                          <span className="font-semibold text-white">
-                            Writers:
-                          </span>{" "}
-                          {writers.join(", ")}
-                        </div>
-                      )}
-                      {studios && studios.length > 0 && (
-                        <div>
-                          <span className="font-semibold text-white">
-                            Studios:
-                          </span>{" "}
-                          {studios.join(", ")}
-                        </div>
-                      )}
-                    </div>
                   </div>
 
-                  {/* Right column: CastList */}
-                  {item.People && item.People.length > 0 && (
-                    <div className="md:w-1/3 w-full mb-4 md:mb-0">
-                      <CastList key={activeItemId} people={item.People} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Episodes list below both columns */}
-                {!isMovie && (
-                  <>
-                    {isSeries && (
-                      <div className="mt-8">
-                        <EpisodesList seriesId={item.Id} />
-                      </div>
-                    )}
-                    {isEpisode && item.SeasonId && (
-                      <div className="mt-8">
-                        <EpisodesList
-                          seriesId={item.SeriesId ?? item.SeasonId}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Movie Tabs Section */}
-                {(isMovie || isSeries) && (
-                  <div className="mt-10">
-                    {/* Tabs */}
-                    {collectionLoading || similarLoading ? (
-                      // Skeleton for the whole tabs section (tabs + content)
-                      <div>
-                        <div className="flex gap-4">
-                          {["one", "two", "three", "four", "five"].map(
-                            (label) => (
-                              <div
-                                key={`skeleton-tab-${label}`}
-                                className="w-[200px] h-[250px] bg-gray-800 rounded-lg animate-pulse"
-                              />
-                            )
-                          )}
+                  {/* Episodes list below both columns */}
+                  {!isMovie && (
+                    <>
+                      {isSeries && (
+                        <div className="mt-8">
+                          <EpisodesList seriesId={item.Id} />
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex border-b border-neutral-700 mb-4">
-                          {hasBoxSet && (
+                      )}
+                      {isEpisode && item.SeasonId && (
+                        <div className="mt-8">
+                          <EpisodesList
+                            seriesId={item.SeriesId ?? item.SeasonId}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Movie Tabs Section */}
+                  {(isMovie || isSeries) && (
+                    <div className="mt-10">
+                      {/* Tabs */}
+                      {collectionLoading || similarLoading ? (
+                        // Skeleton for the whole tabs section (tabs + content)
+                        <div>
+                          <div className="flex gap-4">
+                            {["one", "two", "three", "four", "five"].map(
+                              (label) => (
+                                <div
+                                  key={`skeleton-tab-${label}`}
+                                  className="w-[200px] h-[250px] bg-gray-800 rounded-lg animate-pulse"
+                                />
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex border-b border-neutral-700 mb-4">
+                            {hasBoxSet && (
+                              <button
+                                className={`px-4 py-2 font-semibold ${
+                                  movieTab === "collection"
+                                    ? "border-b-2 border-red-600 text-white"
+                                    : "text-gray-400"
+                                }`}
+                                onClick={() => setMovieTab("collection")}
+                              >
+                                Collection
+                              </button>
+                            )}
                             <button
                               className={`px-4 py-2 font-semibold ${
-                                movieTab === "collection"
+                                movieTab === "more"
                                   ? "border-b-2 border-red-600 text-white"
                                   : "text-gray-400"
                               }`}
-                              onClick={() => setMovieTab("collection")}
+                              onClick={() => setMovieTab("more")}
                             >
-                              Collection
+                              More Like This
                             </button>
-                          )}
-                          <button
-                            className={`px-4 py-2 font-semibold ${
-                              movieTab === "more"
-                                ? "border-b-2 border-red-600 text-white"
-                                : "text-gray-400"
-                            }`}
-                            onClick={() => setMovieTab("more")}
-                          >
-                            More Like This
-                          </button>
-                        </div>
-                        {/* Tab Content */}
-                        <div>
-                          {movieTab === "collection" && hasBoxSet && (
-                            <CollectionSection
-                              items={collectionItems}
-                              isLoading={collectionLoading}
-                            />
-                          )}
-                          {movieTab === "more" && (
-                            <MoreLikeThisSection
-                              item={item}
-                              items={similarItems}
-                              isLoading={similarLoading}
-                            />
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* --- Series Details Section --- */}
-                {(isSeries || isEpisode) &&
-                  (item.SeriesId || item.SeriesName) && (
-                    <div>
-                      <h3 className="mt-10 text-xl font-semibold text-white mb-4">
-                        About
-                      </h3>
-                      <div className=" flex flex-col md:flex-row gap-6 items-start bg-[#262729] rounded-lg">
-                        {/* Series Primary Image */}
-                        {seriesDetails?.Id &&
-                          seriesDetails?.ImageTags?.Primary && (
-                            <img
-                              src={
-                                api.getImageUrl
-                                  ? api.getImageUrl(
-                                      seriesDetails.Id,
-                                      "Primary",
-                                      180
-                                    )
-                                  : ""
-                              }
-                              alt={seriesDetails.Name ?? "Series"}
-                              className="rounded-l-lg w-[80px] md:w-[140px] object-cover bg-neutral-800"
-                              style={{ flexShrink: 0 }}
-                            />
-                          )}
-                        <div className="flex-1 p-6 flex flex-col justify-between h-[200px]">
-                          <div className="font-semibold text-lg text-white mb-1">
-                            {seriesDetails?.Name ??
-                              item.SeriesName ??
-                              item.Name}
                           </div>
-                          <div className="text-gray-300 text-sm max-w-xl mb-2">
-                            {seriesDetails?.Overview}
+                          {/* Tab Content */}
+                          <div>
+                            {movieTab === "collection" && hasBoxSet && (
+                              <CollectionSection
+                                items={collectionItems}
+                                isLoading={collectionLoading}
+                                onSelectItem={handleSelectItem} // <-- pass handler
+                              />
+                            )}
+                            {movieTab === "more" && (
+                              <MoreLikeThisSection
+                                item={item}
+                                items={similarItems}
+                                isLoading={similarLoading}
+                                onSelectItem={handleSelectItem} // <-- pass handler
+                              />
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* --- Series Details Section --- */}
+                  {(isSeries || isEpisode) &&
+                    (item.SeriesId || item.SeriesName) && (
+                      <div>
+                        <h3 className="mt-10 text-xl font-semibold text-white mb-4">
+                          About
+                        </h3>
+                        <div className=" flex flex-col md:flex-row gap-6 items-start bg-[#262729] rounded-lg">
+                          {/* Series Primary Image */}
+                          {seriesDetails?.Id &&
+                            seriesDetails?.ImageTags?.Primary && (
+                              <img
+                                src={
+                                  api && seriesDetails
+                                    ? api.getImageUrl(
+                                        seriesDetails.Id,
+                                        "Primary",
+                                        180
+                                      )
+                                    : ""
+                                }
+                                alt={seriesDetails?.Name ?? "Series"}
+                                className="rounded-l-lg w-[80px] md:w-[140px] object-cover bg-neutral-800"
+                                style={{ flexShrink: 0 }}
+                              />
+                            )}
+                          <div className="flex-1 p-6 flex flex-col justify-between h-[200px]">
+                            <div className="font-semibold text-lg text-white mb-1">
+                              {seriesDetails?.Name ??
+                                (item ? item.SeriesName ?? item.Name : "")}
+                            </div>
+                            <div className="text-gray-300 text-sm max-w-xl mb-2">
+                              {seriesDetails?.Overview}
+                            </div>
                           </div>
                         </div>
                       </div>
+                    )}
+                  {/* --- End Series Details Section --- */}
+
+                  {/* --- BoxSet Section --- */}
+                  {isBoxSet && (
+                    <div className="mt-10">
+                      {/* Tabs for BoxSet */}
+                      <h3 className="text-xl font-semibold text-white mb-4">
+                        Movies{" "}
+                        {boxSetMovies.length > 0 && `(${boxSetMovies.length})`}
+                      </h3>
+                      {/* Tab Content */}
+                      <div>
+                        <CollectionSection
+                          items={boxSetMovies}
+                          isLoading={boxSetLoading}
+                          onSelectItem={handleSelectItem} // <-- pass handler
+                        />
+                      </div>
                     </div>
                   )}
-                {/* --- End Series Details Section --- */}
-
-                {/* --- BoxSet Section --- */}
-                {isBoxSet && (
-                  <div className="mt-10">
-                    {/* Tabs for BoxSet */}
-                    <h3 className="text-xl font-semibold text-white mb-4">
-                      Movies{" "}
-                      {boxSetMovies.length > 0 && `(${boxSetMovies.length})`}
-                    </h3>
-                    {/* Tab Content */}
-                    <div>
-                      <CollectionSection
-                        items={boxSetMovies}
-                        isLoading={boxSetLoading}
-                      />
-                    </div>
-                  </div>
-                )}
-                {/* --- End BoxSet Section --- */}
+                  {/* --- End BoxSet Section --- */}
+                </div>
               </div>
-            </div>
-          </Sheet.Scroller>
+            </Sheet.Scroller>
+          )}
         </Sheet.Content>
       </Sheet.Container>
       <Sheet.Backdrop
