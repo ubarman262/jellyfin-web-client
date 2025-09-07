@@ -1,8 +1,8 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Download, Loader2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
-import { Download, Loader2 } from "lucide-react";
 
 type Episode = {
   Id: string;
@@ -29,13 +29,14 @@ type Season = {
 
 interface EpisodesListProps {
   readonly seriesId: string;
-  // Optionally allow initial season selection
   initialSeasonId?: string;
+  playingNowId?: string;
 }
 
 export default function EpisodesList({
   seriesId,
   initialSeasonId,
+  playingNowId,
 }: Readonly<EpisodesListProps>) {
   const { api } = useAuth();
   const navigate = useNavigate();
@@ -54,6 +55,9 @@ export default function EpisodesList({
   // Custom dropdown state
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Ref map for episode items
+  const episodeRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -74,6 +78,16 @@ export default function EpisodesList({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [dropdownOpen]);
+
+  // Auto-scroll to playing episode
+  useEffect(() => {
+    if (playingNowId && episodeRefs.current[playingNowId]) {
+      episodeRefs.current[playingNowId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [playingNowId, episodesLoading]);
 
   // Keyboard navigation for dropdown
   const handleDropdownKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -200,10 +214,14 @@ export default function EpisodesList({
           }
           const watched = ep.UserData?.Played;
           const downloadLoading = downloadLoadingMap[ep.Id] || false;
+          const isPlaying = playingNowId === ep.Id;
 
           return (
             <div
               key={ep.Id}
+              ref={(el) => {
+                episodeRefs.current[ep.Id] = el;
+              }}
               className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center group hover:bg-[#232323] transition px-2 py-4 sm:px-4 sm:py-3"
             >
               {/* Thumbnail and play overlay */}
@@ -238,6 +256,14 @@ export default function EpisodesList({
                       <polygon points="16,13 30,20 16,27" fill="#fff" />
                     </svg>
                   </span>
+                  {/* Playing overlay */}
+                  {isPlaying && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/60">
+                      <span className="text-white text-md font-bold px-2 py-1 rounded bg-red-600/80">
+                        Playing
+                      </span>
+                    </span>
+                  )}
                 </button>
               </div>
               {/* Details */}

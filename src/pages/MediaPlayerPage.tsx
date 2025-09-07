@@ -1492,8 +1492,13 @@ const MediaPlayerPage: React.FC = () => {
                   className="text-white hover:text-gray-300 transition-colors mr-2"
                   onClick={toggleEpsisodesMenu}
                   onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
+                  style={{
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    outline: "none",
+                  }}
                 >
-                  <GalleryVerticalEnd size={24} />
+                  <GalleryVerticalEnd size={28} />
                 </button>
               )}
 
@@ -1560,11 +1565,12 @@ const MediaPlayerPage: React.FC = () => {
               {showEpisodesMenu && (
                 <div
                   ref={episodesMenuRef}
-                  className="absolute right-0 bottom-[65px] w-[620px] max-h-[80vh] bg-neutral-900 text-white text-sm rounded overflow-y-auto shadow-lg p-2 z-50"
+                  className="absolute right-0 bottom-[90px] w-[620px] max-h-[80vh] bg-neutral-900 text-white text-sm rounded-xl overflow-y-auto shadow-lg p-2 z-50 pl-6"
                 >
                   <EpisodesList
                     seriesId={item.SeriesId}
                     initialSeasonId={item.SeasonId}
+                    playingNowId={item.Id}
                   />
                 </div>
               )}
