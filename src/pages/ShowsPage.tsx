@@ -238,7 +238,8 @@ const ShowsPage: React.FC = () => {
         >
           <span className="font-bold text-4xl text-white">Shows</span>
           <button
-            className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-400 rounded text-lg font-semibold focus:outline-none"
+            className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-700 rounded text-lg font-semibold focus:outline-none"
+            style={{ backdropFilter: "blur(4px)" }}
             onClick={() => setGenreMenuOpen((open) => !open)}
           >
             Genres

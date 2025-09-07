@@ -1,10 +1,8 @@
 import { Calendar } from "lucide-react";
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useRecoilState } from "recoil";
 import Navbar from "../components/layout/Navbar";
 import { useAuth } from "../context/AuthContext";
-import isDrawerOpen from "../states/atoms/DrawerOpen";
 import { MediaItem } from "../types/jellyfin";
 
 const ShowMoreText: React.FC<{ text: string; maxLength?: number }> = ({
@@ -55,14 +53,6 @@ const PersonDetailsPage: React.FC = () => {
   const [person, setPerson] = useState<MediaItem | null>(null);
   const [personLoading, setPersonLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
-
-  const [drawerState, setDrawerState] = useRecoilState(isDrawerOpen);
-
-  useEffect(() => {
-    if (drawerState) {
-      setDrawerState(false);
-    }
-  }, [drawerState, setDrawerState]);
 
   useEffect(() => {
     if (!api || !personId) return;

@@ -237,14 +237,15 @@ const MoviesPage: React.FC = () => {
           ref={genreMenuRef}
         >
           <span className="font-bold text-4xl text-white">Movies</span>
-          <button
-            className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-400 rounded text-lg font-semibold focus:outline-none"
+            <button
+            className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-700 rounded text-lg font-semibold focus:outline-none"
+            style={{ backdropFilter: "blur(4px)" }}
             onClick={() => setGenreMenuOpen((open) => !open)}
-          >
+            >
             Genres
             <svg
               className={`w-4 h-4 transition-transform ${
-                genreMenuOpen ? "rotate-180" : ""
+              genreMenuOpen ? "rotate-180" : ""
               }`}
               fill="none"
               stroke="currentColor"
@@ -252,17 +253,17 @@ const MoviesPage: React.FC = () => {
               viewBox="0 0 24 24"
             >
               <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
               />
             </svg>
             {selectedGenres.length > 0 && (
               <span className="ml-2 text-sm text-gray-400">
-                {selectedGenres.join(", ")}
+              {selectedGenres.join(", ")}
               </span>
             )}
-          </button>
+            </button>
           {genreMenuOpen && (
             <div className="absolute z-40 top-[52px] left-[143px] bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[540px] max-h-96 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
