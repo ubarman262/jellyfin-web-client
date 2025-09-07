@@ -1113,7 +1113,7 @@ const MediaPlayerPage: React.FC = () => {
       <div className="w-full h-full relative">
         <video
           ref={videoRef}
-          className="w-full h-full relative object-contain"
+          className="w-full h-full relative object-contain transition-opacity duration-500"
           autoPlay
           // onClick={togglePlay}
           onDoubleClick={toggleFullscreen}
@@ -1124,6 +1124,7 @@ const MediaPlayerPage: React.FC = () => {
             backgroundColor: "#000",
             borderRadius: "0.5rem",
             outline: "none",
+            opacity: videoLoaded ? 1 : 0, // <-- fade in video when loaded
           }}
           controlsList="nodownload"
           // playsInline
