@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
+import { Download, Loader2 } from "lucide-react";
 
 type Episode = {
   Id: string;
@@ -46,6 +47,9 @@ export default function EpisodesList({
   );
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
+  const [downloadLoadingMap, setDownloadLoadingMap] = useState<{
+    [id: string]: boolean;
+  }>({});
 
   // Custom dropdown state
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -195,6 +199,7 @@ export default function EpisodesList({
             runtime = `${totalMinutes}m`;
           }
           const watched = ep.UserData?.Played;
+          const downloadLoading = downloadLoadingMap[ep.Id] || false;
 
           return (
             <div
@@ -247,7 +252,7 @@ export default function EpisodesList({
                     </span>
                   )}
                   {/* Watched tick (right-aligned on mobile) */}
-                  <span className="ml-auto sm:hidden">
+                  <span className="ml-auto sm:hidden flex items-center gap-2">
                     {watched && (
                       <span className="text-red-500" title="Watched">
                         <svg
@@ -266,6 +271,47 @@ export default function EpisodesList({
                         </svg>
                       </span>
                     )}
+                    {/* Download button for episode */}
+                    <button
+                      type="button"
+                      className="relative bg-white/10 rounded-full p-2 ml-2 border-1 border-white flex items-center justify-center cursor-pointer"
+                      title="Download"
+                      aria-label="Download"
+                      style={{
+                        lineHeight: 0,
+                        width: 32,
+                        height: 32,
+                        transition: "background 0.2s",
+                        opacity: downloadLoading ? 0.7 : 1,
+                        pointerEvents: downloadLoading ? "none" : "auto",
+                      }}
+                      onClick={async () => {
+                        if (!api || !ep.Id) return;
+                        setDownloadLoadingMap((prev) => ({
+                          ...prev,
+                          [ep.Id]: true,
+                        }));
+                        try {
+                          await api.downloadMediaItem(ep.Id);
+                        } catch {
+                          alert("Failed to start download.");
+                        } finally {
+                          setTimeout(() => {
+                            setDownloadLoadingMap((prev) => ({
+                              ...prev,
+                              [ep.Id]: false,
+                            }));
+                          }, 1000);
+                        }
+                      }}
+                      tabIndex={0}
+                    >
+                      {downloadLoading ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Download size={16} />
+                      )}
+                    </button>
                   </span>
                 </div>
                 {/* Episode synopsis */}
@@ -276,7 +322,7 @@ export default function EpisodesList({
                 )}
               </div>
               {/* Watched tick (desktop, right) */}
-              <div className="hidden sm:flex flex-col gap-2 ml-4">
+              <div className="hidden sm:flex items-center gap-2 ml-4">
                 {watched && (
                   <span className="text-red-500" title="Watched">
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -290,6 +336,47 @@ export default function EpisodesList({
                     </svg>
                   </span>
                 )}
+                {/* Download button for episode */}
+                <button
+                  type="button"
+                  className="relative bg-white/10 rounded-full p-2 ml-2 border-1 border-white flex items-center justify-center cursor-pointer"
+                  title="Download"
+                  aria-label="Download"
+                  style={{
+                    lineHeight: 0,
+                    width: 32,
+                    height: 32,
+                    transition: "background 0.2s",
+                    opacity: downloadLoading ? 0.7 : 1,
+                    pointerEvents: downloadLoading ? "none" : "auto",
+                  }}
+                  onClick={async () => {
+                    if (!api || !ep.Id) return;
+                    setDownloadLoadingMap((prev) => ({
+                      ...prev,
+                      [ep.Id]: true,
+                    }));
+                    try {
+                      await api.downloadMediaItem(ep.Id);
+                    } catch {
+                      alert("Failed to start download.");
+                    } finally {
+                      setTimeout(() => {
+                        setDownloadLoadingMap((prev) => ({
+                          ...prev,
+                          [ep.Id]: false,
+                        }));
+                      }, 1000);
+                    }
+                  }}
+                  tabIndex={0}
+                >
+                  {downloadLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Download size={16} />
+                  )}
+                </button>
               </div>
             </div>
           );
