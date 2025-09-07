@@ -1098,7 +1098,7 @@ const MediaPlayerPage: React.FC = () => {
             outline: "none",
           }}
           controlsList="nodownload"
-          // playsInline
+          playsInline
         >
           <track kind="captions" /> {/* Placeholder for captions if needed */}
         </video>
