@@ -64,20 +64,20 @@ export default function PlayButton(props: Readonly<PlayButtonProps>) {
       className="play-item"
       onClick={handlePlay}
       style={{
-        width: typeof width === "number" ? `${width}px` : width,
+        width: typeof width === "number" ? `${width}px` : "100%",
         height: typeof height === "number" ? `${height}px` : height,
       }}
     >
       <div
         className="play-light"
         style={{
-          width: typeof width === "number" ? `${width}px` : width,
+          width: typeof width === "number" ? `${width}px` : "100%",
           height: "100%",
         }}
       >
         <span
           style={{
-            width: typeof width === "number" ? `${width}px` : width,
+            width: typeof width === "number" ? `${width}px` : "100%",
             height: typeof height === "number" ? `${height}px` : height,
           }}
         >

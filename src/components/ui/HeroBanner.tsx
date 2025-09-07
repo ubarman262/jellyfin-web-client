@@ -163,94 +163,132 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
               setIsDrawerOpen(true);
             }}
           >
-            {backdropUrl ? (
-              <>
-                <img
-                  src={backdropUrl}
-                  alt={item.Name}
-                  className="w-full h-full object-cover object-center"
-                  draggable={false}
-                />
-                {/* <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/70 via-neutral-900/40 to-neutral-900/10" /> */}
-                <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/60 to-transparent" />
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-44 pointer-events-none"
-                  style={{
-                    background:
-                      "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
-                    zIndex: 10,
-                  }}
-                />
-              </>
-            ) : (
-              <div className="absolute inset-0 bg-neutral-900" />
-            )}
-
-            <div className="absolute inset-0 flex items-end md:items-end bottom-32">
-              <div className="container pl-6 md:pl-12"> {/* Added left padding */}
-                <div className="max-w-2xl space-y-4">
-                  <h1
-                    className={clsx(
-                      "text-4xl md:text-6xl font-bold text-white transition-transform duration-700",
-                      isActive
-                        ? "translate-y-0 opacity-100"
-                        : "translate-y-8 opacity-0"
-                    )}
-                  >
-                    {item.ImageTags?.Logo ? (
-                      <img
-                        src={api.getImageUrl(item.Id, "Logo", 400)}
-                        alt={item.Name}
-                        className="max-h-20 md:max-h-28 w-auto object-contain"
-                        style={{ display: "inline-block" }}
-                      />
-                    ) : (
-                      <div>
-                        <h1 style={{ fontSize: "2.5rem" }}>{item.Name}</h1>
-                      </div>
-                    )}
-                  </h1>
-
-                  <div
-                    className={clsx(
-                      "flex items-center gap-3 text-sm text-gray-300 transition-transform duration-700 delay-100",
-                      isActive
-                        ? "translate-y-0 opacity-100"
-                        : "translate-y-8 opacity-0"
-                    )}
-                  >
-                    {item.ProductionYear && <span>{item.ProductionYear}</span>}
-                    {genres?.length > 0 && (
-                      <>
-                        <span className="w-1 h-1 rounded-full bg-gray-500" />
-                        <span>{genres.slice(0, 3).join(", ")}</span>
-                      </>
-                    )}
-                  </div>
-
-                  <p
-                    className={clsx(
-                      "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 w-160 md:w-3/5",
-                      isActive
-                        ? "translate-y-0 opacity-100"
-                        : "translate-y-8 opacity-0"
-                    )}
-                    style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
-                  >
+            {/* Mobile portrait card style */}
+            <div className="md:hidden flex justify-center items-center h-full mx-4">
+              <div
+                className="relative w-full h-full aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/20 flex flex-col justify-end"
+                style={{
+                  backgroundImage: backdropUrl ? `url(${backdropUrl})` : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                  maxHeight: "80vh",
+                }}
+              >
+                {/* Overlay for gradient and readability */}
+                {/* <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/60 to-white/10 pointer-events-none" /> */}
+                {/* Content at the bottom of the card */}
+                <div className="w-full z-10 flex flex-col items-center pb-4 px-4">
+                  {item.ImageTags?.Logo ? (
+                    <img
+                      src={api.getImageUrl(item.Id, "Logo", 400)}
+                      alt={item.Name}
+                      className="max-h-16 w-auto object-contain mb-2"
+                      style={{ display: "inline-block" }}
+                    />
+                  ) : (
+                    <h1 className="text-xl font-bold text-neutral-900 mb-2 text-center">{item.Name}</h1>
+                  )}
+                  <p className="text-xs text-white/80 text-center line-clamp-3 mb-2">
                     {overview.split(" ").length > 20
                       ? `${overview.split(" ").slice(0, 20).join(" ")}...`
                       : overview}
                   </p>
-
+                  {/* Action buttons can be added here if needed */}
+                </div>
+                {/* ...existing code... */}
+              </div>
+            </div>
+            {/* Desktop/Tablet original layout */}
+            <div className="hidden md:block">
+              {backdropUrl ? (
+                <>
+                  <img
+                    src={backdropUrl}
+                    alt={item.Name}
+                    className="w-full h-full object-cover object-center"
+                    draggable={false}
+                  />
+                  {/* <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/70 via-neutral-900/40 to-neutral-900/10" /> */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/60 to-transparent" />
                   <div
-                    className={clsx(
-                      // Only add bottom margin on mobile, remove on md+
-                      "flex flex-col items-stretch gap-3 mt-6 transition-transform duration-700 delay-300 md:flex-row md:items-center md:gap-4 md:mt-0 mb-24 md:mb-0",
-                      isActive
-                        ? "translate-y-0 opacity-100"
-                        : "translate-y-8 opacity-0"
-                    )}
-                  >
+                    className="absolute bottom-0 left-0 right-0 h-44 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                      zIndex: 10,
+                    }}
+                  />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-neutral-900" />
+              )}
+              <div className="absolute inset-0 flex items-end md:items-end bottom-32">
+                <div className="container pl-6 md:pl-12">
+                  <div className="max-w-2xl space-y-4">
+                    <h1
+                      className={clsx(
+                        "text-4xl md:text-6xl font-bold text-white transition-transform duration-700",
+                        isActive
+                          ? "translate-y-0 opacity-100"
+                          : "translate-y-8 opacity-0"
+                      )}
+                    >
+                      {item.ImageTags?.Logo ? (
+                        <img
+                          src={api.getImageUrl(item.Id, "Logo", 400)}
+                          alt={item.Name}
+                          className="max-h-20 md:max-h-28 w-auto object-contain"
+                          style={{ display: "inline-block" }}
+                        />
+                      ) : (
+                        <div>
+                          <h1 style={{ fontSize: "2.5rem" }}>{item.Name}</h1>
+                        </div>
+                      )}
+                    </h1>
+
+                    <div
+                      className={clsx(
+                        "flex items-center gap-3 text-sm text-gray-300 transition-transform duration-700 delay-100",
+                        isActive
+                          ? "translate-y-0 opacity-100"
+                          : "translate-y-8 opacity-0"
+                      )}
+                    >
+                      {item.ProductionYear && <span>{item.ProductionYear}</span>}
+                      {genres?.length > 0 && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-gray-500" />
+                          <span>{genres.slice(0, 3).join(", ")}</span>
+                        </>
+                      )}
+                    </div>
+
+                    <p
+                      className={clsx(
+                        "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 w-160 md:w-3/5",
+                        isActive
+                          ? "translate-y-0 opacity-100"
+                          : "translate-y-8 opacity-0"
+                      )}
+                      style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
+                    >
+                      {overview.split(" ").length > 20
+                        ? `${overview.split(" ").slice(0, 20).join(" ")}...`
+                        : overview}
+                    </p>
+
+                    <div
+                      className={clsx(
+                        // Only add bottom margin on mobile, remove on md+
+                        "flex flex-col items-stretch gap-3 mt-6 transition-transform duration-700 delay-300 md:flex-row md:items-center md:gap-4 md:mt-0 mb-24 md:mb-0",
+                        isActive
+                          ? "translate-y-0 opacity-100"
+                          : "translate-y-8 opacity-0"
+                      )}
+                    >
+                    </div>
                   </div>
                 </div>
               </div>
@@ -261,17 +299,20 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
 
       {/* Carousel dots */}
       {items.length > 1 && (
-        <div className="absolute inset-x-0 bottom-0 md:bottom-20 flex justify-center gap-4 z-10">
-          {items.map((item, index) => (
-            <button
-              key={item.Id}
-              className={clsx(
-                "w-2 h-2 rounded-full transition-colors",
-                currentIndex === index ? "bg-white" : "bg-white/30"
-              )}
-              onClick={() => setCurrentIndex(index)}
-            />
-          ))}
+        <div className="absolute inset-x-0 bottom-0 md:bottom-20 flex justify-center gap-4 z-10 md:flex">
+          {/* Hide dots on mobile portrait */}
+          <div className="hidden md:flex w-full justify-center gap-4">
+            {items.map((item, index) => (
+              <button
+                key={item.Id}
+                className={clsx(
+                  "w-2 h-2 rounded-full transition-colors",
+                  currentIndex === index ? "bg-white" : "bg-white/30"
+                )}
+                onClick={() => setCurrentIndex(index)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

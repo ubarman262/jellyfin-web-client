@@ -40,7 +40,7 @@ function isIOSSafari() {
   const ua = window.navigator.userAgent;
   return (
     /iPad|iPhone|iPod/.test(ua) &&
-    !('MSStream' in window) &&
+    !("MSStream" in window) &&
     /Safari/.test(ua) &&
     !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua)
   );
@@ -1050,16 +1050,44 @@ const MediaPlayerPage: React.FC = () => {
     >
       {/* Orientation overlay for mobile portrait */}
       {showOrientationOverlay && (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90">
-          <div className="text-white text-center px-8 py-6 rounded-lg bg-black/80 shadow-lg">
-            <div className="mb-4">
-              <svg width="48" height="48" fill="none" viewBox="0 0 48 48">
-                <rect x="10" y="14" width="28" height="20" rx="4" fill="#ef4444" />
-                <path d="M24 6v6M24 42v-6M6 24h6M42 24h-6" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
+        <div>
+          {/* Back button in top left */}
+          <button
+            onClick={handleBack}
+            className="absolute top-16 left-4 flex items-center gap-2 text-white bg-red-600 hover:bg-red-700 rounded-full px-5 py-2 font-semibold transition-colors z-[200]"
+            style={{ fontSize: "1rem" }}
+          >
+            <ArrowLeft size={20} />
+            Back
+          </button>
+          <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90">
+            <div className="text-white text-center px-8 py-6 rounded-lg bg-black/80 shadow-lg relative">
+              <div className="mb-4">
+                <svg width="48" height="48" fill="none" viewBox="0 0 48 48">
+                  <rect
+                    x="10"
+                    y="14"
+                    width="28"
+                    height="20"
+                    rx="4"
+                    fill="#ef4444"
+                  />
+                  <path
+                    d="M24 6v6M24 42v-6M6 24h6M42 24h-6"
+                    stroke="#fff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+              <div className="text-lg font-semibold mb-2">
+                Rotate your device
+              </div>
+              <div className="text-base">
+                For the best experience, please rotate your device to landscape
+                mode.
+              </div>
             </div>
-            <div className="text-lg font-semibold mb-2">Rotate your device</div>
-            <div className="text-base">For the best experience, please rotate your device to landscape mode.</div>
           </div>
         </div>
       )}
@@ -1098,7 +1126,7 @@ const MediaPlayerPage: React.FC = () => {
             outline: "none",
           }}
           controlsList="nodownload"
-          playsInline
+          // playsInline
         >
           <track kind="captions" /> {/* Placeholder for captions if needed */}
         </video>
@@ -1168,7 +1196,8 @@ const MediaPlayerPage: React.FC = () => {
           className="absolute top-0 left-0 right-0 p-4 flex items-center z-20"
           style={{
             gap: "1rem",
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
             minHeight: "56px",
           }}
         >

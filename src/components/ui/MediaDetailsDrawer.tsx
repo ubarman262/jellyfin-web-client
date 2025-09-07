@@ -511,122 +511,129 @@ const MediaDetailsDrawer = () => {
                               : item.Id
                           }
                           type={item.Type}
-                          width={400}
+                          // width={400}
                           height={50}
                         />
-                        {/* Download button */}
-                        {typeSeries(item) ? null : (
+                        <div className="flex">
+                          {/* Download button */}
+                          {typeSeries(item) ? null : (
+                            <button
+                              type="button"
+                              className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
+                              title="Download"
+                              aria-label="Download"
+                              style={{
+                                lineHeight: 0,
+                                width: 37.2,
+                                height: 37.2,
+                                transition: "background 0.2s",
+                                opacity: downloadLoading ? 0.7 : 1,
+                                pointerEvents: downloadLoading
+                                  ? "none"
+                                  : "auto",
+                              }}
+                              onClick={async () => {
+                                if (!api || !item?.Id) return;
+                                setDownloadLoading(true);
+                                try {
+                                  api.downloadMediaItem(item.Id);
+                                } catch {
+                                  alert("Failed to start download.");
+                                } finally {
+                                  setTimeout(
+                                    () => setDownloadLoading(false),
+                                    1000
+                                  );
+                                }
+                              }}
+                              tabIndex={0}
+                            >
+                              {downloadLoading ? (
+                                <Loader2 size={18} className="animate-spin" />
+                              ) : (
+                                <Download size={18} />
+                              )}
+                            </button>
+                          )}
+
+                          {/* Watched checkmark with transition */}
+                          <MarkWatchedButton
+                            item={item}
+                            isWatched={isWatched}
+                            setIsWatched={setIsWatched}
+                          />
+                          {/* Favourite button with transition */}
                           <button
                             type="button"
                             className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
-                            title="Download"
-                            aria-label="Download"
+                            title={
+                              isFavourite
+                                ? "Remove from favorites"
+                                : "Add to favorites"
+                            }
+                            aria-pressed={isFavourite}
+                            aria-label={
+                              isFavourite
+                                ? "Remove from favorites"
+                                : "Add to favorites"
+                            }
                             style={{
                               lineHeight: 0,
                               width: 37.2,
                               height: 37.2,
                               transition: "background 0.2s",
-                              opacity: downloadLoading ? 0.7 : 1,
-                              pointerEvents: downloadLoading ? "none" : "auto",
                             }}
                             onClick={async () => {
-                              if (!api || !item?.Id) return;
-                              setDownloadLoading(true);
                               try {
-                                api.downloadMediaItem(item.Id);
-                              } catch {
-                                alert("Failed to start download.");
-                              } finally {
-                                setTimeout(
-                                  () => setDownloadLoading(false),
-                                  1000
+                                await api.markAsFavourite(
+                                  item.Id,
+                                  !isFavourite
                                 );
+                                setIsFavourite((prev) => !prev);
+                              } catch (err) {
+                                console.error("Error toggling favorite:", err);
                               }
                             }}
                             tabIndex={0}
                           >
-                            {downloadLoading ? (
-                              <Loader2 size={18} className="animate-spin" />
-                            ) : (
-                              <Download size={18} />
-                            )}
+                            {/* Outlined Heart icon */}
+                            <span
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: isFavourite ? 0 : 1,
+                                transform: isFavourite
+                                  ? "scale(0.7)"
+                                  : "scale(1)",
+                                transition: "opacity 0.25s, transform 0.25s",
+                                pointerEvents: isFavourite ? "none" : "auto",
+                              }}
+                            >
+                              <Heart size={18} />
+                            </span>
+                            {/* Filled Heart icon */}
+                            <span
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: isFavourite ? 1 : 0,
+                                transform: isFavourite
+                                  ? "scale(1)"
+                                  : "scale(0.7)",
+                                transition: "opacity 0.25s, transform 0.25s",
+                                pointerEvents: isFavourite ? "auto" : "none",
+                              }}
+                            >
+                              <Heart size={18} fill="#fff" />
+                            </span>
                           </button>
-                        )}
-
-                        {/* Watched checkmark with transition */}
-                        <MarkWatchedButton
-                          item={item}
-                          isWatched={isWatched}
-                          setIsWatched={setIsWatched}
-                        />
-                        {/* Favourite button with transition */}
-                        <button
-                          type="button"
-                          className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
-                          title={
-                            isFavourite
-                              ? "Remove from favorites"
-                              : "Add to favorites"
-                          }
-                          aria-pressed={isFavourite}
-                          aria-label={
-                            isFavourite
-                              ? "Remove from favorites"
-                              : "Add to favorites"
-                          }
-                          style={{
-                            lineHeight: 0,
-                            width: 37.2,
-                            height: 37.2,
-                            transition: "background 0.2s",
-                          }}
-                          onClick={async () => {
-                            try {
-                              await api.markAsFavourite(item.Id, !isFavourite);
-                              setIsFavourite((prev) => !prev);
-                            } catch (err) {
-                              console.error("Error toggling favorite:", err);
-                            }
-                          }}
-                          tabIndex={0}
-                        >
-                          {/* Outlined Heart icon */}
-                          <span
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: isFavourite ? 0 : 1,
-                              transform: isFavourite
-                                ? "scale(0.7)"
-                                : "scale(1)",
-                              transition: "opacity 0.25s, transform 0.25s",
-                              pointerEvents: isFavourite ? "none" : "auto",
-                            }}
-                          >
-                            <Heart size={18} />
-                          </span>
-                          {/* Filled Heart icon */}
-                          <span
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              opacity: isFavourite ? 1 : 0,
-                              transform: isFavourite
-                                ? "scale(1)"
-                                : "scale(0.7)",
-                              transition: "opacity 0.25s, transform 0.25s",
-                              pointerEvents: isFavourite ? "auto" : "none",
-                            }}
-                          >
-                            <Heart size={18} fill="#fff" />
-                          </span>
-                        </button>
+                        </div>
                       </div>
                       {/* )} */}
                     </h2>
@@ -908,7 +915,7 @@ const MediaDetailsDrawer = () => {
       <Sheet.Backdrop
         onTap={onClose}
         style={{
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          backgroundColor: "rgba(0, 0, 0, 0.95)",
           backdropFilter: "blur(2px)",
           WebkitBackdropFilter: "blur(2px)",
         }}
