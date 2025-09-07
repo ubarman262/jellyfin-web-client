@@ -69,7 +69,7 @@ const Navbar: React.FC = () => {
   return (
     <header
       className={clsx(
-        "sticky top-0 z-20 transition-all duration-300",
+        "sticky top-0 z-50 transition-all duration-300",
         isScrolled
           ? "bg-black"
           : "bg-gradient-to-b from-black/80 to-transparent",
