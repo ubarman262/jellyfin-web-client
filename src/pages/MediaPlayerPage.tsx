@@ -1561,20 +1561,40 @@ const MediaPlayerPage: React.FC = () => {
 
           {/* Episodes List button and overlay */}
           {item.Type === "Episode" && item.SeriesId && item.SeasonId && (
-            <div className="mt-6">
+            <>
               {showEpisodesMenu && (
                 <div
                   ref={episodesMenuRef}
-                  className="absolute right-0 bottom-[90px] w-[620px] max-h-[80vh] bg-neutral-900 text-white text-sm rounded-xl overflow-y-auto shadow-lg p-2 z-50 pl-6"
+                  className="fixed left-0 bottom-0 w-full max-h-[80vh] bg-neutral-900 text-white text-sm rounded-t-xl overflow-y-auto shadow-lg p-2 z-50 pl-6"
+                  style={{
+                    animation: "slideUp 0.3s ease-out forwards",
+                    backdropFilter: "blur(20px) saturate(1.5)",
+                    backgroundColor: "#0000006e",
+                  }}
                 >
                   <EpisodesList
                     seriesId={item.SeriesId}
                     initialSeasonId={item.SeasonId}
                     playingNowId={item.Id}
+                    variant="horizontal"
                   />
                 </div>
               )}
-            </div>
+              <style>
+                {`
+                @keyframes slideUp {
+                  from {
+                    transform: translateY(100%);
+                    opacity: 0;
+                  }
+                  to {
+                    transform: translateY(0);
+                    opacity: 1;
+                  }
+                }
+                `}
+              </style>
+            </>
           )}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Check, Plus } from "lucide-react";
+import { CSSProperties } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
 
@@ -8,28 +9,41 @@ interface MarkWatchedButtonProps {
   readonly setIsWatched: (
     value: boolean | ((prevState: boolean) => boolean)
   ) => void;
+  readonly className?: string;
+  readonly style?: CSSProperties;
+  readonly iconSize?: number;
 }
 
 export default function MarkWatchedButton({
   item,
   isWatched,
   setIsWatched,
+  className,
+  style,
+  iconSize = 18,
 }: MarkWatchedButtonProps) {
   const { api } = useAuth();
 
   if (!api) return null;
 
+  const defaultStyle: CSSProperties = {
+    lineHeight: 0,
+    width: 37.2,
+    height: 37.2,
+    transition: "background 0.2s",
+  };
+
+  const combinedStyle = { ...defaultStyle, ...style };
+
+  // Use custom className if provided, otherwise use default classes
+  const buttonClasses = className || "relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer";
+
   return (
     <div>
       <span
-        className="relative bg-white/10 rounded-full p-2 ml-4 border-2 border-white flex items-center justify-center cursor-pointer"
+        className={buttonClasses}
         title={isWatched ? "Mark as unwatched" : "Mark as watched"}
-        style={{
-          lineHeight: 0,
-          width: 37.2,
-          height: 37.2,
-          transition: "background 0.2s",
-        }}
+        style={combinedStyle}
         onClick={async () => {
           if (!isWatched) {
             try {
@@ -62,7 +76,7 @@ export default function MarkWatchedButton({
             pointerEvents: isWatched ? "none" : "auto",
           }}
         >
-          <Plus size={18} />
+          <Plus size={iconSize} />
         </span>
         {/* Check icon */}
         <span
@@ -78,7 +92,7 @@ export default function MarkWatchedButton({
             pointerEvents: isWatched ? "auto" : "none",
           }}
         >
-          <Check size={18} />
+          <Check size={iconSize} />
         </span>
       </span>
     </div>
