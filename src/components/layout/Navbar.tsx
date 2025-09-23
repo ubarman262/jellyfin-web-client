@@ -70,14 +70,14 @@ const Navbar: React.FC = () => {
     <header
       className={clsx(
         "sticky top-0 z-50 transition-all duration-300",
-        isScrolled
-          ? "bg-black"
-          : "bg-gradient-to-b from-black/80 to-transparent",
+        !isScrolled
+          ? "bg-gradient-to-b from-black/80 to-transparent border-0 border-transparent"
+          : "backdrop-blur-[20px] backdrop-saturate-[1.5] bg-black/50 shadow-[0_4px_30px_rgba(0,0,0,0.1)] border-b border-white/20",
         "-mb-16"
       )}
     >
       <div className="px-14">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 navbar-class">
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <span className="text-red-600 font-bold text-2xl">JELLYFIN</span>
@@ -156,7 +156,8 @@ const Navbar: React.FC = () => {
                   <div
                     className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-medium overflow-hidden cursor-pointer"
                     onClick={() => {
-                      if (window.innerWidth >= 768) setShowUserMenu(!showUserMenu);
+                      if (window.innerWidth >= 768)
+                        setShowUserMenu(!showUserMenu);
                     }}
                     tabIndex={0}
                   >
@@ -171,7 +172,10 @@ const Navbar: React.FC = () => {
                     )}
                   </div>
                   {/* Hide ChevronDown on mobile (md:hidden) */}
-                  <span className="hidden md:inline-flex cursor-pointer" onClick={() => setShowUserMenu(!showUserMenu)}>
+                  <span
+                    className="hidden md:inline-flex cursor-pointer"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                  >
                     <ChevronDown size={16} />
                   </span>
                 </div>
@@ -214,9 +218,7 @@ const Navbar: React.FC = () => {
       <div
         className={clsx(
           "md:hidden fixed inset-0 z-30 flex",
-          isMenuOpen
-            ? "pointer-events-auto"
-            : "pointer-events-none"
+          isMenuOpen ? "pointer-events-auto" : "pointer-events-none"
         )}
         aria-hidden={!isMenuOpen}
       >
@@ -329,7 +331,9 @@ const Navbar: React.FC = () => {
                   className="flex items-center gap-2 text-2xl font-bold text-gray-300 hover:text-white p-2"
                   style={{
                     opacity: isMenuOpen ? 1 : 0,
-                    transform: isMenuOpen ? "translateY(0)" : "translateY(20px)",
+                    transform: isMenuOpen
+                      ? "translateY(0)"
+                      : "translateY(20px)",
                     transition: "opacity 0.3s 0.5s, transform 0.3s 0.5s",
                   }}
                 >
