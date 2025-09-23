@@ -208,34 +208,30 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                   )}
                 </li>
               )}
-              {subtitleTracks.map((track) => (
-                <li key={track.Index}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedSubtitleIndex(track.Index);
-                      setIsOpen(false);
-                    }}
-                    className={clsx(
-                      "w-full flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white/10 rounded text-left",
-                      selectedSubtitleIndex === track.Index && "font-semibold"
-                    )}
-                    aria-pressed={selectedSubtitleIndex === track.Index}
-                  >
-                    <span>
-                      {getLanguageName(track.Language ?? "") ??
-                        (track.Title
-                          ? `- ${truncateName(track.Title)}`
-                          : track.Index !== undefined
-                          ? `Subtitle ${track.Index}`
-                          : "")}
-                    </span>
-                    {selectedSubtitleIndex === track.Index && (
-                      <Check size={16} />
-                    )}
-                  </button>
-                </li>
-              ))}
+              {subtitleTracks
+                .filter((track) => !track.Title?.toLowerCase().includes("forced"))
+                .map((track) => (
+                  <li key={track.Index}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubtitleIndex(track.Index);
+                        setIsOpen(false);
+                      }}
+                      className={clsx(
+                        "w-full flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white/10 rounded text-left",
+                        selectedSubtitleIndex === track.Index && "font-semibold"
+                      )}
+                      aria-pressed={selectedSubtitleIndex === track.Index}
+                    >
+                      <span>
+                        {getLanguageName(track.Language ?? "")}
+                        {track.Title ? ` - ${truncateName(track.Title)}` : ""}
+                      </span>
+                      {selectedSubtitleIndex === track.Index && <Check size={16} />}
+                    </button>
+                  </li>
+                ))}
             </ul>
             {/* Subtitle Offset Controls */}
             {selectedSubtitleIndex !== null && (

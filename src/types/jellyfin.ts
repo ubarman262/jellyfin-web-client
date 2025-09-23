@@ -345,7 +345,7 @@ export const DRAWER_PATHS = [
 export const LANGUAGE_MAP = {
   eng: "English",
   spa: "Spanish",
-  fra: "French",
+  fre: "French",
   deu: "German",
   ger: "German",
   ita: "Italian",
