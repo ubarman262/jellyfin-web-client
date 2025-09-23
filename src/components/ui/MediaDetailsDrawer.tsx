@@ -411,7 +411,7 @@ const MediaDetailsDrawer = () => {
           ) : (
             <Sheet.Scroller
               draggableAt="top"
-              className="rounded-t-xl scrollbar-hide"
+              className="rounded-t-xl scrollbar-hide border-t border-l border-r border-white/10"
               ref={(el) => {
                 scrollerRef.current = el;
               }}
