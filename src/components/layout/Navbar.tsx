@@ -72,7 +72,7 @@ const Navbar: React.FC = () => {
         "sticky top-0 z-50 transition-all duration-300",
         !isScrolled
           ? "bg-gradient-to-b from-black/80 to-transparent border-0 border-transparent"
-          : "backdrop-blur-[3px] backdrop-saturate-[0.8] bg-[#171717]/90 shadow-[0_4px_30px_rgba(0,0,0,0.1)] border-b border-white/20",
+          : "backdrop-blur-[8px] backdrop-saturate-[0.8] bg-[#171717]/90 shadow-[0_4px_30px_rgba(0,0,0,0.1)] border-b border-white/20",
         "-mb-16"
       )}
     >
