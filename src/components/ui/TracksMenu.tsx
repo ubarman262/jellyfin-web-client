@@ -141,29 +141,30 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
             <h3 className="text-xs uppercase tracking-wide text-neutral-400 px-2 pb-2 border-b border-neutral-700">
               Subtitles
             </h3>
+            <div>
+              <input
+                type="file"
+                accept=".vtt,.srt"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  onSelectLocalSubtitle(e.target.files[0]);
+                  setIsOpen(false);
+                }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-start gap-2 px-3 py-2 cursor-pointer hover:bg-white/10 rounded font-medium"
+              >
+                <Upload size={16} />
+                Add new subtitle
+              </button>
+            </div>
+            <div className="my-2" />
             <ul className="py-1 max-h-40 overflow-y-auto">
-              <li>
-                <input
-                  type="file"
-                  accept=".vtt,.srt"
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      onSelectLocalSubtitle(e.target.files[0]);
-                      setIsOpen(false);
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-start gap-2 px-3 py-2 cursor-pointer bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded text-left text-blue-300 font-medium"
-                >
-                  <Upload size={16} />
-                  Add new subtitle
-                </button>
-              </li>
               <li>
                 <button
                   type="button"
