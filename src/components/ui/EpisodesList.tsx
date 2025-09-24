@@ -400,7 +400,7 @@ export default function EpisodesList({
       );
     } else {
       episodesListContent = (
-        <div className="divide-y divide-[#232323] border border-[#232323] rounded-xl overflow-hidden mb-10">
+        <div className="divide-y divide-[#4d4d4d] rounded-xl overflow-hidden mb-10">
           {episodes.map((ep, idx) => {
             // Calculate runtime in m format
             let runtime = "";
