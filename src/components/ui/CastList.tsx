@@ -57,6 +57,7 @@ const CastList: React.FC<CastListProps> = ({ people }) => {
               <span className="text-xs text-gray-200 text-center truncate w-full group-hover:underline">
                 {person.Name}
               </span>
+              <span className="text-xs text-gray-400 text-center truncate w-full" title={person.Role}>{person.Role}</span>
             </Link>
           );
         })}

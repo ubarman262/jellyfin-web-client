@@ -938,6 +938,9 @@ const MediaPlayerPage: React.FC = () => {
   // PiP state
   const [isPiP, setIsPiP] = useState(false);
 
+  // X-Ray state
+  const [showXRay, setShowXRay] = useState(false);
+
   // PiP toggle handler
   const togglePiP = async () => {
     const video = videoRef.current;
@@ -1176,6 +1179,126 @@ const MediaPlayerPage: React.FC = () => {
         </div>
       )}
 
+      {/* X-Ray Overlay */}
+      {showXRay && (
+        <div 
+          className="absolute inset-0 z-40" 
+          onClick={() => setShowXRay(false)}
+        >
+          <div 
+            className="absolute left-4 top-[45%] transform -translate-y-1/2 max-w-sm w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>              
+              {/* Overview */}
+              <div className="mb-6 bg-black/60 p-4">
+                <h3 className="text-lg font-semibold mb-2">{item.Name}</h3>
+                {item.Overview && (
+                  <p className="text-sm text-gray-300 leading-relaxed line-clamp-4">
+                    {item.Overview}
+                  </p>
+                )}
+                <div className="mt-3 space-y-1 text-sm">
+                  {item.ProductionYear && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Year:</span>
+                      <span>{item.ProductionYear}</span>
+                    </div>
+                  )}
+                  {item.OfficialRating && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Rating:</span>
+                      <span>{item.OfficialRating}</span>
+                    </div>
+                  )}
+                  {item.CommunityRating && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">IMDb:</span>
+                      <span>{item.CommunityRating.toFixed(1)}/10</span>
+                    </div>
+                  )}
+                  {item.RunTimeTicks && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Runtime:</span>
+                      <span>{Math.round(item.RunTimeTicks / 600000000)} min</span>
+                    </div>
+                  )}
+                  {item.Genres && item.Genres.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Genres:</span>
+                      <span className="text-right">{item.Genres.slice(0, 3).join(", ")}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Cast & Crew */}
+              {item.People && item.People.length > 0 && (
+                <div className="mb-6 bg-black/60 p-4">
+                  <h4 className="text-md font-semibold mb-3">Cast & Crew</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {item.People.slice(0, 10).map((person) => (
+                      <div key={person.Id || person.Name} className="flex items-center space-x-3">
+                        {person.PrimaryImageTag && api && (
+                          <img
+                            src={api.getImageUrl(person.Id, "Primary", 40, 60)}
+                            alt={person.Name}
+                            className="w-8 h-12 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{person.Name}</p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {person.Role || person.Type}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Studios */}
+              {item.Studios && item.Studios.length > 0 && (
+                <div className="mb-4 bg-black/60 p-4">
+                  <h4 className="text-md font-semibold mb-2">Studio</h4>
+                  <p className="text-sm text-gray-300">
+                    {item.Studios.map(studio => studio.Name).join(", ")}
+                  </p>
+                </div>
+              )}
+
+              {/* Series/Season Info for Episodes */}
+              {item.Type === "Episode" && (
+                <div className="mb-4 bg-black/60 p-4">
+                  <h4 className="text-md font-semibold mb-2">Episode Info</h4>
+                  <div className="text-sm space-y-1">
+                    {item.SeriesName && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Series:</span>
+                        <span className="text-right">{item.SeriesName}</span>
+                      </div>
+                    )}
+                    {item.ParentIndexNumber && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Season:</span>
+                        <span>{item.ParentIndexNumber}</span>
+                      </div>
+                    )}
+                    {item.IndexNumber && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Episode:</span>
+                        <span>{item.IndexNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Controls overlay */}
       <div
         role="button"
@@ -1194,7 +1317,7 @@ const MediaPlayerPage: React.FC = () => {
       >
         {/* Top bar */}
         <div
-          className="absolute top-0 left-0 right-0 p-4 flex items-center z-20"
+          className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20"
           style={{
             gap: "1rem",
             background:
@@ -1202,6 +1325,64 @@ const MediaPlayerPage: React.FC = () => {
             minHeight: "56px",
           }}
         >
+          {/* X-Ray Button - positioned on the left */}
+          <button
+            onClick={() => setShowXRay(!showXRay)}
+            className={clsx(
+              "bg-black/60 hover:bg-black/80 text-white px-3 py-2 text-sm font-medium transition-all duration-200 border border-white/20 shadow-md",
+              showXRay && "bg-white/10 text-black"
+            )}
+            style={{
+              fontSize: "0.875rem",
+              minHeight: "32px",
+              outline: "none",
+            }}
+          >
+            X-Ray
+          </button>
+          
+          {/* Title in the center */}
+          <div className="flex-1 text-center">
+            {item.Type === "Episode" ? (
+              <div className="text-white">
+                <h1
+                  className="text-xl font-medium truncate"
+                  style={{
+                    fontSize: "clamp(1.1rem, 2.2vw, 1.4rem)",
+                    textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+                    letterSpacing: "0.025em",
+                  }}
+                >
+                  {item.SeriesName || item.Name}
+                </h1>
+                <p
+                  className="text-sm font-thin text-gray-200 truncate mt-1"
+                  style={{
+                    fontSize: "clamp(0.8rem, 1.8vw, 1rem)",
+                    textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+                    letterSpacing: "0.015em",
+                  }}
+                >
+                  {item.ParentIndexNumber && `Season ${item.ParentIndexNumber}, `}
+                  {item.IndexNumber && `Ep. ${item.IndexNumber}`}
+                  {item.Name && item.Name !== item.SeriesName && ` ${item.Name}`}
+                </p>
+              </div>
+            ) : (
+              <h1
+                className="text-xl font-medium text-white truncate"
+                style={{
+                  fontSize: "clamp(1.1rem, 2.2vw, 1.4rem)",
+                  textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+                  letterSpacing: "0.025em",
+                }}
+              >
+                {item.Name}
+              </h1>
+            )}
+          </div>
+          
+          {/* Close button on the right */}
           <button
             onClick={() => handleBack()}
             className="flex items-center gap-2 text-white bg-black/60 rounded-full p-3 hover:bg-black/80 transition-colors"
@@ -1212,17 +1393,10 @@ const MediaPlayerPage: React.FC = () => {
               outline: "none",
             }}
           >
-            <ArrowLeft size={24} />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
-          <h1
-            className="text-xl font-medium text-white ml-3 truncate"
-            style={{
-              fontSize: "clamp(1rem, 2vw, 1.25rem)",
-              maxWidth: "70vw",
-            }}
-          >
-            {item.Name}
-          </h1>
         </div>
 
         {/* Center controls - mobile layout */}
