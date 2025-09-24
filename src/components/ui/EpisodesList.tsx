@@ -630,7 +630,7 @@ export default function EpisodesList({
           <div className="relative" ref={dropdownRef}>
             {/* Custom dropdown */}
             <button
-              className="appearance-none bg-gray-800 text-white rounded px-4 py-2 pr-10 font-semibold border border-gray-700 transition-all outline-none cursor-pointer flex items-center min-w-[140px] shadow"
+              className="appearance-none bg-[#242424] text-white rounded px-4 py-2 pr-10 font-semibold border border-[#4d4d4d] transition-all outline-none cursor-pointer flex items-center min-w-[140px] shadow"
               type="button"
               aria-haspopup="listbox"
               aria-expanded={dropdownOpen}
@@ -654,7 +654,7 @@ export default function EpisodesList({
             </button>
             {dropdownOpen && (
               <ul
-                className="absolute z-50 mt-2 left-0 w-full bg-gray-800 border border-gray-700 rounded shadow-lg overflow-hidden animate-fade-in scrollbar-hide"
+                className="absolute z-50 mt-2 left-0 w-full bg-[#242424] border border-[#4d4d4d] rounded shadow-lg overflow-hidden animate-fade-in scrollbar-hide"
                 role="listbox"
                 tabIndex={-1}
                 style={{
@@ -671,7 +671,7 @@ export default function EpisodesList({
                     className={`px-4 py-2 cursor-pointer transition-all ${
                       season.Id === selectedSeasonId
                         ? "bg-[var(--accent-secondary)] text-white"
-                        : "hover:bg-gray-900 text-white"
+                        : "hover:bg-[#424242] text-white"
                     } font-semibold`}
                     onClick={() => {
                       setSelectedSeasonId(season.Id);

@@ -8,7 +8,7 @@ import {
   X,
   ChevronLeft,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { isMobile } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -63,15 +63,16 @@ const MediaDetailsDrawer = () => {
   const isEpisode = typeEpisode(item);
   const isSeries = typeSeries(item);
 
-  // --- Item logo logic ---
-  let itemLogo: string | undefined = undefined;
-  if (api && item) {
+  // --- Item logo logic (memoized) ---
+  const itemLogo = useMemo(() => {
+    if (!api || !item) return undefined;
     if (isEpisode && item.SeriesId && item?.ParentLogoImageTag) {
-      itemLogo = api.getImageUrl(item.SeriesId, "Logo", 400);
+      return api.getImageUrl(item.SeriesId, "Logo", 400);
     } else if (!isEpisode && item.ImageTags?.Logo) {
-      itemLogo = api.getImageUrl(item.Id, "Logo", 400);
+      return api.getImageUrl(item.Id, "Logo", 400);
     }
-  }
+    return undefined;
+  }, [api, item, isEpisode]);
   // -----------------------
 
   useEffect(() => {
@@ -336,22 +337,25 @@ const MediaDetailsDrawer = () => {
   }, [location.search]);
 
   // Function to handle internal item selection (from inside drawer)
-  const handleSelectItem = (newItemId: string) => {
-    if (newItemId && newItemId !== activeItemId) {
-      setItemStack((prev) => [...prev, newItemId]);
-      setActiveItemId(newItemId);
-    }
-  };
+  const handleSelectItem = useCallback(
+    (newItemId: string) => {
+      if (newItemId && newItemId !== activeItemId) {
+        setItemStack((prev) => [...prev, newItemId]);
+        setActiveItemId(newItemId);
+      }
+    },
+    [activeItemId, setActiveItemId]
+  );
 
   // Back button handler
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (itemStack.length > 1) {
       const newStack = itemStack.slice(0, -1);
       const prevItemId = newStack[newStack.length - 1];
       setItemStack(newStack);
       setActiveItemId(prevItemId);
     }
-  };
+  }, [itemStack, setActiveItemId]);
 
   // Ref for Sheet.Scroller
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -359,18 +363,19 @@ const MediaDetailsDrawer = () => {
   // Scroll to top when activeItemId changes, after content is loaded
   useEffect(() => {
     if (!item || !api) return;
-    // Try to scroll after next paint
-    requestAnimationFrame(() => {
+    // Use more efficient scroll timing
+    const timeoutId = setTimeout(() => {
       if (scrollerRef.current) {
-        scrollerRef.current.scrollTop = 0;
+        scrollerRef.current.scrollTo({ top: 0, behavior: "auto" });
       }
-    });
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [activeItemId, item, api]);
 
-  // Defensive: Only call getDirectors/getWriters/getStudios if item is not null
-  const directors = item ? getDirectors(item) : [];
-  const writers = item ? getWriters(item) : [];
-  const studios = item ? getStudios(item) : [];
+  // Defensive: Only call getDirectors/getWriters/getStudios if item is not null (memoized)
+  const directors = useMemo(() => (item ? getDirectors(item) : []), [item]);
+  const writers = useMemo(() => (item ? getWriters(item) : []), [item]);
+  const studios = useMemo(() => (item ? getStudios(item) : []), [item]);
 
   // Defensive: Use optional chaining and fallback values everywhere item is used in JSX
   // Remove the early return that closes the Sheet
@@ -381,11 +386,24 @@ const MediaDetailsDrawer = () => {
   // Only render content when the loaded item's ID matches the activeItemId
   const isCorrectItem = !!item && !!activeItemId && item.Id === activeItemId;
 
-  const onClose = () => {
+  const onClose = useCallback(() => {
     isOpen(false);
     setHasBoxSet(false);
     // URL will be handled by useEffect above
-  };
+  }, [isOpen]);
+
+  // Memoize download handler
+  const handleDownload = useCallback(async () => {
+    if (!api || !item?.Id) return;
+    setDownloadLoading(true);
+    try {
+      api.downloadMediaItem(item.Id);
+    } catch {
+      alert("Failed to start download.");
+    } finally {
+      setTimeout(() => setDownloadLoading(false), 1000);
+    }
+  }, [api, item?.Id]);
 
   return (
     <Sheet
@@ -458,35 +476,39 @@ const MediaDetailsDrawer = () => {
                     buttonSize={24}
                     aspectRatio="16/9"
                   />
-
                   {/* Item Logo or Name above play button */}
                   {itemLogo ? (
                     <div
-                      className="absolute left-8 bottom-[15px] z-20 flex items-end"
+                      className="absolute left-8 z-20 flex items-end"
                       style={{
-                        width: isMobile ? "50vw" : "32%",
-                        minWidth: 100,
-                        maxWidth: 400,
-                        height: "auto",
-                        aspectRatio: "4/1",
-                        justifyContent: "flex-start",
+                      bottom:
+                        item?.UserData?.PlaybackPositionTicks &&
+                        item?.RunTimeTicks
+                        ? 30
+                        : 15,
+                      width: isMobile ? "50vw" : "32%",
+                      minWidth: 100,
+                      maxWidth: 400,
+                      height: "auto",
+                      aspectRatio: "4/1",
+                      justifyContent: "flex-start",
                       }}
                     >
                       <img
-                        src={itemLogo}
-                        alt={item ? `${item.Name} logo` : "logo"}
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "90px",
-                          minHeight: "40px",
-                          width: "auto",
-                          height: "auto",
-                          objectFit: "contain",
-                          background: "rgba(0,0,0,0.0)",
-                          pointerEvents: "none",
-                          display: "block",
-                          margin: 0,
-                        }}
+                      src={itemLogo}
+                      alt={item ? `${item.Name} logo` : "logo"}
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "90px",
+                        minHeight: "40px",
+                        width: "auto",
+                        height: "auto",
+                        objectFit: "contain",
+                        background: "rgba(0,0,0,0.0)",
+                        pointerEvents: "none",
+                        display: "block",
+                        margin: 0,
+                      }}
                       />
                     </div>
                   ) : (
@@ -501,10 +523,37 @@ const MediaDetailsDrawer = () => {
                         fontSize: isMobile ? "1.2rem" : "1.8rem",
                       }}
                     >
-                      {item ? (isEpisode ? item.SeriesName : item.Name) : ""}
+                      {(() => {
+                        if (!item) return "";
+                        return isEpisode ? item.SeriesName : item.Name;
+                      })()}
                     </div>
                   )}
-
+                  {/* Progress bar */}
+                  {item?.UserData?.PlaybackPositionTicks &&
+                    item?.RunTimeTicks && (
+                      <div className="absolute w-[23rem] -bottom-2 left-8 right-4 z-50 flex items-center gap-2">
+                        <div className="flex-1 bg-white/30 h-0.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[--accent-secondary] transition-all duration-300"
+                            style={{
+                              width: `${Math.min(
+                                (item.UserData.PlaybackPositionTicks /
+                                  item.RunTimeTicks) *
+                                  100,
+                                100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="text-white text-xs font-medium whitespace-nowrap px-2 py-1 rounded">
+                          {Math.round(
+                            item.UserData.PlaybackPositionTicks / 600000000
+                          )}{" "}
+                          of {Math.round(item.RunTimeTicks / 600000000)}m
+                        </div>
+                      </div>
+                    )}{" "}
                   {/* Fade overlay between video and details */}
                   <div
                     className="absolute -bottom-4 left-0 right-0 h-[200px] pointer-events-none"
@@ -555,20 +604,7 @@ const MediaDetailsDrawer = () => {
                                     ? "none"
                                     : "auto",
                                 }}
-                                onClick={async () => {
-                                  if (!api || !item?.Id) return;
-                                  setDownloadLoading(true);
-                                  try {
-                                    api.downloadMediaItem(item.Id);
-                                  } catch {
-                                    alert("Failed to start download.");
-                                  } finally {
-                                    setTimeout(
-                                      () => setDownloadLoading(false),
-                                      1000
-                                    );
-                                  }
-                                }}
+                                onClick={handleDownload}
                                 tabIndex={0}
                               >
                                 {downloadLoading ? (
@@ -953,4 +989,4 @@ const MediaDetailsDrawer = () => {
   );
 };
 
-export default MediaDetailsDrawer;
+export default memo(MediaDetailsDrawer);
