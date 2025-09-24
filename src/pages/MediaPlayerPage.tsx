@@ -1247,14 +1247,15 @@ const MediaPlayerPage: React.FC = () => {
               <div className="mb-6 bg-black/60 p-4">
                 <div 
                   className="cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group mb-2"
-                  onClick={() =>
+                  onClick={() => {
+                    const searchQuery = item.Type === "Episode" && item.SeriesName 
+                      ? `${item.SeriesName} - ${item.Name || ""}`
+                      : item.Name || "";
                     window.open(
-                      `https://www.google.com/search?q=${encodeURIComponent(
-                        item.Name || ""
-                      )}`,
+                      `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
                       "_blank"
-                    )
-                  }
+                    );
+                  }}
                 >
                   <div className="flex items-center">
                     <h3 className="text-lg font-semibold hover:underline transition-colors flex-1">{item.Name}</h3>
