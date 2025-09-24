@@ -1565,11 +1565,10 @@ const MediaPlayerPage: React.FC = () => {
               {showEpisodesMenu && (
                 <div
                   ref={episodesMenuRef}
-                  className="fixed left-0 bottom-0 w-full max-h-[80vh] bg-neutral-900 text-white text-sm rounded-t-xl overflow-y-auto shadow-lg p-2 z-50 pl-6"
+                  className="fixed left-0 bottom-0 w-full max-h-[80vh] bg-[#171717]/50 text-white text-sm rounded-t-xl overflow-y-auto shadow-lg p-2 z-50 pl-6 "
                   style={{
                     animation: "slideUp 0.3s ease-out forwards",
-                    backdropFilter: "blur(20px) saturate(1.5)",
-                    backgroundColor: "#0000006e",
+                    backdropFilter: "blur(20px) saturate(1)",
                   }}
                 >
                   <EpisodesList
