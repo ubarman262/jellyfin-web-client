@@ -30,9 +30,12 @@ import SkipIntroButton from "../components/ui/skipIntroButton";
 import EpisodesList from "../components/ui/EpisodesList";
 import RewindIcon from "../assets/svg/rewind-10-seconds.svg";
 import ForwardIcon from "../assets/svg/forward-10-seconds.svg";
+import NewTabLink from "../assets/svg/new-tab-link.svg";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
+  audioContext?: AudioContext;
+  gainNode?: GainNode;
 }
 
 // Helper to detect iOS Safari
@@ -941,6 +944,56 @@ const MediaPlayerPage: React.FC = () => {
   // X-Ray state
   const [showXRay, setShowXRay] = useState(false);
 
+  // Audio boost state
+  const [audioBoost, setAudioBoost] = useState(1); // 1x, 2x, 4x, 6x
+
+  // Audio boost toggle handler
+  const toggleAudioBoost = () => {
+    setAudioBoost((prev) => {
+      const boostLevels = [1, 2, 4, 6];
+      const currentIndex = boostLevels.indexOf(prev);
+      const nextIndex = (currentIndex + 1) % boostLevels.length;
+      return boostLevels[nextIndex];
+    });
+  };
+
+  // Apply audio boost to video element
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Create or update audio context for boost
+    if (audioBoost !== 1) {
+      if (!video.audioContext) {
+        try {
+          const AudioContext =
+            window.AudioContext || (window as any).webkitAudioContext;
+          const audioContext = new AudioContext();
+          const source = audioContext.createMediaElementSource(video);
+          const gainNode = audioContext.createGain();
+
+          source.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          video.audioContext = audioContext;
+          video.gainNode = gainNode;
+        } catch (err) {
+          console.warn("Audio boost not supported:", err);
+          return;
+        }
+      }
+
+      if (video.gainNode) {
+        video.gainNode.gain.setValueAtTime(
+          audioBoost,
+          video.audioContext.currentTime
+        );
+      }
+    } else if (video.gainNode) {
+      video.gainNode.gain.setValueAtTime(1, video.audioContext.currentTime);
+    }
+  }, [audioBoost]);
+
   // PiP toggle handler
   const togglePiP = async () => {
     const video = videoRef.current;
@@ -1181,18 +1234,37 @@ const MediaPlayerPage: React.FC = () => {
 
       {/* X-Ray Overlay */}
       {showXRay && (
-        <div 
-          className="absolute inset-0 z-40" 
+        <div
+          className="absolute inset-0 z-40"
           onClick={() => setShowXRay(false)}
         >
-          <div 
+          <div
             className="absolute left-4 top-[45%] transform -translate-y-1/2 max-w-sm w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
             onClick={(e) => e.stopPropagation()}
           >
-            <div>              
+            <div>
               {/* Overview */}
               <div className="mb-6 bg-black/60 p-4">
-                <h3 className="text-lg font-semibold mb-2">{item.Name}</h3>
+                <div 
+                  className="cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group mb-2"
+                  onClick={() =>
+                    window.open(
+                      `https://www.google.com/search?q=${encodeURIComponent(
+                        item.Name || ""
+                      )}`,
+                      "_blank"
+                    )
+                  }
+                >
+                  <div className="flex items-center">
+                    <h3 className="text-lg font-semibold hover:underline transition-colors flex-1">{item.Name}</h3>
+                    <img
+                      src={NewTabLink}
+                      alt="Open in new tab"
+                      className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    />
+                  </div>
+                </div>
                 {item.Overview && (
                   <p className="text-sm text-gray-300 leading-relaxed line-clamp-4">
                     {item.Overview}
@@ -1220,13 +1292,17 @@ const MediaPlayerPage: React.FC = () => {
                   {item.RunTimeTicks && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">Runtime:</span>
-                      <span>{Math.round(item.RunTimeTicks / 600000000)} min</span>
+                      <span>
+                        {Math.round(item.RunTimeTicks / 600000000)} min
+                      </span>
                     </div>
                   )}
                   {item.Genres && item.Genres.length > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">Genres:</span>
-                      <span className="text-right">{item.Genres.slice(0, 3).join(", ")}</span>
+                      <span className="text-right">
+                        {item.Genres.slice(0, 3).join(", ")}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1238,7 +1314,18 @@ const MediaPlayerPage: React.FC = () => {
                   <h4 className="text-md font-semibold mb-3">Cast & Crew</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {item.People.slice(0, 10).map((person) => (
-                      <div key={person.Id || person.Name} className="flex items-center space-x-3">
+                      <div
+                        key={person.Id || person.Name}
+                        className="flex items-center space-x-3 cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group"
+                        onClick={() =>
+                          window.open(
+                            `https://www.google.com/search?q=${encodeURIComponent(
+                              person.Name || ""
+                            )}`,
+                            "_blank"
+                          )
+                        }
+                      >
                         {person.PrimaryImageTag && api && (
                           <img
                             src={api.getImageUrl(person.Id, "Primary", 40, 60)}
@@ -1246,8 +1333,17 @@ const MediaPlayerPage: React.FC = () => {
                             className="w-8 h-12 object-cover rounded"
                           />
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{person.Name}</p>
+                        <div className="flex-1 min-w-0 relative">
+                          <div className="flex items-center">
+                            <p className="text-sm font-medium truncate hover:underline transition-colors">
+                              {person.Name}
+                            </p>
+                            <img
+                              src={NewTabLink}
+                              alt="Open in new tab"
+                              className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            />
+                          </div>
                           <p className="text-xs text-gray-400 truncate">
                             {person.Role || person.Type}
                           </p>
@@ -1263,7 +1359,7 @@ const MediaPlayerPage: React.FC = () => {
                 <div className="mb-4 bg-black/60 p-4">
                   <h4 className="text-md font-semibold mb-2">Studio</h4>
                   <p className="text-sm text-gray-300">
-                    {item.Studios.map(studio => studio.Name).join(", ")}
+                    {item.Studios.map((studio) => studio.Name).join(", ")}
                   </p>
                 </div>
               )}
@@ -1340,7 +1436,7 @@ const MediaPlayerPage: React.FC = () => {
           >
             X-Ray
           </button>
-          
+
           {/* Title in the center */}
           <div className="flex-1 text-center">
             {item.Type === "Episode" ? (
@@ -1363,9 +1459,12 @@ const MediaPlayerPage: React.FC = () => {
                     letterSpacing: "0.015em",
                   }}
                 >
-                  {item.ParentIndexNumber && `Season ${item.ParentIndexNumber}, `}
+                  {item.ParentIndexNumber &&
+                    `Season ${item.ParentIndexNumber}, `}
                   {item.IndexNumber && `Ep. ${item.IndexNumber}`}
-                  {item.Name && item.Name !== item.SeriesName && ` ${item.Name}`}
+                  {item.Name &&
+                    item.Name !== item.SeriesName &&
+                    ` ${item.Name}`}
                 </p>
               </div>
             ) : (
@@ -1381,7 +1480,7 @@ const MediaPlayerPage: React.FC = () => {
               </h1>
             )}
           </div>
-          
+
           {/* Close button on the right */}
           <button
             onClick={() => handleBack()}
@@ -1393,8 +1492,18 @@ const MediaPlayerPage: React.FC = () => {
               outline: "none",
             }}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -1655,6 +1764,23 @@ const MediaPlayerPage: React.FC = () => {
                   }}
                 />
               </div>
+              {/* Audio Boost Button */}
+              <button
+                onClick={toggleAudioBoost}
+                className={clsx(
+                  "w-2 text-white transition-colors text-xs font-bold px-2 py-1 border-2 border-white cursor-pointer rounded",
+                  audioBoost > 1 && "bg-white/20 text-red-200"
+                )}
+                title={`Audio Boost: ${audioBoost}x`}
+                style={{
+                  minWidth: "32px",
+                  minHeight: "24px",
+                  outline: "none",
+                  fontSize: "0.75rem",
+                }}
+              >
+                {audioBoost}x
+              </button>
             </div>
             <div
               className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end"
