@@ -478,3 +478,9 @@ export type MediaType =
   | "nextup"
   | "favourites"
   | "collections";
+
+export interface PlaybackInfoOptions {
+  EnableDirectPlay?: boolean;
+  EnableDirectStream?: boolean;
+  EnableTranscoding?: boolean;
+}

@@ -1088,26 +1088,149 @@ const MediaPlayerPage: React.FC = () => {
   }
 
   return (
-    <div
-      ref={playerContainerRef}
-      className={clsx(
-        // Use fixed positioning and 100vw/100vh to prevent scrollbars on iPad/square screens
-        "fixed inset-0 w-screen h-screen bg-black text-white overflow-hidden",
-        { "cursor-none": !showControls && isPlaying }
-      )}
-      onClick={handlePlayerClick}
-      onMouseMove={handleMouseMove}
-      // Add responsive font size for controls
-      style={{
-        fontSize: "clamp(14px, 2vw, 18px)",
-        WebkitTapHighlightColor: "transparent",
-        touchAction: "manipulation",
-      }}
-    >
-      {/* Orientation overlay for mobile portrait */}
-      {showOrientationOverlay && (
+    <>
+      <style>{`
+        /* Standard WebVTT cue styling */
+        video::cue {
+          background: transparent !important;
+          background-color: transparent !important;
+          color: white !important;
+          font-size: 16px !important;
+          font-family: Arial, sans-serif !important;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
+          line-height: 1.3 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        
+        /* WebKit subtitle display (Safari/iOS) */
+        video::-webkit-media-text-track-display {
+          background: transparent !important;¬
+          background-color: transparent !important;
+          font-size: 16px !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          bottom: 10px !important;
+        }
+        
+        /* WebKit subtitle container */
+        video::-webkit-media-text-track-container {
+          position: relative !important;
+          background: transparent !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        
+        /* iOS specific subtitle styling */
+        video::-webkit-media-text-track-region {
+          background: transparent !important;
+          background-color: transparent !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        
+        /* Force remove any background on cue rendering */
+        video::cue(.subtitles) {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        
+        /* Target iOS native subtitle background specifically */
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-text-track-display-backdrop {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        
+        /* Remove bottom padding and background more aggressively */
+        video::-webkit-media-text-track-display {
+          transform: translateY(-20px) !important;
+          background: none !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+        }
+        
+        /* Target the actual subtitle backdrop element */
+        video::-webkit-media-text-track-display-backdrop,
+        video::-webkit-media-text-track-region-container,
+        video::-webkit-media-text-track-background {
+          background: transparent !important;
+          background-color: transparent !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+        }
+        
+        /* iOS WebKit cue background removal */
+        video::cue-region {
+          background: transparent !important;
+        }
+        
+        /* More specific iOS subtitle background removal */
+        video[controls]::-webkit-media-text-track-display {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        
+        /* Force transparent for all possible subtitle background selectors */
+        video *[class*="subtitle"],
+        video *[class*="caption"],
+        video *[class*="text-track"] {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        
+        /* iOS Safari specific overrides - target the actual rendered subtitle elements */
+        video::-webkit-media-text-track-display * {
+          background: transparent !important;
+          background-color: transparent !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border-radius: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        
+        /* Target iOS video subtitle rendering more specifically */
+        @supports (-webkit-appearance: none) {
+          video::cue {
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 0 !important;
+          }
+          
+          video::-webkit-media-text-track-display {
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            bottom: 5px !important;
+          }
+        }
+      `}</style>
+      <div
+        ref={playerContainerRef}
+        className={clsx(
+          // Use fixed positioning and 100vw/100vh to prevent scrollbars on iPad/square screens
+          "fixed inset-0 w-screen h-screen bg-black text-white overflow-hidden",
+          { "cursor-none": !showControls && isPlaying }
+        )}
+        onClick={handlePlayerClick}
+        onMouseMove={handleMouseMove}
+        // Add responsive font size for controls
+        style={{
+          fontSize: "clamp(14px, 2vw, 18px)",
+          WebkitTapHighlightColor: "transparent",
+          touchAction: "manipulation",
+        }}
+      >
+        {/* Orientation overlay for mobile portrait */}
+        {/* {showOrientationOverlay && (
         <div>
-          {/* Back button in top left */}
           <button
             onClick={handleBack}
             className="absolute top-16 left-4 flex items-center gap-2 text-white bg-red-600 hover:bg-red-700 rounded-full px-5 py-2 font-semibold transition-colors z-[200]"
@@ -1146,496 +1269,526 @@ const MediaPlayerPage: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
-      {/* Backdrop image as background while video loads */}
-      {!videoLoaded && backdropUrl && !isPiP && (
-        <img
-          src={backdropUrl}
-          alt="Backdrop"
-          className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none transition-opacity duration-500"
-          draggable={false}
-        />
-      )}
-
-      {/* Loader overlay when switching audio */}
-      {isSwitchingAudio && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600"></div>
-        </div>
-      )}
-
-      {/* Video + SubtitleTrack wrapper */}
-      <div className="w-full h-full relative">
-        <video
-          ref={videoRef}
-          className="w-full h-full relative object-contain transition-opacity duration-500"
-          autoPlay
-          // onClick={togglePlay}
-          onDoubleClick={toggleFullscreen}
-          onLoadedMetadata={() => setVideoLoaded(true)}
-          style={{
-            maxWidth: "100vw",
-            maxHeight: "100vh",
-            backgroundColor: "#000",
-            borderRadius: "0.5rem",
-            outline: "none",
-            opacity: videoLoaded ? 1 : 0, // <-- fade in video when loaded
-          }}
-          controlsList="nodownload"
-          // playsInline
-        >
-          <track kind="captions" /> {/* Placeholder for captions if needed */}
-        </video>
-        {/* SubtitleTrack overlay for non-PiP mode only */}
-        {!isPiP && (localSubtitleUrl || selectedSubtitleIndex !== null) && (
-          <SubtitleTrack
-            subtitleTracks={subtitleTracks}
-            selectedSubtitleIndex={selectedSubtitleIndex}
-            itemId={item.Id}
-            currentTime={currentTime}
-            localSubtitleFileUrl={
-              selectedSubtitleIndex === "local"
-                ? localSubtitleUrl ?? undefined
-                : undefined
-            }
-            subtitleDelayMs={subtitleDelayMs}
-            fontSize={subtitleFontSize}
+        {/* Backdrop image as background while video loads */}
+        {!videoLoaded && backdropUrl && !isPiP && (
+          <img
+            src={backdropUrl}
+            alt="Backdrop"
+            className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none transition-opacity duration-500"
+            draggable={false}
           />
         )}
-      </div>
-      {/* Skip Intro Button */}
-      {intro &&
-        !hasSkippedIntro &&
-        currentTime >= intro.start &&
-        currentTime < intro.end && (
+
+        {/* Loader overlay when switching audio */}
+        {isSwitchingAudio && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600"></div>
+          </div>
+        )}
+
+        {/* Video + SubtitleTrack wrapper */}
+        <div className="w-full h-full relative">
+          <video
+            ref={videoRef}
+            className="w-full h-full relative object-contain transition-opacity duration-500"
+            autoPlay
+            // onClick={togglePlay}
+            onDoubleClick={toggleFullscreen}
+            onLoadedMetadata={() => setVideoLoaded(true)}
+            style={{
+              maxWidth: "100vw",
+              maxHeight: "100vh",
+              backgroundColor: "#000",
+              borderRadius: "0.5rem",
+              outline: "none",
+              opacity: videoLoaded ? 1 : 0, // <-- fade in video when loaded
+            }}
+            controlsList="nodownload"
+            // playsInline
+          >
+            {/* <source src={videoUrl} type="application/x-mpegURL" /> */}
+            {subtitleTracks
+              .filter((s) => api.getVTTStream(item.Id, s.Index)) // Only include tracks with valid URLs
+              .map((s, idx) => {
+                const trackUrl = api.getVTTStream(item.Id, s.Index);
+                return (
+                  <track
+                    style={{ backgroundColor: "transparent !important" }}
+                    key={itemId}
+                    kind="subtitles"
+                    src={trackUrl}
+                    srcLang={s.Language ?? "und"}
+                    label={
+                      s.DisplayTitle ??
+                      s.Language ??
+                      `Subtitle ${s.Index ?? idx}`
+                    }
+                    default={s.IsDefault && idx === 0} // Only set first default track as default
+                  />
+                );
+              })}
+          </video>
+          {/* SubtitleTrack overlay for non-PiP mode only */}
+          {!isPiP && (localSubtitleUrl || selectedSubtitleIndex !== null) && (
+            <SubtitleTrack
+              subtitleTracks={subtitleTracks}
+              selectedSubtitleIndex={selectedSubtitleIndex}
+              itemId={item.Id}
+              currentTime={currentTime}
+              localSubtitleFileUrl={
+                selectedSubtitleIndex === "local"
+                  ? localSubtitleUrl ?? undefined
+                  : undefined
+              }
+              subtitleDelayMs={subtitleDelayMs}
+              fontSize={subtitleFontSize}
+            />
+          )}
+        </div>
+        {/* Skip Intro Button */}
+        {intro &&
+          !hasSkippedIntro &&
+          currentTime >= intro.start &&
+          currentTime < intro.end && (
+            <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
+              <div className="pointer-events-auto">
+                <SkipIntroButton
+                  onClick={handleSkipIntro}
+                  width={150}
+                  height={50}
+                />
+              </div>
+            </div>
+          )}
+
+        {/* Next Episode Button Overlay */}
+        {nextEpisode && duration > 0 && duration - currentTime < 30 && (
           <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
             <div className="pointer-events-auto">
-              <SkipIntroButton
-                onClick={handleSkipIntro}
-                width={150}
-                height={50}
+              <NextEpisodeButton
+                nextEpisode={nextEpisode}
+                playNextEpisode={() => playNextEpisode()}
               />
             </div>
           </div>
         )}
 
-      {/* Next Episode Button Overlay */}
-      {nextEpisode && duration > 0 && duration - currentTime < 30 && (
-        <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
-          <div className="pointer-events-auto">
-            <NextEpisodeButton
-              nextEpisode={nextEpisode}
-              playNextEpisode={() => playNextEpisode()}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* X-Ray Overlay */}
-      {showXRay && (
-        <div
-          className="absolute inset-0 z-40"
-          onClick={() => setShowXRay(false)}
-        >
+        {/* X-Ray Overlay */}
+        {showXRay && (
           <div
-            className="absolute left-4 top-[45%] transform -translate-y-1/2 max-w-sm w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
-            onClick={(e) => e.stopPropagation()}
+            className="absolute inset-0 z-40"
+            onClick={() => setShowXRay(false)}
           >
-            <div>
-              {/* Overview */}
-              <div className="mb-6 bg-black/60 p-4">
-                <div 
-                  className="cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group mb-2"
-                  onClick={() => {
-                    const searchQuery = item.Type === "Episode" && item.SeriesName 
-                      ? `${item.SeriesName} - ${item.Name || ""}`
-                      : item.Name || "";
-                    window.open(
-                      `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  <div className="flex items-center">
-                    <h3 className="text-lg font-semibold hover:underline transition-colors flex-1">{item.Name}</h3>
-                    <img
-                      src={NewTabLink}
-                      alt="Open in new tab"
-                      className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    />
-                  </div>
-                </div>
-                {item.Overview && (
-                  <p className="text-sm text-gray-300 leading-relaxed line-clamp-4">
-                    {item.Overview}
-                  </p>
-                )}
-                <div className="mt-3 space-y-1 text-sm">
-                  {item.ProductionYear && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Year:</span>
-                      <span>{item.ProductionYear}</span>
-                    </div>
-                  )}
-                  {item.OfficialRating && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Rating:</span>
-                      <span>{item.OfficialRating}</span>
-                    </div>
-                  )}
-                  {item.CommunityRating && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">IMDb:</span>
-                      <span>{item.CommunityRating.toFixed(1)}/10</span>
-                    </div>
-                  )}
-                  {item.RunTimeTicks && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Runtime:</span>
-                      <span>
-                        {Math.round(item.RunTimeTicks / 600000000)} min
-                      </span>
-                    </div>
-                  )}
-                  {item.Genres && item.Genres.length > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Genres:</span>
-                      <span className="text-right">
-                        {item.Genres.slice(0, 3).join(", ")}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Cast & Crew */}
-              {item.People && item.People.length > 0 && (
+            <div
+              className="absolute left-4 top-[45%] transform -translate-y-1/2 max-w-sm w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div>
+                {/* Overview */}
                 <div className="mb-6 bg-black/60 p-4">
-                  <h4 className="text-md font-semibold mb-3">Cast & Crew</h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {item.People.slice(0, 10).map((person) => (
-                      <div
-                        key={person.Id || person.Name}
-                        className="flex items-center space-x-3 cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group"
-                        onClick={() =>
-                          window.open(
-                            `https://www.google.com/search?q=${encodeURIComponent(
-                              person.Name || ""
-                            )}`,
-                            "_blank"
-                          )
-                        }
-                      >
-                        {person.PrimaryImageTag && api && (
-                          <img
-                            src={api.getImageUrl(person.Id, "Primary", 40, 60)}
-                            alt={person.Name}
-                            className="w-8 h-12 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0 relative">
-                          <div className="flex items-center">
-                            <p className="text-sm font-medium truncate hover:underline transition-colors">
-                              {person.Name}
-                            </p>
+                  <div
+                    className="cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group mb-2"
+                    onClick={() => {
+                      const searchQuery =
+                        item.Type === "Episode" && item.SeriesName
+                          ? `${item.SeriesName} - ${item.Name || ""}`
+                          : item.Name || "";
+                      window.open(
+                        `https://www.google.com/search?q=${encodeURIComponent(
+                          searchQuery
+                        )}`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <h3 className="text-lg font-semibold hover:underline transition-colors flex-1">
+                        {item.Name}
+                      </h3>
+                      <img
+                        src={NewTabLink}
+                        alt="Open in new tab"
+                        className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      />
+                    </div>
+                  </div>
+                  {item.Overview && (
+                    <p className="text-sm text-gray-300 leading-relaxed line-clamp-4">
+                      {item.Overview}
+                    </p>
+                  )}
+                  <div className="mt-3 space-y-1 text-sm">
+                    {item.ProductionYear && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Year:</span>
+                        <span>{item.ProductionYear}</span>
+                      </div>
+                    )}
+                    {item.OfficialRating && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Rating:</span>
+                        <span>{item.OfficialRating}</span>
+                      </div>
+                    )}
+                    {item.CommunityRating && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">IMDb:</span>
+                        <span>{item.CommunityRating.toFixed(1)}/10</span>
+                      </div>
+                    )}
+                    {item.RunTimeTicks && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Runtime:</span>
+                        <span>
+                          {Math.round(item.RunTimeTicks / 600000000)} min
+                        </span>
+                      </div>
+                    )}
+                    {item.Genres && item.Genres.length > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Genres:</span>
+                        <span className="text-right">
+                          {item.Genres.slice(0, 3).join(", ")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cast & Crew */}
+                {item.People && item.People.length > 0 && (
+                  <div className="mb-6 bg-black/60 p-4">
+                    <h4 className="text-md font-semibold mb-3">Cast & Crew</h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {item.People.slice(0, 10).map((person) => (
+                        <div
+                          key={person.Id || person.Name}
+                          className="flex items-center space-x-3 cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group"
+                          onClick={() =>
+                            window.open(
+                              `https://www.google.com/search?q=${encodeURIComponent(
+                                person.Name || ""
+                              )}`,
+                              "_blank"
+                            )
+                          }
+                        >
+                          {person.PrimaryImageTag && api && (
                             <img
-                              src={NewTabLink}
-                              alt="Open in new tab"
-                              className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                              src={api.getImageUrl(
+                                person.Id,
+                                "Primary",
+                                40,
+                                60
+                              )}
+                              alt={person.Name}
+                              className="w-8 h-12 object-cover rounded"
                             />
+                          )}
+                          <div className="flex-1 min-w-0 relative">
+                            <div className="flex items-center">
+                              <p className="text-sm font-medium truncate hover:underline transition-colors">
+                                {person.Name}
+                              </p>
+                              <img
+                                src={NewTabLink}
+                                alt="Open in new tab"
+                                className="w-3 h-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-400 truncate">
+                              {person.Role || person.Type}
+                            </p>
                           </div>
-                          <p className="text-xs text-gray-400 truncate">
-                            {person.Role || person.Type}
-                          </p>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Studios */}
-              {item.Studios && item.Studios.length > 0 && (
-                <div className="mb-4 bg-black/60 p-4">
-                  <h4 className="text-md font-semibold mb-2">Studio</h4>
-                  <p className="text-sm text-gray-300">
-                    {item.Studios.map((studio) => studio.Name).join(", ")}
-                  </p>
-                </div>
-              )}
-
-              {/* Series/Season Info for Episodes */}
-              {item.Type === "Episode" && (
-                <div className="mb-4 bg-black/60 p-4">
-                  <h4 className="text-md font-semibold mb-2">Episode Info</h4>
-                  <div className="text-sm space-y-1">
-                    {item.SeriesName && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Series:</span>
-                        <span className="text-right">{item.SeriesName}</span>
-                      </div>
-                    )}
-                    {item.ParentIndexNumber && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Season:</span>
-                        <span>{item.ParentIndexNumber}</span>
-                      </div>
-                    )}
-                    {item.IndexNumber && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Episode:</span>
-                        <span>{item.IndexNumber}</span>
-                      </div>
-                    )}
+                {/* Studios */}
+                {item.Studios && item.Studios.length > 0 && (
+                  <div className="mb-4 bg-black/60 p-4">
+                    <h4 className="text-md font-semibold mb-2">Studio</h4>
+                    <p className="text-sm text-gray-300">
+                      {item.Studios.map((studio) => studio.Name).join(", ")}
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Series/Season Info for Episodes */}
+                {item.Type === "Episode" && (
+                  <div className="mb-4 bg-black/60 p-4">
+                    <h4 className="text-md font-semibold mb-2">Episode Info</h4>
+                    <div className="text-sm space-y-1">
+                      {item.SeriesName && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Series:</span>
+                          <span className="text-right">{item.SeriesName}</span>
+                        </div>
+                      )}
+                      {item.ParentIndexNumber && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Season:</span>
+                          <span>{item.ParentIndexNumber}</span>
+                        </div>
+                      )}
+                      {item.IndexNumber && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Episode:</span>
+                          <span>{item.IndexNumber}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Controls overlay */}
-      <div
-        role="button"
-        tabIndex={0}
-        className={clsx(
-          "absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 transition-opacity duration-300 select-none cursor-default",
-          showControls ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
-        onDoubleClick={toggleFullscreen}
-        onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling to the video
-        style={{
-          // Make controls more visible on mobile
-          padding:
-            "env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)",
-        }}
-      >
-        {/* Top bar */}
+
+        {/* Controls overlay */}
         <div
-          className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20"
+          role="button"
+          tabIndex={0}
+          className={clsx(
+            "absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 transition-opacity duration-300 select-none cursor-default",
+            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onDoubleClick={toggleFullscreen}
+          onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling to the video
           style={{
-            gap: "1rem",
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
-            minHeight: "56px",
+            // Make controls more visible on mobile
+            padding:
+              "env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)",
           }}
         >
-          {/* X-Ray Button - positioned on the left */}
-          <button
-            onClick={() => setShowXRay(!showXRay)}
-            className={clsx(
-              "bg-black/60 hover:bg-black/80 text-white px-3 py-2 text-sm font-medium transition-all duration-200 border border-white/20 shadow-md",
-              showXRay && "bg-white/10 text-black"
-            )}
+          {/* Top bar */}
+          <div
+            className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20"
             style={{
-              fontSize: "0.875rem",
-              minHeight: "32px",
-              outline: "none",
+              gap: "1rem",
+              background:
+                "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+              minHeight: "56px",
             }}
           >
-            X-Ray
-          </button>
+            {/* X-Ray Button - positioned on the left */}
+            <button
+              onClick={() => setShowXRay(!showXRay)}
+              className={clsx(
+                "bg-black/60 hover:bg-black/80 text-white px-3 py-2 text-sm font-medium transition-all duration-200 border border-white/20 shadow-md",
+                showXRay && "bg-white/10 text-black"
+              )}
+              style={{
+                fontSize: "0.875rem",
+                minHeight: "32px",
+                outline: "none",
+              }}
+            >
+              X-Ray
+            </button>
 
-          {/* Title in the center */}
-          <div className="flex-1 text-center">
-            {item.Type === "Episode" ? (
-              <div className="text-white">
+            {/* Title in the center */}
+            <div className="flex-1 text-center">
+              {item.Type === "Episode" ? (
+                <div className="text-white">
+                  <h1
+                    className="text-xl font-medium truncate"
+                    style={{
+                      fontSize: "clamp(1.1rem, 2.2vw, 1.4rem)",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+                      letterSpacing: "0.025em",
+                    }}
+                  >
+                    {item.SeriesName || item.Name}
+                  </h1>
+                  <p
+                    className="text-sm font-thin text-gray-200 truncate mt-1"
+                    style={{
+                      fontSize: "clamp(0.8rem, 1.8vw, 1rem)",
+                      textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+                      letterSpacing: "0.015em",
+                    }}
+                  >
+                    {item.ParentIndexNumber &&
+                      `Season ${item.ParentIndexNumber}, `}
+                    {item.IndexNumber && `Ep. ${item.IndexNumber}`}
+                    {item.Name &&
+                      item.Name !== item.SeriesName &&
+                      ` ${item.Name}`}
+                  </p>
+                </div>
+              ) : (
                 <h1
-                  className="text-xl font-medium truncate"
+                  className="text-xl font-medium text-white truncate"
                   style={{
                     fontSize: "clamp(1.1rem, 2.2vw, 1.4rem)",
                     textShadow: "0 2px 8px rgba(0,0,0,0.8)",
                     letterSpacing: "0.025em",
                   }}
                 >
-                  {item.SeriesName || item.Name}
+                  {item.Name}
                 </h1>
-                <p
-                  className="text-sm font-thin text-gray-200 truncate mt-1"
-                  style={{
-                    fontSize: "clamp(0.8rem, 1.8vw, 1rem)",
-                    textShadow: "0 1px 4px rgba(0,0,0,0.8)",
-                    letterSpacing: "0.015em",
-                  }}
-                >
-                  {item.ParentIndexNumber &&
-                    `Season ${item.ParentIndexNumber}, `}
-                  {item.IndexNumber && `Ep. ${item.IndexNumber}`}
-                  {item.Name &&
-                    item.Name !== item.SeriesName &&
-                    ` ${item.Name}`}
-                </p>
-              </div>
-            ) : (
-              <h1
-                className="text-xl font-medium text-white truncate"
-                style={{
-                  fontSize: "clamp(1.1rem, 2.2vw, 1.4rem)",
-                  textShadow: "0 2px 8px rgba(0,0,0,0.8)",
-                  letterSpacing: "0.025em",
-                }}
-              >
-                {item.Name}
-              </h1>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Close button on the right */}
-          <button
-            onClick={() => handleBack()}
-            className="flex items-center gap-2 text-white bg-black/60 rounded-full p-3 hover:bg-black/80 transition-colors"
-            style={{
-              minWidth: "44px",
-              minHeight: "44px",
-              fontSize: "1.2rem",
-              outline: "none",
-            }}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Center controls - mobile layout */}
-        {videoLoaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-            <div
-              className="flex flex-row items-center justify-center gap-10 sm:gap-20 pointer-events-auto"
+            {/* Close button on the right */}
+            <button
+              onClick={() => handleBack()}
+              className="flex items-center gap-2 text-white bg-black/60 rounded-full p-3 hover:bg-black/80 transition-colors"
               style={{
-                marginBottom: "2rem",
+                minWidth: "44px",
+                minHeight: "44px",
+                fontSize: "1.2rem",
+                outline: "none",
               }}
             >
-              <button
-                onClick={() => skip(-10)}
-                onDoubleClick={(e) => e.stopPropagation()}
-                className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
-                style={{
-                  touchAction: "manipulation",
-                  minWidth: "56px",
-                  minHeight: "56px",
-                  outline: "none",
-                  backdropFilter: "blur(5px) saturate(1.5)",
-                }}
-                tabIndex={0}
-                disabled={showOrientationOverlay}
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <img
-                  src={RewindIcon}
-                  alt="Rewind 10 seconds"
-                  className="w-8 h-8"
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
                 />
-              </button>
-              <button
-                onClick={safeTogglePlay}
-                onDoubleClick={(e) => e.stopPropagation()}
-                className="bg-white/30 hover:bg-white/40 rounded-full p-7 mx-2 transition-colors shadow-lg"
-                style={{
-                  touchAction: "manipulation",
-                  minWidth: "72px",
-                  minHeight: "72px",
-                  outline: "none",
-                  backdropFilter: "blur(5px) saturate(1.5)",
-                }}
-                tabIndex={0}
-                disabled={showOrientationOverlay}
-              >
-                {isPlaying ? (
-                  <Pause size={40} strokeWidth="1.5" />
-                ) : (
-                  <Play size={40} strokeWidth="1.5" />
-                )}
-              </button>
-              <button
-                onClick={() => skip(10)}
-                onDoubleClick={(e) => e.stopPropagation()}
-                className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
-                style={{
-                  touchAction: "manipulation",
-                  minWidth: "56px",
-                  minHeight: "56px",
-                  outline: "none",
-                  backdropFilter: "blur(5px) saturate(1.5)",
-                }}
-                tabIndex={0}
-                disabled={showOrientationOverlay}
-              >
-                <img
-                  src={ForwardIcon}
-                  alt="Forward 10 seconds"
-                  className="w-8 h-8"
-                />
-              </button>
-            </div>
+              </svg>
+            </button>
           </div>
-        )}
 
-        {/* Bottom controls */}
-        <div
-          className="absolute bottom-0 left-0 right-0 p-4 space-y-2 z-20"
-          style={{
-            // background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
-            minHeight: "80px",
-            // Increase fallback padding for iPhone landscape
-            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 32px)",
-            boxSizing: "border-box",
-          }}
-        >
-          {/* Progress bar */}
+          {/* Center controls - mobile layout */}
+          {videoLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+              <div
+                className="flex flex-row items-center justify-center gap-10 sm:gap-20 pointer-events-auto"
+                style={{
+                  marginBottom: "2rem",
+                }}
+              >
+                <button
+                  onClick={() => skip(-10)}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
+                  style={{
+                    touchAction: "manipulation",
+                    minWidth: "56px",
+                    minHeight: "56px",
+                    outline: "none",
+                    backdropFilter: "blur(5px) saturate(1.5)",
+                  }}
+                  tabIndex={0}
+                  disabled={showOrientationOverlay}
+                >
+                  <img
+                    src={RewindIcon}
+                    alt="Rewind 10 seconds"
+                    className="w-8 h-8"
+                  />
+                </button>
+                <button
+                  onClick={safeTogglePlay}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  className="bg-white/30 hover:bg-white/40 rounded-full p-7 mx-2 transition-colors shadow-lg"
+                  style={{
+                    touchAction: "manipulation",
+                    minWidth: "72px",
+                    minHeight: "72px",
+                    outline: "none",
+                    backdropFilter: "blur(5px) saturate(1.5)",
+                  }}
+                  tabIndex={0}
+                  disabled={showOrientationOverlay}
+                >
+                  {isPlaying ? (
+                    <Pause size={40} strokeWidth="1.5" />
+                  ) : (
+                    <Play size={40} strokeWidth="1.5" />
+                  )}
+                </button>
+                <button
+                  onClick={() => skip(10)}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
+                  style={{
+                    touchAction: "manipulation",
+                    minWidth: "56px",
+                    minHeight: "56px",
+                    outline: "none",
+                    backdropFilter: "blur(5px) saturate(1.5)",
+                  }}
+                  tabIndex={0}
+                  disabled={showOrientationOverlay}
+                >
+                  <img
+                    src={ForwardIcon}
+                    alt="Forward 10 seconds"
+                    className="w-8 h-8"
+                  />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom controls */}
           <div
-            className="flex items-center gap-2"
+            className="absolute bottom-0 left-0 right-0 p-4 space-y-2 z-20"
             style={{
-              minHeight: "32px",
+              // background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
+              minHeight: "80px",
+              // Increase fallback padding for iPhone landscape
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 32px)",
+              boxSizing: "border-box",
             }}
           >
-            {videoLoaded ? (
-              <>
-                <span
-                  className="text-sm w-12 text-white font-mono"
-                  style={{ fontSize: "1rem", textShadow: "0 1px 4px #000" }}
-                >
-                  {formatTime(currentTime)}
-                </span>
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 0}
-                  value={currentTime}
-                  onChange={handleProgressChange}
-                  className="video-progress w-full h-2 bg-white/40 rounded-full appearance-none cursor-pointer"
-                  style={{
-                    accentColor: "#ef4444",
-                    height: "2.5px",
-                    borderRadius: "2px",
-                  }}
-                />
-                <span
-                  className="text-sm text-white font-mono"
-                  style={{ fontSize: "1rem", textShadow: "0 1px 4px #000" }}
-                >
-                  {formatTime(duration)}
-                </span>
-              </>
-            ) : (
-              <div className="w-full h-[3px] bg-white/20 rounded-full overflow-hidden relative">
-                <div
-                  className="absolute left-0 top-0 h-full bg-white/30 animate-indeterminate"
-                  style={{ width: "40%" }}
-                ></div>
-                <style>
-                  {`
+            {/* Progress bar */}
+            <div
+              className="flex items-center gap-2"
+              style={{
+                minHeight: "32px",
+              }}
+            >
+              {videoLoaded ? (
+                <>
+                  <span
+                    className="text-sm w-12 text-white font-mono"
+                    style={{ fontSize: "1rem", textShadow: "0 1px 4px #000" }}
+                  >
+                    {formatTime(currentTime)}
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 0}
+                    value={currentTime}
+                    onChange={handleProgressChange}
+                    className="video-progress w-full h-2 bg-white/40 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      accentColor: "#ef4444",
+                      height: "2.5px",
+                      borderRadius: "2px",
+                    }}
+                  />
+                  <span
+                    className="text-sm text-white font-mono"
+                    style={{ fontSize: "1rem", textShadow: "0 1px 4px #000" }}
+                  >
+                    {formatTime(duration)}
+                  </span>
+                </>
+              ) : (
+                <div className="w-full h-[3px] bg-white/20 rounded-full overflow-hidden relative">
+                  <div
+                    className="absolute left-0 top-0 h-full bg-white/30 animate-indeterminate"
+                    style={{ width: "40%" }}
+                  ></div>
+                  <style>
+                    {`
                   @keyframes indeterminate {
                     0% {
                       left: -40%;
@@ -1654,234 +1807,238 @@ const MediaPlayerPage: React.FC = () => {
                     animation: indeterminate 1.2s infinite cubic-bezier(0.4,0,0.2,1);
                   }
                   `}
-                </style>
-              </div>
-            )}
-          </div>
-
-          {/* Controls row */}
-          <div
-            className="flex items-center justify-between flex-wrap gap-2"
-            style={{
-              minHeight: "48px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div
-              className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start"
-              style={{ flexWrap: "wrap" }}
-            >
-              {previousEpisode && (
-                <button
-                  onClick={playPreviousEpisode}
-                  className="text-white hover:text-gray-300 transition-colors"
-                  title="Previous Episode"
-                >
-                  <SkipBack size={22} />
-                </button>
-              )}
-              <button
-                onClick={() => skip(-10)}
-                className="text-white hover:text-gray-300 transition-colors"
-                style={{
-                  minWidth: "44px",
-                  minHeight: "44px",
-                  fontSize: "1.1rem",
-                  outline: "none",
-                }}
-              >
-                <ChevronsLeft size={28} />
-              </button>
-              <button
-                onClick={togglePlay}
-                className="text-white hover:text-gray-300 transition-colors"
-                style={{
-                  minWidth: "44px",
-                  minHeight: "44px",
-                  fontSize: "1.1rem",
-                  outline: "none",
-                }}
-              >
-                {isPlaying ? <Pause size={28} /> : <Play size={28} />}
-              </button>
-              <button
-                onClick={() => skip(10)}
-                className="text-white hover:text-gray-300 transition-colors"
-                style={{
-                  minWidth: "44px",
-                  minHeight: "44px",
-                  fontSize: "1.1rem",
-                  outline: "none",
-                }}
-              >
-                <ChevronsRight size={28} />
-              </button>
-              {nextEpisode && (
-                <button
-                  onClick={playNextEpisode}
-                  className="text-white hover:text-gray-300 transition-colors"
-                  title="Next Episode"
-                >
-                  <SkipForward size={22} />
-                </button>
-              )}
-              <div
-                className="flex items-center gap-2"
-                style={{ minWidth: "120px" }}
-              >
-                <button
-                  onClick={toggleMute}
-                  className="text-white hover:text-gray-300 transition-colors"
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    outline: "none",
-                  }}
-                >
-                  {(() => {
-                    let volumeIcon;
-                    if (isMuted) {
-                      volumeIcon = <VolumeX size={28} />;
-                    } else if (volume > 0.5) {
-                      volumeIcon = <Volume2 size={28} />;
-                    } else {
-                      volumeIcon = <Volume1 size={28} />;
-                    }
-                    return volumeIcon;
-                  })()}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="volume-slider w-24 h-2 bg-white/40 rounded-full appearance-none cursor-pointer"
-                  style={{
-                    accentColor: "#ef4444",
-                    height: "2.5px",
-                    borderRadius: "2px",
-                  }}
-                />
-              </div>
-              {/* Audio Boost Button */}
-              <button
-                onClick={toggleAudioBoost}
-                className={clsx(
-                  "w-2 text-white transition-colors text-xs font-bold px-2 py-1 border-2 border-white cursor-pointer rounded",
-                  audioBoost > 1 && "bg-white/20 text-red-200"
-                )}
-                title={`Audio Boost: ${audioBoost}x`}
-                style={{
-                  minWidth: "32px",
-                  minHeight: "24px",
-                  outline: "none",
-                  fontSize: "0.75rem",
-                }}
-              >
-                {audioBoost}x
-              </button>
-            </div>
-            <div
-              className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end"
-              style={{ flexWrap: "wrap" }}
-            >
-              {item.Type !== "Movie" && (
-                <button
-                  ref={episodesButtonRef}
-                  className="text-white hover:text-gray-300 transition-colors mr-2"
-                  onClick={toggleEpsisodesMenu}
-                  onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    outline: "none",
-                  }}
-                >
-                  <GalleryVerticalEnd size={28} />
-                </button>
-              )}
-
-              <TracksMenu
-                audioTracks={audioTracks}
-                selectedAudioTrack={selectedAudioTrack}
-                setSelectedAudioTrack={setSelectedAudioTrack}
-                subtitleTracks={subtitleTracks}
-                selectedSubtitleIndex={selectedSubtitleIndex}
-                setSelectedSubtitleIndex={handleSetSelectedSubtitleTrackUI}
-                onSelectLocalSubtitle={handleSelectLocalSubtitle}
-                onUploadLocalSubtitle={handleUploadLocalSubtitle} // new prop
-                localSubtitleName={localSubtitleName}
-                localSubtitleFile={localSubtitleFile} // new prop
-                subtitleDelayMs={subtitleDelayMs}
-                increaseSubtitleDelay={increaseSubtitleDelay}
-                decreaseSubtitleDelay={decreaseSubtitleDelay}
-                resetSubtitleDelay={resetSubtitleDelay}
-                isOpen={tracksMenuOpen}
-                setIsOpen={setTracksMenuOpen}
-                // Pass font size props
-                subtitleFontSize={subtitleFontSize}
-                increaseSubtitleFontSize={increaseSubtitleFontSize}
-                decreaseSubtitleFontSize={decreaseSubtitleFontSize}
-                resetSubtitleFontSize={resetSubtitleFontSize}
-              />
-              {/* PiP Button */}
-              <button
-                onClick={togglePiP}
-                className={clsx(
-                  "text-white hover:text-gray-300 transition-colors",
-                  isPiP && "opacity-70"
-                )}
-                title="Picture in Picture"
-                disabled={
-                  !document.pictureInPictureEnabled ||
-                  videoRef.current?.disablePictureInPicture
-                }
-                style={{
-                  minWidth: "44px",
-                  minHeight: "44px",
-                  outline: "none",
-                }}
-              >
-                <PictureInPicture2 size={28} />
-              </button>
-              <button
-                onClick={toggleFullscreen}
-                className="text-white hover:text-gray-300 transition-colors"
-                style={{
-                  minWidth: "44px",
-                  minHeight: "44px",
-                  outline: "none",
-                }}
-              >
-                {isFullscreen ? <Minimize size={28} /> : <Maximize size={28} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Episodes List button and overlay */}
-          {item.Type === "Episode" && item.SeriesId && item.SeasonId && (
-            <>
-              {showEpisodesMenu && (
-                <div
-                  ref={episodesMenuRef}
-                  className="fixed left-0 bottom-0 w-full max-h-[80vh] bg-[#171717]/50 text-white text-sm rounded-t-xl overflow-y-auto shadow-lg p-2 z-50 pl-6 "
-                  style={{
-                    animation: "slideUp 0.3s ease-out forwards",
-                    backdropFilter: "blur(20px) saturate(1)",
-                  }}
-                >
-                  <EpisodesList
-                    seriesId={item.SeriesId}
-                    initialSeasonId={item.SeasonId}
-                    playingNowId={item.Id}
-                    variant="horizontal"
-                  />
+                  </style>
                 </div>
               )}
-              <style>
-                {`
+            </div>
+
+            {/* Controls row */}
+            <div
+              className="flex items-center justify-between flex-wrap gap-2"
+              style={{
+                minHeight: "48px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start"
+                style={{ flexWrap: "wrap" }}
+              >
+                {previousEpisode && (
+                  <button
+                    onClick={playPreviousEpisode}
+                    className="text-white hover:text-gray-300 transition-colors"
+                    title="Previous Episode"
+                  >
+                    <SkipBack size={22} />
+                  </button>
+                )}
+                <button
+                  onClick={() => skip(-10)}
+                  className="text-white hover:text-gray-300 transition-colors"
+                  style={{
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    fontSize: "1.1rem",
+                    outline: "none",
+                  }}
+                >
+                  <ChevronsLeft size={28} />
+                </button>
+                <button
+                  onClick={togglePlay}
+                  className="text-white hover:text-gray-300 transition-colors"
+                  style={{
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    fontSize: "1.1rem",
+                    outline: "none",
+                  }}
+                >
+                  {isPlaying ? <Pause size={28} /> : <Play size={28} />}
+                </button>
+                <button
+                  onClick={() => skip(10)}
+                  className="text-white hover:text-gray-300 transition-colors"
+                  style={{
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    fontSize: "1.1rem",
+                    outline: "none",
+                  }}
+                >
+                  <ChevronsRight size={28} />
+                </button>
+                {nextEpisode && (
+                  <button
+                    onClick={playNextEpisode}
+                    className="text-white hover:text-gray-300 transition-colors"
+                    title="Next Episode"
+                  >
+                    <SkipForward size={22} />
+                  </button>
+                )}
+                <div
+                  className="flex items-center gap-2"
+                  style={{ minWidth: "120px" }}
+                >
+                  <button
+                    onClick={toggleMute}
+                    className="text-white hover:text-gray-300 transition-colors"
+                    style={{
+                      minWidth: "44px",
+                      minHeight: "44px",
+                      outline: "none",
+                    }}
+                  >
+                    {(() => {
+                      let volumeIcon;
+                      if (isMuted) {
+                        volumeIcon = <VolumeX size={28} />;
+                      } else if (volume > 0.5) {
+                        volumeIcon = <Volume2 size={28} />;
+                      } else {
+                        volumeIcon = <Volume1 size={28} />;
+                      }
+                      return volumeIcon;
+                    })()}
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="volume-slider w-24 h-2 bg-white/40 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      accentColor: "#ef4444",
+                      height: "2.5px",
+                      borderRadius: "2px",
+                    }}
+                  />
+                </div>
+                {/* Audio Boost Button */}
+                <button
+                  onClick={toggleAudioBoost}
+                  className={clsx(
+                    "w-2 text-white transition-colors text-xs font-bold px-2 py-1 border-2 border-white cursor-pointer rounded",
+                    audioBoost > 1 && "bg-white/20 text-red-200"
+                  )}
+                  title={`Audio Boost: ${audioBoost}x`}
+                  style={{
+                    minWidth: "32px",
+                    minHeight: "24px",
+                    outline: "none",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  {audioBoost}x
+                </button>
+              </div>
+              <div
+                className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end"
+                style={{ flexWrap: "wrap" }}
+              >
+                {item.Type !== "Movie" && (
+                  <button
+                    ref={episodesButtonRef}
+                    className="text-white hover:text-gray-300 transition-colors mr-2"
+                    onClick={toggleEpsisodesMenu}
+                    onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
+                    style={{
+                      minWidth: "44px",
+                      minHeight: "44px",
+                      outline: "none",
+                    }}
+                  >
+                    <GalleryVerticalEnd size={28} />
+                  </button>
+                )}
+
+                <TracksMenu
+                  audioTracks={audioTracks}
+                  selectedAudioTrack={selectedAudioTrack}
+                  setSelectedAudioTrack={setSelectedAudioTrack}
+                  subtitleTracks={subtitleTracks}
+                  selectedSubtitleIndex={selectedSubtitleIndex}
+                  setSelectedSubtitleIndex={handleSetSelectedSubtitleTrackUI}
+                  onSelectLocalSubtitle={handleSelectLocalSubtitle}
+                  onUploadLocalSubtitle={handleUploadLocalSubtitle} // new prop
+                  localSubtitleName={localSubtitleName}
+                  localSubtitleFile={localSubtitleFile} // new prop
+                  subtitleDelayMs={subtitleDelayMs}
+                  increaseSubtitleDelay={increaseSubtitleDelay}
+                  decreaseSubtitleDelay={decreaseSubtitleDelay}
+                  resetSubtitleDelay={resetSubtitleDelay}
+                  isOpen={tracksMenuOpen}
+                  setIsOpen={setTracksMenuOpen}
+                  // Pass font size props
+                  subtitleFontSize={subtitleFontSize}
+                  increaseSubtitleFontSize={increaseSubtitleFontSize}
+                  decreaseSubtitleFontSize={decreaseSubtitleFontSize}
+                  resetSubtitleFontSize={resetSubtitleFontSize}
+                />
+                {/* PiP Button */}
+                <button
+                  onClick={togglePiP}
+                  className={clsx(
+                    "text-white hover:text-gray-300 transition-colors",
+                    isPiP && "opacity-70"
+                  )}
+                  title="Picture in Picture"
+                  disabled={
+                    !document.pictureInPictureEnabled ||
+                    videoRef.current?.disablePictureInPicture
+                  }
+                  style={{
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    outline: "none",
+                  }}
+                >
+                  <PictureInPicture2 size={28} />
+                </button>
+                <button
+                  onClick={toggleFullscreen}
+                  className="text-white hover:text-gray-300 transition-colors"
+                  style={{
+                    minWidth: "44px",
+                    minHeight: "44px",
+                    outline: "none",
+                  }}
+                >
+                  {isFullscreen ? (
+                    <Minimize size={28} />
+                  ) : (
+                    <Maximize size={28} />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Episodes List button and overlay */}
+            {item.Type === "Episode" && item.SeriesId && item.SeasonId && (
+              <>
+                {showEpisodesMenu && (
+                  <div
+                    ref={episodesMenuRef}
+                    className="fixed left-0 bottom-0 w-full max-h-[80vh] bg-[#171717]/50 text-white text-sm rounded-t-xl overflow-y-auto shadow-lg p-2 z-50 pl-6 "
+                    style={{
+                      animation: "slideUp 0.3s ease-out forwards",
+                      backdropFilter: "blur(20px) saturate(1)",
+                    }}
+                  >
+                    <EpisodesList
+                      seriesId={item.SeriesId}
+                      initialSeasonId={item.SeasonId}
+                      playingNowId={item.Id}
+                      variant="horizontal"
+                    />
+                  </div>
+                )}
+                <style>
+                  {`
                 @keyframes slideUp {
                   from {
                     transform: translateY(100%);
@@ -1893,12 +2050,13 @@ const MediaPlayerPage: React.FC = () => {
                   }
                 }
                 `}
-              </style>
-            </>
-          )}
+                </style>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

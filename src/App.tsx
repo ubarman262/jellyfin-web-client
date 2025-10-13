@@ -17,6 +17,7 @@ import MediaDetailsDrawer from "./components/ui/MediaDetailsDrawer";
 import StudioDetailsPage from "./pages/StudioDetailsPage";
 import CollectionsPage from "./pages/CollectionsPage";
 import ProfilePage from "./components/ProfilePage";
+import { MediaPlayerPageiOS } from "./pages/MediaPlayerPageiOS";
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -151,6 +152,15 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <MediaPlayerPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/play-alt/:itemId"
+          element={
+            <ProtectedRoute>
+              <MediaPlayerPageiOS />
             </ProtectedRoute>
           }
         />

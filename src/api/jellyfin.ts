@@ -7,6 +7,7 @@ import {
   MediaItem,
   MediaSourceResponse,
   MediaStream,
+  PlaybackInfoOptions,
   UserLogin,
 } from "../types/jellyfin";
 
@@ -384,6 +385,17 @@ class JellyfinApi {
       url += `?${queryString}`;
     }
     return url;
+  }
+
+  async getPlaybackInfo(
+    itemId: string,
+    options: PlaybackInfoOptions
+  ): Promise<MediaSourceResponse> {
+    return this.makeRequest<MediaSourceResponse>(
+      "post",
+      `/Items/${itemId}/PlaybackInfo`,
+      options
+    );
   }
 
   getPlaybackUrl(itemId: string, audioStreamIndex: number = 0): string {
