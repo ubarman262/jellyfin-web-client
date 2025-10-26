@@ -1,11 +1,13 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { AlertCircle, Server } from "lucide-react";
+import React, { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const AddServerPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  
   const [serverUrlState, setServerUrlState] = useState(
-    localStorage.getItem("jellyfin_server_url") ?? ""
+    searchParams.get("server_url") || localStorage.getItem("jellyfin_server_url") || ""
   );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

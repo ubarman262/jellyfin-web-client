@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AtSign, Lock, AlertCircle } from "lucide-react";
 
@@ -8,16 +8,38 @@ const LoginPage: React.FC = () => {
   const login = auth?.login;
   const isLoading = auth?.isLoading ?? false;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for server_url query parameter from both useSearchParams and window.location
+    let serverUrlParam = searchParams.get('server_url');
+    
+    // Fallback to parsing from window.location if useSearchParams doesn't work
+    if (!serverUrlParam) {
+      const urlParams = new URLSearchParams(window.location.search);
+      serverUrlParam = urlParams.get('server_url');
+    }
+    
+    // Also check if we're on root with query params and should redirect to login
+    if (!serverUrlParam && window.location.pathname === '/' && window.location.search) {
+      const urlParams = new URLSearchParams(window.location.search);
+      serverUrlParam = urlParams.get('server_url');
+    }
+    
+    if (serverUrlParam) {
+      // Redirect to add-server with the server URL
+      navigate(`/add-server?server_url=${encodeURIComponent(serverUrlParam)}`);
+      return;
+    }
+
     // Redirect to add-server if no server URL is set
     if (!localStorage.getItem("jellyfin_server_url")) {
       navigate("/add-server");
     }
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
