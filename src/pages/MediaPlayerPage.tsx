@@ -1378,6 +1378,7 @@ const MediaPlayerPage: React.FC = () => {
               selectedSubtitleIndex={selectedSubtitleIndex}
               itemId={item.Id}
               currentTime={currentTime}
+              videoEl={videoRef.current}
               localSubtitleFileUrl={
                 selectedSubtitleIndex === "local"
                   ? localSubtitleUrl ?? undefined
