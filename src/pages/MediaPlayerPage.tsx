@@ -1,7 +1,6 @@
 import clsx from "clsx";
 import Hls from "hls.js";
 import {
-  ArrowLeft,
   ChevronsLeft,
   ChevronsRight,
   GalleryVerticalEnd,
@@ -1079,6 +1078,47 @@ const MediaPlayerPage: React.FC = () => {
     item,
   ]);
 
+  // Keep native text tracks hidden outside PiP to avoid duplicate subtitles on iOS.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const trackElements = Array.from(video.querySelectorAll("track"));
+    const textTracks = video.textTracks;
+
+    for (let i = 0; i < textTracks.length; i++) {
+      const textTrack = textTracks[i];
+      const trackEl = trackElements[i] as HTMLTrackElement | undefined;
+      const trackIndexRaw = trackEl?.getAttribute("data-jf-index");
+      const trackIndex =
+        trackIndexRaw !== null && trackIndexRaw !== undefined
+          ? Number(trackIndexRaw)
+          : null;
+
+      const hasMatchingServerTrack =
+        isPiP &&
+        typeof selectedSubtitleIndex === "number" &&
+        trackIndex !== null &&
+        !Number.isNaN(trackIndex) &&
+        trackIndex === selectedSubtitleIndex;
+
+      const isDynamicLocal =
+        isPiP &&
+        selectedSubtitleIndex === "local" &&
+        trackEl?.getAttribute("data-dynamic") === "true";
+
+      const shouldShow = hasMatchingServerTrack || isDynamicLocal;
+      textTrack.mode =
+        shouldShow && selectedSubtitleIndex !== null ? "showing" : "disabled";
+    }
+  }, [
+    isPiP,
+    selectedSubtitleIndex,
+    subtitleTracks,
+    localSubtitleUrl,
+    localSubtitleName,
+  ]);
+
   if (isLoading || !item || !api) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
@@ -1316,7 +1356,8 @@ const MediaPlayerPage: React.FC = () => {
                 return (
                   <track
                     style={{ backgroundColor: "transparent !important" }}
-                    key={itemId}
+                    key={s.Index ?? idx}
+                    data-jf-index={s.Index ?? idx}
                     kind="subtitles"
                     src={trackUrl}
                     srcLang={s.Language ?? "und"}
@@ -1325,7 +1366,7 @@ const MediaPlayerPage: React.FC = () => {
                       s.Language ??
                       `Subtitle ${s.Index ?? idx}`
                     }
-                    default={s.IsDefault && idx === 0} // Only set first default track as default
+                    default={false}
                   />
                 );
               })}
