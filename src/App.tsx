@@ -59,6 +59,15 @@ const App: React.FC = () => {
   const location = useLocation();
   const isPlayerPage = !!matchPath("/play/:itemId", location.pathname);
 
+  // Set body background to black on player page
+  React.useEffect(() => {
+    if (isPlayerPage) {
+      document.body.style.backgroundColor = 'black';
+    } else {
+      document.body.style.backgroundColor = '';
+    }
+  }, [isPlayerPage]);
+
   return (
     <>
       {!isPlayerPage && <MediaDetailsDrawer />}
