@@ -906,6 +906,7 @@ const MediaPlayerPage: React.FC = () => {
     navigator.mediaSession.setActionHandler?.("pause", () => {
       videoRef.current?.pause();
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     navigator.mediaSession.setActionHandler?.("seekto", (details: any) => {
       if (
         videoRef.current &&
@@ -966,6 +967,7 @@ const MediaPlayerPage: React.FC = () => {
       if (!video.audioContext) {
         try {
           const AudioContext =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             window.AudioContext || (window as any).webkitAudioContext;
           const audioContext = new AudioContext();
           const source = audioContext.createMediaElementSource(video);
@@ -988,7 +990,7 @@ const MediaPlayerPage: React.FC = () => {
           video.audioContext.currentTime
         );
       }
-    } else if (video.gainNode) {
+    } else if (video.gainNode && video.audioContext) {
       video.gainNode.gain.setValueAtTime(1, video.audioContext.currentTime);
     }
   }, [audioBoost]);
@@ -1979,25 +1981,21 @@ const MediaPlayerPage: React.FC = () => {
                 </button>
               </div>
               <div
-                className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end"
+                className="flex items-center gap-6 w-full sm:w-auto justify-center sm:justify-end"
                 style={{ flexWrap: "wrap" }}
               >
                 {item.Type !== "Movie" && (
                   <button
                     ref={episodesButtonRef}
-                    className="text-white hover:text-gray-300 transition-colors mr-2"
+                    className="text-white hover:text-gray-300 transition-colors"
                     onClick={toggleEpsisodesMenu}
                     onDoubleClick={(e) => e.stopPropagation()} // Prevent double click from bubbling up
-                    style={{
-                      minWidth: "44px",
-                      minHeight: "44px",
-                      outline: "none",
-                    }}
                   >
                     <GalleryVerticalEnd size={28} />
                   </button>
                 )}
 
+                {/* Tracks Menu */}
                 <TracksMenu
                   audioTracks={audioTracks}
                   selectedAudioTrack={selectedAudioTrack}
@@ -2033,22 +2031,12 @@ const MediaPlayerPage: React.FC = () => {
                     !document.pictureInPictureEnabled ||
                     videoRef.current?.disablePictureInPicture
                   }
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    outline: "none",
-                  }}
                 >
                   <PictureInPicture2 size={28} />
                 </button>
                 <button
                   onClick={toggleFullscreen}
                   className="text-white hover:text-gray-300 transition-colors"
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    outline: "none",
-                  }}
                 >
                   {isFullscreen ? (
                     <Minimize size={28} />
