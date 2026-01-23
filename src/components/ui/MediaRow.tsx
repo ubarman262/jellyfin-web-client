@@ -23,7 +23,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
   const [isNonTouchDevice, setIsNonTouchDevice] = useState(true);
 
   useEffect(() => {
-    const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const hasTouch = "ontouchstart" in globalThis || navigator.maxTouchPoints > 0;
     setIsNonTouchDevice(!hasTouch);
   }, []);
 
@@ -103,7 +103,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
                 }
               }}
               role={onSelectItem ? "button" : undefined}
-              tabIndex={onSelectItem ? 0 : undefined}
+              {...(onSelectItem && { tabIndex: 0 })}
               style={onSelectItem ? { cursor: "pointer" } : undefined}
             >
               <MediaCard key={item.Id} item={item} />

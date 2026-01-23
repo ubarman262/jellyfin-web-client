@@ -1,6 +1,5 @@
 import clsx from "clsx";
 import {
-  ChevronDown,
   Film,
   GalleryThumbnails,
   Heart,
@@ -10,12 +9,12 @@ import {
   Search,
   Tv,
   User,
-  X,
+  X
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import JellyfinApi from "../../api/jellyfin";
+import { useAuth } from "../../context/AuthContext";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
@@ -24,14 +23,12 @@ const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     // Close menus when location changes
     setIsMenuOpen(false);
-    setShowUserMenu(false);
   }, [location]);
 
   useEffect(() => {
@@ -70,9 +67,9 @@ const Navbar: React.FC = () => {
     <header
       className={clsx(
         "sticky top-0 z-50 transition-all duration-300",
-        !isScrolled
-          ? "bg-gradient-to-b from-black/80 to-transparent border-0 border-transparent"
-          : "backdrop-blur-[5px] backdrop-saturate-[0.8] bg-[#171717]/90 shadow-[0_4px_30px_rgba(0,0,0,0.1)] border-b border-white/10",
+        isScrolled
+          ? "backdrop-blur-[5px] backdrop-saturate-[0.8] bg-[#171717]/90 shadow-[0_4px_30px_rgba(0,0,0,0.1)] border-b border-white/10"
+          : "bg-gradient-to-b from-black/80 to-transparent border-0 border-transparent",
         "-mb-16"
       )}
     >
@@ -151,55 +148,21 @@ const Navbar: React.FC = () => {
 
             {/* User Profile */}
             {isAuthenticated && (
-              <div className="relative">
-                <div className="flex items-center gap-1 text-gray-300 hover:text-white transition-colors">
-                  <div
-                    className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-medium overflow-hidden cursor-pointer"
-                    onClick={() => {
-                      if (window.innerWidth >= 768)
-                        setShowUserMenu(!showUserMenu);
-                    }}
-                    tabIndex={0}
-                  >
-                    {profilePicUrl ? (
-                      <img
-                        src={profilePicUrl}
-                        alt={user?.Name}
-                        className="w-8 h-8 object-cover rounded-full"
-                      />
-                    ) : (
-                      getUserInitial()
-                    )}
-                  </div>
-                  {/* Hide ChevronDown on mobile (md:hidden) */}
-                  <span
-                    className="hidden md:inline-flex cursor-pointer"
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                  >
-                    <ChevronDown size={16} />
-                  </span>
-                </div>
-                {showUserMenu && (
-                  <div className="absolute right-0 top-12 w-48 bg-gray-900 rounded-md shadow-lg overflow-hidden z-50">
-                    <div
-                      className="p-3 border-b border-gray-800 cursor-pointer"
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        navigate("/profile");
-                      }}
-                    >
-                      <p className="text-white font-medium">{user?.Name}</p>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 w-full p-3 text-left text-gray-300 hover:bg-gray-800 transition-colors"
-                    >
-                      <LogOut size={16} />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
+              <button
+                onClick={() => navigate("/profile")}
+                className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-medium overflow-hidden hover:ring-2 hover:ring-white/20 transition-all cursor-pointer"
+                aria-label="Profile"
+              >
+                {profilePicUrl ? (
+                  <img
+                    src={profilePicUrl}
+                    alt={user?.Name}
+                    className="w-8 h-8 object-cover rounded-full"
+                  />
+                ) : (
+                  getUserInitial()
                 )}
-              </div>
+              </button>
             )}
 
             {/* Mobile Menu Button */}

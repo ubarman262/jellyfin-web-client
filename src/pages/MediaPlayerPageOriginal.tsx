@@ -1,48 +1,31 @@
 import clsx from "clsx";
-import Hls from "hls.js";
 import {
   ChevronsLeft,
   ChevronsRight,
   GalleryVerticalEnd,
-  Maximize,
-  Minimize,
-  Pause,
-  Play,
-  SkipBack,
-  SkipForward,
-  Volume1,
-  Volume2,
-  VolumeX,
-  PictureInPicture2, // Add PiP icon
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSetRecoilState } from "recoil";
 import NextEpisodeButton from "../components/ui/nextEpisodeButton";
-import SubtitleTrack from "../components/ui/SubtitleTrack";
 import TracksMenu from "../components/ui/TracksMenu";
+import VideoPlayerCore from "../components/ui/VideoPlayer/VideoPlayerCore";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
 import isDrawerOpen from "../states/atoms/DrawerOpen";
 import { MediaItem, MediaStream } from "../types/jellyfin";
 import SkipIntroButton from "../components/ui/skipIntroButton";
 import EpisodesList from "../components/ui/EpisodesList";
-import RewindIcon from "../assets/svg/rewind-10-seconds.svg";
-import ForwardIcon from "../assets/svg/forward-10-seconds.svg";
 import NewTabLink from "../assets/svg/new-tab-link.svg";
-
-interface VideoElementWithHls extends HTMLVideoElement {
-  __hlsInstance?: Hls | null;
-  audioContext?: AudioContext;
-  gainNode?: GainNode;
-}
+import SubtitleEditModal from "../components/ui/SubtitleEditModal";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 // Helper to detect iOS Safari
 function isIOSSafari() {
-  const ua = globalThis.navigator.userAgent;
+  const ua = window.navigator.userAgent;
   return (
     /iPad|iPhone|iPod/.test(ua) &&
-    !("MSStream" in globalThis) &&
+    !("MSStream" in window) &&
     /Safari/.test(ua) &&
     !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua)
   );
@@ -59,34 +42,24 @@ const MediaPlayerPage: React.FC = () => {
 
   const setIsDrawerOpen = useSetRecoilState(isDrawerOpen);
 
-  const videoRef = useRef<VideoElementWithHls>(null);
-  const playerContainerRef = useRef<HTMLDivElement>(null);
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Episodes menu refs
+  const episodesMenuRef = useRef<HTMLDivElement | null>(null);
+  const episodesButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
+  // Video player state
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showControls, setShowControls] = useState(true);
-  // Add a state for controls hide delay (ms)
-  const [controlsHideDelay, setControlsHideDelay] = useState(3000);
+  const [showOrientationOverlay, setShowOrientationOverlay] = useState(false);
+
+  // UI state
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
-  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(
-    null
-  );
-  const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null); // new state
+  const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(null);
+  const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null);
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
-
-  // --- Add state for episodes menu visibility ---
   const [showEpisodesMenu, setShowEpisodesMenu] = useState(false);
-  const episodesMenuRef = useRef<HTMLDivElement | null>(null);
-  const episodesButtonRef = useRef<HTMLButtonElement | null>(null); // <-- add ref for the button
-
-  const [showOrientationOverlay, setShowOrientationOverlay] = useState(false);
+  const [subtitleEditModalOpen, setSubtitleEditModalOpen] = useState(false);
 
   // Detect orientation for mobile devices
   useEffect(() => {
@@ -97,15 +70,15 @@ const MediaPlayerPage: React.FC = () => {
         return;
       }
       // Use window.orientation or matchMedia
-      const landscape = globalThis.matchMedia("(orientation: landscape)").matches;
+      const landscape = window.matchMedia("(orientation: landscape)").matches;
       setShowOrientationOverlay(!landscape);
     }
     checkOrientation();
-    globalThis.addEventListener("orientationchange", checkOrientation);
-    globalThis.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    window.addEventListener("resize", checkOrientation);
     return () => {
-      globalThis.removeEventListener("orientationchange", checkOrientation);
-      globalThis.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+      window.removeEventListener("resize", checkOrientation);
     };
   }, []);
 
@@ -317,14 +290,17 @@ const MediaPlayerPage: React.FC = () => {
 
     let timeToStartVideoAt;
 
-    if (hasRestoredPosition) {
+    if (!hasRestoredPosition) {
+      // This is an initial load for the current 'item'
+      if (forceStartFromBeginning) {
+        timeToStartVideoAt = 0; // Force start from beginning
+      } else {
+        timeToStartVideoAt = resumeTimeFromUserData; // Use UserData or 0 if no UserData
+      }
+    } else {
       // Position has been restored before for this item; likely an audio/subtitle track change.
       // Resume from the video's actual current playback time.
       timeToStartVideoAt = videoRef.current?.currentTime || currentTime || 0;
-    } else if (forceStartFromBeginning) {
-      timeToStartVideoAt = 0; // Force start from beginning
-    } else {
-      timeToStartVideoAt = resumeTimeFromUserData; // Use UserData or 0 if no UserData
     }
 
     // This is the crucial time that will be passed to videoEl.currentTime in restoreTimeAndPlay
@@ -558,7 +534,7 @@ const MediaPlayerPage: React.FC = () => {
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!videoRef.current) return;
 
-    const newVolume = Number.parseFloat(e.target.value);
+    const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
     videoRef.current.volume = newVolume;
 
@@ -574,7 +550,7 @@ const MediaPlayerPage: React.FC = () => {
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!videoRef.current) return;
 
-    const newTime = Number.parseFloat(e.target.value);
+    const newTime = parseFloat(e.target.value);
     setCurrentTime(newTime);
     videoRef.current.currentTime = newTime;
   };
@@ -594,7 +570,7 @@ const MediaPlayerPage: React.FC = () => {
   };
 
   const formatTime = (seconds: number) => {
-    if (Number.isNaN(seconds) || seconds < 0) return "0:00";
+    if (isNaN(seconds) || seconds < 0) return "0:00";
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
@@ -658,8 +634,8 @@ const MediaPlayerPage: React.FC = () => {
       }
     };
 
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [togglePlay, skip, toggleFullscreen]);
 
   // Extract audio tracks from item and restore last selected audio/subtitle from cookie (only once per item)
@@ -811,7 +787,7 @@ const MediaPlayerPage: React.FC = () => {
         return;
       }
       const currentIndex = episodes.findIndex((ep) => ep.Id === item.Id);
-      if (currentIndex >= 0) {
+      if (currentIndex !== -1) {
         if (currentIndex + 1 < episodes.length) {
           setNextEpisode(episodes[currentIndex + 1]);
         } else {
@@ -883,7 +859,7 @@ const MediaPlayerPage: React.FC = () => {
       artworkUrl = api.getImageUrl(item.Id, "Primary", 512, 512);
     }
 
-    navigator.mediaSession.metadata = new globalThis.MediaMetadata({
+    navigator.mediaSession.metadata = new window.MediaMetadata({
       title: item.Name,
       // artist: item.Artists?.join(", ") || item.AlbumArtist || "",
       artist: item.SeriesName ?? "Jellyfin",
@@ -965,7 +941,7 @@ const MediaPlayerPage: React.FC = () => {
         try {
           const AudioContext =
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            globalThis.AudioContext || (globalThis as any).webkitAudioContext;
+            window.AudioContext || (window as any).webkitAudioContext;
           const audioContext = new AudioContext();
           const source = audioContext.createMediaElementSource(video);
           const gainNode = audioContext.createGain();
@@ -999,10 +975,10 @@ const MediaPlayerPage: React.FC = () => {
     if (!document.pictureInPictureEnabled || video.disablePictureInPicture)
       return;
     try {
-      if (isPiP) {
-        await document.exitPictureInPicture();
-      } else {
+      if (!isPiP) {
         await video.requestPictureInPicture();
+      } else {
+        await document.exitPictureInPicture();
       }
     } catch (e) {
       console.error("Error toggling Picture-in-Picture:", e);
@@ -1058,7 +1034,7 @@ const MediaPlayerPage: React.FC = () => {
 
       if (trackUrl) {
         const trackElem = document.createElement("track");
-        trackElem.dataset.dynamic = "true";
+        trackElem.setAttribute("data-dynamic", "true");
         trackElem.kind = kind;
         trackElem.label = label;
         trackElem.srclang = srclang;
@@ -1088,7 +1064,7 @@ const MediaPlayerPage: React.FC = () => {
     for (let i = 0; i < textTracks.length; i++) {
       const textTrack = textTracks[i];
       const trackEl = trackElements[i] as HTMLTrackElement | undefined;
-      const trackIndexRaw = trackEl?.dataset.jfIndex;
+      const trackIndexRaw = trackEl?.getAttribute("data-jf-index");
       const trackIndex =
         trackIndexRaw !== null && trackIndexRaw !== undefined
           ? Number(trackIndexRaw)
@@ -1104,7 +1080,7 @@ const MediaPlayerPage: React.FC = () => {
       const isDynamicLocal =
         isPiP &&
         selectedSubtitleIndex === "local" &&
-        trackEl?.dataset.dynamic === "true";
+        trackEl?.getAttribute("data-dynamic") === "true";
 
       const shouldShow = hasMatchingServerTrack || isDynamicLocal;
       textTrack.mode =
@@ -1128,6 +1104,17 @@ const MediaPlayerPage: React.FC = () => {
 
   return (
     <>
+      {/* Subtitle Edit Modal */}
+      {item && (
+        <SubtitleEditModal
+          isOpen={subtitleEditModalOpen}
+          onClose={() => setSubtitleEditModalOpen(false)}
+          item={item}
+          subtitleTracks={subtitleTracks}
+          onSubtitlesUpdated={getSubtitles}
+        />
+      )}
+
       <style>{`
         /* Standard WebVTT cue styling */
         video::cue {
@@ -1972,6 +1959,7 @@ const MediaPlayerPage: React.FC = () => {
                   increaseSubtitleFontSize={increaseSubtitleFontSize}
                   decreaseSubtitleFontSize={decreaseSubtitleFontSize}
                   resetSubtitleFontSize={resetSubtitleFontSize}
+                  onOpenSubtitleEditModal={() => setSubtitleEditModalOpen(true)}
                 />
                 {/* PiP Button */}
                 <button

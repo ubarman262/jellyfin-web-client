@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
 import { useSearch } from "../hooks/useMediaData";
+import MediaRow from "../components/ui/MediaRow";
 
 const SearchPage: React.FC = () => {
   const location = useLocation();
@@ -79,15 +80,9 @@ const SearchPage: React.FC = () => {
                 placeholder="Search for Movies, Shows..."
                 value={searchQuery}
                 onChange={handleInputChange}
-                className="bg-gray-800 w-full pl-10 pr-4 py-3 rounded-l-md text-white focus:outline-none focus:ring-2 focus:ring-red-600"
+                className="bg-gray-800 w-full pl-10 pr-4 py-3 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
-            <button
-              type="submit"
-              className="bg-red-600 text-white px-6 py-3 rounded-r-md hover:bg-red-700 transition-colors"
-            >
-              Search
-            </button>
           </form>
         </div>
 
@@ -144,10 +139,24 @@ const SearchPage: React.FC = () => {
             );
           } else if (results.length > 0) {
             resultsContent = (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {results.map((item) => (
-                  <MediaCard key={item.Id} item={item} />
-                ))}
+              <div>
+                <MediaRow
+                  title="Movies"
+                  items={results.filter((item) => item.Type === "Movie")}
+                  isLoading={isLoading}
+                />
+                <MediaRow
+                  title="Series"
+                  items={results.filter((item) => item.Type === "Series")}
+                  isLoading={isLoading}
+                />
+                <MediaRow
+                  title="Episodes"
+                  items={results
+                    .filter((item) => item.Type === "Episode")
+                    .map((item) => ({ ...item, Type: "EpisodeInSearch" }))}
+                  isLoading={isLoading}
+                />
               </div>
             );
           } else if (searchQuery) {
@@ -178,13 +187,9 @@ const SearchPage: React.FC = () => {
                   <h2 className="text-2xl font-medium">
                     {isLoading
                       ? "Searching..."
-                      : `Results for "${searchQuery}"`}
+                      : `${totalResults} results`}
                   </h2>
-                  {!isLoading && totalResults > 0 && (
-                    <p className="text-gray-400">
-                      {totalResults} results found
-                    </p>
-                  )}
+                  {/* Remove duplicate count, keep only in heading */}
                 </div>
               )}
               {resultsContent}

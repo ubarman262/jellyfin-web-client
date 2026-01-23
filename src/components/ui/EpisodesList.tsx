@@ -142,6 +142,43 @@ export default function EpisodesList({
     }
   }
 
+  // Helper function to handle download action
+  const handleDownload = async (episodeId: string) => {
+    if (!api || !episodeId) return;
+    setDownloadLoadingMap((prev) => ({
+      ...prev,
+      [episodeId]: true,
+    }));
+    try {
+      api.downloadMediaItem(episodeId);
+    } catch {
+      alert("Failed to start download.");
+    } finally {
+      setTimeout(() => {
+        setDownloadLoadingMap((prev) => ({
+          ...prev,
+          [episodeId]: false,
+        }));
+      }, 1000);
+    }
+  };
+
+  // Helper function to handle watched state updates
+  const handleWatchedUpdate = (episodeId: string, newWatched: boolean | ((prev: boolean) => boolean)) => {
+    setWatchedMap((prev) => ({
+      ...prev,
+      [episodeId]:
+        typeof newWatched === "function"
+          ? newWatched(prev[episodeId] ?? false)
+          : newWatched,
+    }));
+  };
+
+  // Helper function to handle play navigation
+  const handlePlayEpisode = (episodeId: string) => {
+    navigate(`/play/${episodeId}`);
+  };
+
   // Fetch seasons on mount or when seriesId changes
   useEffect(() => {
     if (!api || !seriesId) {
@@ -273,7 +310,7 @@ export default function EpisodesList({
                 {/* Thumbnail */}
                 <div className="relative w-full h-32 rounded overflow-hidden group mb-3">
                   <button
-                    onClick={() => navigate(`/play/${ep.Id}`)}
+                    onClick={() => handlePlayEpisode(ep.Id)}
                     className="w-full h-full p-0 m-0 border-none bg-transparent relative cursor-pointer focus:outline-none"
                     aria-label={`Play ${ep.Name}`}
                     tabIndex={0}
@@ -281,7 +318,7 @@ export default function EpisodesList({
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        navigate(`/play/${ep.Id}`);
+                        handlePlayEpisode(ep.Id);
                       }
                     }}
                   >
@@ -329,15 +366,7 @@ export default function EpisodesList({
                       iconSize={12}
                       item={ep as MediaItem}
                       isWatched={watched}
-                      setIsWatched={(newWatched) => {
-                        setWatchedMap((prev) => ({
-                          ...prev,
-                          [ep.Id]:
-                            typeof newWatched === "function"
-                              ? newWatched(prev[ep.Id] ?? false)
-                              : newWatched,
-                        }));
-                      }}
+                      setIsWatched={(newWatched) => handleWatchedUpdate(ep.Id, newWatched)}
                     />
                   </div>
                   {runtime && (
@@ -365,25 +394,7 @@ export default function EpisodesList({
                       opacity: downloadLoading ? 0.7 : 1,
                       pointerEvents: downloadLoading ? "none" : "auto",
                     }}
-                    onClick={async () => {
-                      if (!api || !ep.Id) return;
-                      setDownloadLoadingMap((prev) => ({
-                        ...prev,
-                        [ep.Id]: true,
-                      }));
-                      try {
-                        api.downloadMediaItem(ep.Id);
-                      } catch {
-                        alert("Failed to start download.");
-                      } finally {
-                        setTimeout(() => {
-                          setDownloadLoadingMap((prev) => ({
-                            ...prev,
-                            [ep.Id]: false,
-                          }));
-                        }, 1000);
-                      }
-                    }}
+                    onClick={() => handleDownload(ep.Id)}
                     tabIndex={0}
                   >
                     {downloadLoading ? (
@@ -489,15 +500,7 @@ export default function EpisodesList({
                         iconSize={16}
                         item={ep as MediaItem}
                         isWatched={watched}
-                        setIsWatched={(newWatched) => {
-                          setWatchedMap((prev) => ({
-                            ...prev,
-                            [ep.Id]:
-                              typeof newWatched === "function"
-                                ? newWatched(prev[ep.Id] ?? false)
-                                : newWatched,
-                          }));
-                        }}
+                        setIsWatched={(newWatched) => handleWatchedUpdate(ep.Id, newWatched)}
                       />
                       {/* Download button for episode */}
                       <button
@@ -513,25 +516,7 @@ export default function EpisodesList({
                           opacity: downloadLoading ? 0.7 : 1,
                           pointerEvents: downloadLoading ? "none" : "auto",
                         }}
-                        onClick={async () => {
-                          if (!api || !ep.Id) return;
-                          setDownloadLoadingMap((prev) => ({
-                            ...prev,
-                            [ep.Id]: true,
-                          }));
-                          try {
-                            api.downloadMediaItem(ep.Id);
-                          } catch {
-                            alert("Failed to start download.");
-                          } finally {
-                            setTimeout(() => {
-                              setDownloadLoadingMap((prev) => ({
-                                ...prev,
-                                [ep.Id]: false,
-                              }));
-                            }, 1000);
-                          }
-                        }}
+                        onClick={() => handleDownload(ep.Id)}
                         tabIndex={0}
                       >
                         {downloadLoading ? (
@@ -557,15 +542,7 @@ export default function EpisodesList({
                     iconSize={16}
                     item={ep as MediaItem}
                     isWatched={watched}
-                    setIsWatched={(newWatched) => {
-                      setWatchedMap((prev) => ({
-                        ...prev,
-                        [ep.Id]:
-                          typeof newWatched === "function"
-                            ? newWatched(prev[ep.Id] ?? false)
-                            : newWatched,
-                      }));
-                    }}
+                    setIsWatched={(newWatched) => handleWatchedUpdate(ep.Id, newWatched)}
                   />
                   {/* Download button for episode */}
                   <button
@@ -581,25 +558,7 @@ export default function EpisodesList({
                       opacity: downloadLoading ? 0.7 : 1,
                       pointerEvents: downloadLoading ? "none" : "auto",
                     }}
-                    onClick={async () => {
-                      if (!api || !ep.Id) return;
-                      setDownloadLoadingMap((prev) => ({
-                        ...prev,
-                        [ep.Id]: true,
-                      }));
-                      try {
-                        api.downloadMediaItem(ep.Id);
-                      } catch {
-                        alert("Failed to start download.");
-                      } finally {
-                        setTimeout(() => {
-                          setDownloadLoadingMap((prev) => ({
-                            ...prev,
-                            [ep.Id]: false,
-                          }));
-                        }, 1000);
-                      }
-                    }}
+                    onClick={() => handleDownload(ep.Id)}
                     tabIndex={0}
                   >
                     {downloadLoading ? (
@@ -653,7 +612,7 @@ export default function EpisodesList({
               </span>
             </button>
             {dropdownOpen && (
-              <ul
+              <div
                 className="absolute z-50 mt-2 left-0 w-full bg-[#242424] border border-[#4d4d4d] rounded shadow-lg overflow-hidden animate-fade-in scrollbar-hide"
                 role="listbox"
                 tabIndex={-1}
@@ -664,7 +623,7 @@ export default function EpisodesList({
                 }}
               >
                 {seasons.map((season) => (
-                  <li
+                  <div
                     key={season.Id}
                     role="option"
                     aria-selected={season.Id === selectedSeasonId}
@@ -686,9 +645,9 @@ export default function EpisodesList({
                     }}
                   >
                     {season.Name}
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         )}

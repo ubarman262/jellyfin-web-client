@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
+import PageTemplate from "../components/layout/PageTemplate";
 import { useMediaData } from "../hooks/useMediaData";
 
 const PAGE_SIZE = 24;
@@ -15,8 +15,7 @@ const CollectionsPage: React.FC = () => {
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white">
-      <Navbar />
+    <PageTemplate>
       <div className="px-14 pt-24 pb-16 pl-2 pr-2">
         {(() => {
           if (isLoading) {
@@ -75,7 +74,7 @@ const CollectionsPage: React.FC = () => {
           }
         })()}
       </div>
-    </div>
+    </PageTemplate>
   );
 };
 

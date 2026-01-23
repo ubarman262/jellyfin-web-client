@@ -82,7 +82,7 @@ const MediaListPage: React.FC<MediaListPageProps> = ({ mediaType }) => {
 
   useEffect(() => {
     const option = { root: null, rootMargin: "200px", threshold: 0 };
-    const observer = new window.IntersectionObserver(handleObserver, option);
+    const observer = new globalThis.IntersectionObserver(handleObserver, option);
     const currentLoader = loaderRef.current;
     if (currentLoader) observer.observe(currentLoader);
     return () => {

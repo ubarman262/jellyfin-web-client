@@ -9,6 +9,7 @@
   },
   "homepage": "https://ubarman262.github.io/jellyfin-web-client",
   "scripts": {
+    "start": "npm run dev",
     "dev": "vite --host",
     "build": "vite build",
     "lint": "eslint .",

@@ -10,36 +10,58 @@ const AddServerPage: React.FC = () => {
     searchParams.get("server_url") || localStorage.getItem("jellyfin_server_url") || ""
   );
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const { setServerUrl } = useAuth();
   const navigate = useNavigate();
 
-  const testConnection = async () => {
+  const connectToServer = async () => {
     setError(null);
-    setSuccess(false);
-    setIsTesting(true);
+    setIsConnecting(true);
+    
     try {
-      // Try to fetch the /System/Info endpoint as a basic connectivity check
       const url = serverUrlState.replace(/\/+$/, ""); // Remove trailing slash
-      const res = await fetch(`${url}/System/Info/public`);
-      if (!res.ok) throw new Error("Server did not respond as expected");
-      setSuccess(true);
-      setServerUrl(serverUrlState); // Update server URL in context
-      // Save server URL for later use
-      localStorage.setItem("jellyfin_server_url", serverUrlState);
+      
+      // Create AbortController for 15-second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      // Test connection to Jellyfin server
+      const res = await fetch(`${url}/System/Info/public`, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) {
+        throw new Error(`Server responded with status ${res.status}`);
+      }
+      
+      // Verify it's actually a Jellyfin server by checking the response
+      const serverInfo = await res.json();
+      if (!serverInfo.ServerName && !serverInfo.Version) {
+        throw new Error("Server does not appear to be a Jellyfin server");
+      }
+      
+      // Save server URL and update context
+      localStorage.setItem("jellyfin_server_url", url);
+      setServerUrl(url);
+      
+      // Navigate to login page
+      navigate("/login");
+      
     } catch (err) {
-      console.error("Connection test failed:", err);
-      setError(
-        "Could not connect to the Jellyfin server. Please check the URL and try again."
-      );
+      console.error("Connection failed:", err);
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError("Connection timed out after 15 seconds. Please check the URL and try again.");
+      } else {
+        setError("Could not connect to the Jellyfin server. Please verify the URL is correct and the server is running.");
+      }
     } finally {
-      setIsTesting(false);
+      setIsConnecting(false);
     }
-  };
-
-  const handleContinue = () => {
-    navigate("/login");
   };
 
   return (
@@ -67,7 +89,7 @@ const AddServerPage: React.FC = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              testConnection();
+              connectToServer();
             }}
             className="space-y-6"
           >
@@ -98,25 +120,12 @@ const AddServerPage: React.FC = () => {
             </div>
             <button
               type="submit"
-              disabled={isTesting}
+              disabled={isConnecting}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-70"
             >
-              {isTesting ? "Testing..." : "Test Connection"}
+              {isConnecting ? "Connecting..." : "Connect"}
             </button>
-            {success && (
-              <div className="text-green-400 text-center font-medium">
-                Connection successful!
-              </div>
-            )}
           </form>
-          <button
-            type="button"
-            disabled={!success}
-            onClick={handleContinue}
-            className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-70"
-          >
-            Continue to Login
-          </button>
         </div>
       </div>
     </div>

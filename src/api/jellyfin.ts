@@ -1,5 +1,6 @@
 import axios from "axios";
 import {
+  CultureInfo,
   Items,
   ItemsResponse,
   JellyfinAuthResult,
@@ -8,8 +9,10 @@ import {
   MediaSourceResponse,
   MediaStream,
   PlaybackInfoOptions,
+  RemoteSubtitleInfo,
   UserLogin,
 } from "../types/jellyfin";
+import { createMarlinSearchClient, MarlinSearchAPI } from "./marlin-search";
 
 class JellyfinApi {
   private readonly serverUrl: string;
@@ -20,6 +23,7 @@ class JellyfinApi {
   private readonly deviceName: string;
   private readonly clientName: string;
   private readonly clientVersion: string;
+  private readonly marlinSearchClient?: MarlinSearchAPI;
 
   constructor(config: JellyfinConfig) {
     // Ensure server URL is properly formatted
@@ -48,6 +52,42 @@ class JellyfinApi {
     // Configure axios defaults
     axios.defaults.timeout = 10000; // 10 second timeout
     axios.defaults.validateStatus = (status) => status >= 200 && status < 300;
+
+    // Initialize MarlinSearch if configured (check both config and localStorage)
+    let marlinSearchUrl = config.marlinSearchUrl;
+    let marlinSearchToken = config.marlinSearchToken;
+
+    // Check localStorage for marlinSearchConfig object
+    if (!marlinSearchUrl) {
+      try {
+        const storedConfig = localStorage.getItem("marlinSearchConfig");
+        if (storedConfig) {
+          const parsedConfig = JSON.parse(storedConfig);
+          marlinSearchUrl = parsedConfig.baseUrl;
+          marlinSearchToken = parsedConfig.authToken;
+        }
+      } catch (error) {
+        console.warn("Failed to parse marlinSearchConfig from localStorage:", error);
+      }
+    }
+    
+    // Debug: Check what's actually in localStorage
+    console.log("LocalStorage keys:", Object.keys(localStorage));
+    console.log("LocalStorage marlinSearchConfig:", localStorage.getItem("marlinSearchConfig"));
+    console.log("Config marlinSearchUrl:", config.marlinSearchUrl);
+    console.log("Final marlinSearchUrl:", marlinSearchUrl);
+    console.log("Final marlinSearchToken:", marlinSearchToken);
+
+    if (marlinSearchUrl) {
+      console.log("Creating MarlinSearch client with URL:", marlinSearchUrl);
+      (this as any).marlinSearchClient = createMarlinSearchClient({
+        baseUrl: marlinSearchUrl,
+        authToken: marlinSearchToken || undefined,
+        timeout: 5000,
+      });
+    } else {
+      console.log("No MarlinSearch URL provided in config or localStorage");
+    }
   }
 
   private normalizeServerUrl(url: string): string {
@@ -69,8 +109,8 @@ class JellyfinApi {
   }
 
   private generateDeviceId(): string {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replaceAll(/[xy]/g, (c) => {
+      const r = Math.trunc(Math.random() * 16);
       const v = c === "x" ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
@@ -131,6 +171,23 @@ class JellyfinApi {
         );
       }
       throw error;
+    }
+  }
+
+  private async isMarlinSearchAvailable(): Promise<boolean> {
+    if (!this.marlinSearchClient) {
+      console.log("MarlinSearch client is not initialized");
+      return false;
+    }
+
+    try {
+      console.log("Checking MarlinSearch status...");
+      const status = await this.marlinSearchClient.checkStatus();
+      console.log("MarlinSearch status response:", status);
+      return status.includes("OK") || status.includes("up");
+    } catch (error) {
+      console.log("MarlinSearch status check failed:", error);
+      return false;
     }
   }
 
@@ -332,6 +389,58 @@ class JellyfinApi {
     searchTerm: string,
     limit: number = 100
   ): Promise<ItemsResponse> {
+    console.log("Search called with term:", searchTerm);
+    console.log("MarlinSearch client exists:", !!this.marlinSearchClient);
+
+    const isMarlinAvailable = await this.isMarlinSearchAvailable();
+    console.log("MarlinSearch available:", isMarlinAvailable);
+
+    // Try MarlinSearch first if available
+    if (this.marlinSearchClient && isMarlinAvailable) {  
+      console.log("Using MarlinSearch for query:", searchTerm);
+      try {
+        const marlinResults = await this.marlinSearchClient.search(searchTerm);
+        console.log("MarlinSearch results:", marlinResults);
+
+        if (marlinResults.ids && marlinResults.ids.length > 0) {
+          // Fetch full MediaItem details for each ID
+          const mediaItems: MediaItem[] = [];
+          const idsToFetch = marlinResults.ids.slice(0, limit);
+
+          const results = await Promise.allSettled(
+            idsToFetch.map(async (id) => {
+              try {
+                return await this.getMediaItem(id);
+              } catch (error) {
+                console.warn(`Failed to fetch item ${id}:`, error);
+                return null;
+              }
+            })
+          );
+
+          // Filter out failed requests and null results
+          results.forEach((result) => {
+            if (result.status === "fulfilled" && result.value) {
+              mediaItems.push(result.value);
+            }
+          });
+
+          return {
+            Items: mediaItems,
+            TotalRecordCount: mediaItems.length,
+            StartIndex: 0,
+          };
+        }
+      } catch (error) {
+        console.warn(
+          "MarlinSearch failed, falling back to Jellyfin search:",
+          error
+        );
+      }
+    }
+
+    // Fallback to original Jellyfin search
+    console.log("Using Jellyfin search fallback");
     return this.makeRequest<ItemsResponse>(
       "get",
       `/Users/${this.userId}/Items`,
@@ -1007,6 +1116,83 @@ class JellyfinApi {
 
     // Open in new tab so cookies/session are sent
     window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  /**
+   * Get available localization cultures/languages.
+   * @returns Promise<CultureInfo[]> Array of available cultures.
+   */
+  async getLocalizationCultures(): Promise<CultureInfo[]> {
+    return this.makeRequest<CultureInfo[]>("get", "/Localization/cultures");
+  }
+
+  /**
+   * Search for remote subtitles for a specific item and language.
+   * @param itemId The media item ID.
+   * @param language The language code (e.g., 'eng', 'spa', 'fra').
+   * @returns Promise<RemoteSubtitleInfo[]> Array of available remote subtitles.
+   */
+  async searchRemoteSubtitles(
+    itemId: string,
+    language: string
+  ): Promise<RemoteSubtitleInfo[]> {
+    return this.makeRequest<RemoteSubtitleInfo[]>(
+      "get",
+      `/Items/${itemId}/RemoteSearch/Subtitles/${language}`
+    );
+  }
+
+  /**
+   * Download and add a remote subtitle to an item.
+   * @param itemId The media item ID.
+   * @param subtitleId The remote subtitle ID.
+   * @returns Promise<void>
+   */
+  async downloadRemoteSubtitle(
+    itemId: string,
+    subtitleId: string
+  ): Promise<void> {
+    await this.makeRequest("post", `/Items/${itemId}/RemoteSearch/Subtitles/${subtitleId}`);
+  }
+
+  /**
+   * Delete a subtitle track from an item.
+   * @param itemId The media item ID.
+   * @param index The subtitle track index to delete.
+   * @returns Promise<void>
+   */
+  async deleteSubtitleTrack(itemId: string, index: number): Promise<void> {
+    await this.makeRequest("delete", `/Videos/${itemId}/Subtitles/${index}`);
+  }
+
+  /**
+   * Set MarlinSearch configuration and save to localStorage
+   */
+  setMarlinSearchConfig(url: string, token?: string): void {
+    console.log("Setting MarlinSearch config:", url, token);
+    
+    const config = {
+      baseUrl: url,
+      authToken: token
+    };
+    
+    localStorage.setItem('marlinSearchConfig', JSON.stringify(config));
+    console.log("Saved to localStorage:", localStorage.getItem('marlinSearchConfig'));
+    
+    // Reinitialize the client
+    (this as any).marlinSearchClient = createMarlinSearchClient({
+      baseUrl: url,
+      authToken: token,
+      timeout: 5000,
+    });
+  }
+
+  /**
+   * Remove MarlinSearch configuration
+   */
+  removeMarlinSearchConfig(): void {
+    localStorage.removeItem('marlinSearchConfig');
+    (this as any).marlinSearchClient = undefined;
   }
 }
 

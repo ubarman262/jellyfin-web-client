@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { AtSign, Lock, AlertCircle } from "lucide-react";
+import { AtSign, Lock, AlertCircle, RotateCcw } from "lucide-react";
 
 const LoginPage: React.FC = () => {
   const auth = useAuth();
@@ -17,15 +17,15 @@ const LoginPage: React.FC = () => {
     // Check for server_url query parameter from both useSearchParams and window.location
     let serverUrlParam = searchParams.get('server_url');
     
-    // Fallback to parsing from window.location if useSearchParams doesn't work
+    // Fallback to parsing from globalThis.location if useSearchParams doesn't work
     if (!serverUrlParam) {
-      const urlParams = new URLSearchParams(window.location.search);
+      const urlParams = new URLSearchParams(globalThis.location.search);
       serverUrlParam = urlParams.get('server_url');
     }
     
     // Also check if we're on root with query params and should redirect to login
-    if (!serverUrlParam && window.location.pathname === '/' && window.location.search) {
-      const urlParams = new URLSearchParams(window.location.search);
+    if (!serverUrlParam && globalThis.location.pathname === '/' && globalThis.location.search) {
+      const urlParams = new URLSearchParams(globalThis.location.search);
       serverUrlParam = urlParams.get('server_url');
     }
     
@@ -58,6 +58,18 @@ const LoginPage: React.FC = () => {
       setError("Invalid username or password. Please try again.");
       console.error("Login error:", err);
     }
+  };
+
+  const handleStartOver = () => {
+    // Clear all Jellyfin-related data from localStorage
+    localStorage.removeItem("jellyfin_access_token");
+    localStorage.removeItem("jellyfin_device_id");
+    localStorage.removeItem("jellyfin_server_url");
+    localStorage.removeItem("jellyfin_user");
+    localStorage.removeItem("jellyfin_user_id");
+    
+    // Redirect to add-server page
+    navigate("/add-server");
   };
 
   return (
@@ -143,6 +155,16 @@ const LoginPage: React.FC = () => {
               {isLoading ? "Signing In..." : "Sign In"}
             </button>
           </form>
+
+          <div className="mt-4 pt-4 border-t border-gray-600">
+            <button
+              onClick={handleStartOver}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 flex items-center justify-center gap-2"
+            >
+              <RotateCcw size={18} />
+              Start Over
+            </button>
+          </div>
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-500">

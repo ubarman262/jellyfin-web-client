@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, matchPath } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import MediaDetailsPage from "./pages/MediaDetailsPage";
@@ -14,31 +14,9 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import FavouritesPage from "./pages/FavouritesPage";
 import { RecoilRoot } from "recoil";
 import MediaDetailsDrawer from "./components/ui/MediaDetailsDrawer";
-import StudioDetailsPage from "./pages/StudioDetailsPage";
 import CollectionsPage from "./pages/CollectionsPage";
-import ProfilePage from "./components/ProfilePage";
-import { MediaPlayerPageiOS } from "./pages/MediaPlayerPageiOS";
-
-// Protected route component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
+import ProfilePage from "./pages/ProfilePage";
+import ProtectedLayout from "./components/layout/ProtectedLayout";
 
 // App wrapper with AuthProvider
 const AppWrapper: React.FC = () => {
@@ -78,108 +56,99 @@ const App: React.FC = () => {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <HomePage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/movies"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <MoviesPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/shows"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <ShowsPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/favourites"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <FavouritesPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/collections"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <CollectionsPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/profile"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <ProfilePage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/latest"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <HomePage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/details/:itemId"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <MediaDetailsPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/person"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <PersonDetailsPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/play/:itemId"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <MediaPlayerPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/play-alt/:itemId"
-          element={
-            <ProtectedRoute>
-              <MediaPlayerPageiOS />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
         <Route
           path="/search"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <SearchPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 
@@ -188,18 +157,9 @@ const App: React.FC = () => {
         <Route
           path="/home"
           element={
-            <ProtectedRoute>
+            <ProtectedLayout>
               <HomePage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/studio"
-          element={
-            <ProtectedRoute>
-              <StudioDetailsPage />
-            </ProtectedRoute>
+            </ProtectedLayout>
           }
         />
 

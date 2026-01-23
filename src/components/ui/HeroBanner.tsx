@@ -33,7 +33,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
       items.forEach((item) => {
         if (item.BackdropImageTags?.length) {
           const url = api.getImageUrl(item.Id, "Backdrop", 1920);
-          const img = new window.Image();
+          const img = new globalThis.Image();
           img.src = url;
         }
       });
@@ -79,7 +79,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
     if (!api || items.length === 0) return;
     const currentItem = items[currentIndex];
     if (currentItem.BackdropImageTags?.length) {
-      const img = new window.Image();
+      const img = new globalThis.Image();
       img.src = api.getImageUrl(currentItem.Id, "Backdrop", 1920);
     }
 

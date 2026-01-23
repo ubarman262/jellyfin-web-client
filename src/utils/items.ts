@@ -125,6 +125,10 @@ const getStudios = (item: MediaItem): string[] => {
     : [];
 };
 
+const sortSeasons = (seasons: MediaItem[]): MediaItem[] => {
+  return [...seasons].sort((a, b) => (a.IndexNumber ?? 0) - (b.IndexNumber ?? 0));
+}
+
 
 export {
   getBackdropUrl,
@@ -136,4 +140,5 @@ export {
   getDirectors,
   getWriters,
   getStudios,
+  sortSeasons
 };

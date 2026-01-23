@@ -42,7 +42,7 @@ const MediaDetailsDrawer = () => {
 
   const [activeItemId, setActiveItemId] = useRecoilState(activeItem);
   const [open, isOpen] = useRecoilState(isDrawerOpen);
-  const { item, isLoading } = useMediaItem(activeItemId);
+  const { item } = useMediaItem(activeItemId);
 
   // --- Fix: Sync activeItem atom with URL on mount ---
   useEffect(() => {

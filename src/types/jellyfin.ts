@@ -2,6 +2,8 @@ export interface JellyfinConfig {
   serverUrl: string;
   apiKey?: string;
   userId?: string;
+  marlinSearchUrl?: string;
+  marlinSearchToken?: string;
 }
 
 export interface UserLogin {
@@ -483,4 +485,25 @@ export interface PlaybackInfoOptions {
   EnableDirectPlay?: boolean;
   EnableDirectStream?: boolean;
   EnableTranscoding?: boolean;
+}
+
+export interface CultureInfo {
+  Name: string;
+  DisplayName: string;
+  TwoLetterISOLanguageName: string;
+  ThreeLetterISOLanguageName: string;
+}
+
+export interface RemoteSubtitleInfo {
+  Id: string;
+  Name: string;
+  ProviderName: string;
+  Language: string;
+  Format: string;
+  IsHashMatch: boolean;
+  DownloadCount?: number;
+  CommunityRating?: number;
+  Author?: string;
+  Comment?: string;
+  DateCreated?: string;
 }

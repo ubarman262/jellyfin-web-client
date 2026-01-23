@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import Navbar from "../components/layout/Navbar";
 import HeroBanner from "../components/ui/HeroBanner";
 import MediaRow from "../components/ui/MediaRow";
 import StudiosSection from "../components/ui/StudiosSection";
+import PageTemplate from "../components/layout/PageTemplate";
 import { useMediaData } from "../hooks/useMediaData";
 import { MediaItem } from "../types/jellyfin";
 
@@ -46,9 +46,7 @@ const HomePage: React.FC = () => {
   }, [latestItems]);
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white">
-      <Navbar />
-
+    <PageTemplate>
       {/* Hero Section */}
       {featuredItems ? (
         <HeroBanner items={featuredItems} />
@@ -85,7 +83,7 @@ const HomePage: React.FC = () => {
         {/* Studios Section */}
         <StudiosSection />
       </div>
-    </div>
+    </PageTemplate>
   );
 };
 

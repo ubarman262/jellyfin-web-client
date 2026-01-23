@@ -39,6 +39,13 @@ function getImageUrl(
         return api.getImageUrl(item.Id, "Primary", size);
       }
       break;
+    case "EpisodeInSearch":
+      if (hasPrimaryImage) {
+        return api.getImageUrl(item.Id, "Primary", size);
+      } else if (item.SeriesId) {
+        return api.getImageUrl(item.SeriesId, "Primary", size);
+      }
+      break;
     default:
       if (hasPrimaryImage) {
         return api.getImageUrl(item.Id, "Primary", size);
@@ -276,14 +283,31 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false, onSelectI
     setTouchDevice(isTouchDevice());
   }, []);
 
+  // Detect if on /search page
+  const isSearchPage = location.pathname.startsWith("/search");
+  // Use horizontal card for Episode/EpisodeInSearch on /search page
+  const isEpisodeHorizontal =
+    isSearchPage && (item.Type === "Episode" || item.Type === "EpisodeInSearch");
+
+  // Determine aspect ratio and layout classes
+  let aspectClasses: string;
+  if (featured) {
+    aspectClasses = "w-full aspect-[16/9]";
+  } else if (isEpisodeHorizontal) {
+    aspectClasses = "w-full aspect-[16/7] min-h-[120px] max-h-[160px] flex-row flex";
+  } else {
+    aspectClasses = "w-full aspect-[2/3] z-10";
+  }
+
   return (
     <div
       className={clsx(
         "group relative transition-all duration-300 overflow-hidden bg-gray-900 cursor-pointer rounded-md",
-        featured ? "w-full aspect-[16/9]" : "w-full aspect-[2/3] z-10",
+        aspectClasses,
         isHovered && "z-10 shadow-xl",
-        // Add max width and height for the card
-        "max-w-[200px] max-h-[300px]"
+        isEpisodeHorizontal
+          ? "max-w-full"
+          : "max-w-[200px] max-h-[300px]"
       )}
       onMouseEnter={() => {
         if (!touchDevice) setIsHovered(true);
@@ -302,19 +326,26 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false, onSelectI
           src={imageUrl}
           alt={title}
           className={clsx(
-            "w-full h-full object-cover transition-all duration-500 rounded-md",
+            isEpisodeHorizontal
+              ? "object-cover h-full min-w-[120px] rounded-l-md"
+              : "w-full h-full object-cover rounded-md",
             isHovered && "brightness-30 scale-110",
-            // Add max width and height for the image
-            "max-w-[200px] max-h-[300px]"
+            isEpisodeHorizontal ? "" : "max-w-[200px] max-h-[300px]"
           )}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-md max-w-[200px] max-h-[300px]">
+        <div
+          className={clsx(
+            isEpisodeHorizontal
+              ? "flex items-center justify-center bg-gray-800 rounded-l-md h-full min-w-[120px]"
+              : "w-full h-full flex items-center justify-center bg-gray-800 rounded-md max-w-[200px] max-h-[300px]"
+          )}
+        >
           <span className="text-gray-400">{title}</span>
         </div>
       )}
 
-      {progressPercent > 0 && (
+      {progressPercent > 0 && !isEpisodeHorizontal && (
         <div className="absolute left-0 right-0 bottom-0 h-1.5 bg-black/40 z-10">
           <div
             className="h-full bg-[var(--accent-secondary)] transition-all"
@@ -325,9 +356,12 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false, onSelectI
 
       <div
         className={clsx(
-          "absolute inset-0 flex flex-col justify-end p-3 text-start",
-          "bg-gradient-to-t from-black/90 to-transparent",
-          // Always show overlay on touch devices, else on hover
+          isEpisodeHorizontal
+            ? "flex-1 flex flex-col justify-center px-4 py-2"
+            : "absolute inset-0 flex flex-col justify-end p-3 text-start",
+          isEpisodeHorizontal
+            ? ""
+            : "bg-gradient-to-t from-black/90 to-transparent",
           touchDevice
             ? "opacity-100"
             : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -359,8 +393,8 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, featured = false, onSelectI
 // Utility to detect touch devices
 function isTouchDevice() {
   return (
-    typeof window !== "undefined" &&
-    ("ontouchstart" in window ||
+    globalThis.window !== undefined &&
+    ("ontouchstart" in globalThis.window ||
       navigator.maxTouchPoints > 0)
   );
 }

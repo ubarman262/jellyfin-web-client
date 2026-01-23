@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Captions, Save, Upload } from "lucide-react";
+import { Captions, Save } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { LANGUAGE_MAP, MediaStream } from "../../types/jellyfin";
 
@@ -16,7 +16,6 @@ interface TracksMenuProps {
   subtitleTracks: MediaStream[];
   selectedSubtitleIndex: number | string | null;
   setSelectedSubtitleIndex: (index: number | string | null) => void;
-  onSelectLocalSubtitle: (file: File) => void;
   onUploadLocalSubtitle?: (file: File) => void; // new prop
   localSubtitleName?: string | null;
   localSubtitleFile?: File | null; // new prop
@@ -31,6 +30,7 @@ interface TracksMenuProps {
   increaseSubtitleFontSize?: () => void;
   decreaseSubtitleFontSize?: () => void;
   resetSubtitleFontSize?: () => void;
+  onOpenSubtitleEditModal: () => void;
 }
 
 const TracksMenu: React.FC<TracksMenuProps> = ({
@@ -40,7 +40,6 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
   subtitleTracks,
   selectedSubtitleIndex,
   setSelectedSubtitleIndex,
-  onSelectLocalSubtitle,
   onUploadLocalSubtitle, // new prop
   localSubtitleName,
   localSubtitleFile, // new prop
@@ -54,9 +53,9 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
   increaseSubtitleFontSize,
   decreaseSubtitleFontSize,
   resetSubtitleFontSize,
+  onOpenSubtitleEditModal,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const truncateName = (name: string, maxLength = 15) => {
     if (name.length <= maxLength) {
@@ -116,12 +115,14 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                         "w-full flex items-center justify-between px-3 py-2 cursor-pointer rounded text-left",
                         selectedAudioTrack === track.id
                           ? "font-semibold bg-[#ef4444]"
-                          : "hover:bg-white/10"
+                          : "hover:bg-white/10",
                       )}
                       aria-pressed={selectedAudioTrack === track.id}
                     >
                       <span>
-                        {track.language ? ` ${getLanguageName(track.language) || track.language}` : ""}
+                        {track.language
+                          ? ` ${getLanguageName(track.language) || track.language}`
+                          : ""}
                       </span>
                     </button>
                   </li>
@@ -136,28 +137,18 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
             <h3 className="text-xs uppercase tracking-wide text-neutral-400 px-2 pb-2 border-b border-neutral-700">
               Subtitles
             </h3>
-            <div>
-              <input
-                type="file"
-                accept=".vtt,.srt"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  onSelectLocalSubtitle(e.target.files[0]);
-                  setIsOpen(false);
-                }
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center justify-start gap-2 px-3 py-2 cursor-pointer hover:bg-white/10 rounded font-medium"
-              >
-                <Upload size={16} />
-                Add new subtitle
-              </button>
-            </div>
+
+            {/* Subtitle Edit Button */}
+            <button
+              onClick={() => {
+                onOpenSubtitleEditModal();
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-white/10 rounded transition-colors text-sm border border-gray-600 flex items-center gap-2 mb-2"
+            >
+              Search Subtitles
+            </button>
+
             <div className="my-2" />
             <ul className="py-1 max-h-40 overflow-y-auto">
               <li>
@@ -169,7 +160,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                   }}
                   className={clsx(
                     "w-full flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white/10 rounded text-left",
-                    selectedSubtitleIndex === null && "font-semibold"
+                    selectedSubtitleIndex === null && "font-semibold",
                   )}
                   aria-pressed={selectedSubtitleIndex === null}
                 >
@@ -188,7 +179,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                       "w-full flex items-center justify-between px-3 py-2 cursor-pointer rounded text-left",
                       selectedSubtitleIndex === "local"
                         ? "font-semibold bg-[#ef4444]"
-                        : "hover:bg-white/10"
+                        : "hover:bg-white/10",
                     )}
                     aria-pressed={selectedSubtitleIndex === "local"}
                   >
@@ -222,36 +213,38 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
               )}
               {subtitleTracks
                 .filter(
-                  (track) => !track.Title?.toLowerCase().includes("forced")
+                  (track) => !track.Title?.toLowerCase().includes("forced"),
                 )
                 .map((track) => {
                   return (
-                  <li key={track.Index}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedSubtitleIndex(track.Index);
-                        setIsOpen(false);
-                      }}
-                      className={clsx(
-                        "w-full flex items-center justify-between px-3 py-2 cursor-pointer rounded text-left",
-                        selectedSubtitleIndex === track.Index
-                          ? "font-semibold bg-[#ef4444]"
-                          : "hover:bg-white/10"
-                      )}
-                      aria-pressed={selectedSubtitleIndex === track.Index}
-                    >
-                      <span>
-                        {getLanguageName(track.Language ?? "") ?? `Subtitle ${track.Index - 1}`}
-                        {track.Title &&
-                        getLanguageName(track.Language ?? "") !==
-                          truncateName(track.Title)
-                          ? ` - ${truncateName(track.Title)}`
-                          : ""}
-                      </span>
-                    </button>
-                  </li>
-                )})}
+                    <li key={track.Index}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSubtitleIndex(track.Index);
+                          setIsOpen(false);
+                        }}
+                        className={clsx(
+                          "w-full flex items-center justify-between px-3 py-2 cursor-pointer rounded text-left",
+                          selectedSubtitleIndex === track.Index
+                            ? "font-semibold bg-[#ef4444]"
+                            : "hover:bg-white/10",
+                        )}
+                        aria-pressed={selectedSubtitleIndex === track.Index}
+                      >
+                        <span>
+                          {getLanguageName(track.Language ?? "") ??
+                            `Subtitle ${track.Index - 1}`}
+                          {track.Title &&
+                          getLanguageName(track.Language ?? "") !==
+                            truncateName(track.Title)
+                            ? ` - ${truncateName(track.Title)}`
+                            : ""}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
             </ul>
             {/* Subtitle Offset Controls */}
             {selectedSubtitleIndex !== null && (
