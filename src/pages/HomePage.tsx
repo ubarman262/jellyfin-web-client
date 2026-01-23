@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import HeroBanner from "../components/ui/HeroBanner";
 import MediaRow from "../components/ui/MediaRow";
-import StudiosSection from "../components/ui/StudiosSection";
 import PageTemplate from "../components/layout/PageTemplate";
 import { useMediaData } from "../hooks/useMediaData";
 import { MediaItem } from "../types/jellyfin";
@@ -18,7 +17,7 @@ const HomePage: React.FC = () => {
     { limit: 20 }
   );
 
-  const { items: latestItems } = useMediaData("latest", { limit: 20 });
+  const { items: latestItems } = useMediaData("latest");
 
   const { items: latestMovies, isLoading: LatestMoviesLoading } = useMediaData(
     "latest",
@@ -60,12 +59,14 @@ const HomePage: React.FC = () => {
           title="Continue Watching"
           items={resumeItems}
           isLoading={resumeLoading}
+          isHorizontal={true}
         />
 
         <MediaRow
           title="Next Up"
           items={nextUpItems}
           isLoading={nextUpLoading}
+          isHorizontal={true}
         />
 
         <MediaRow
@@ -81,7 +82,7 @@ const HomePage: React.FC = () => {
         />
 
         {/* Studios Section */}
-        <StudiosSection />
+        {/* <StudiosSection /> */}
       </div>
     </PageTemplate>
   );

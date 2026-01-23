@@ -7,14 +7,16 @@ interface MediaRowProps {
   title: string;
   items: MediaItem[];
   isLoading?: boolean;
-  onSelectItem?: (itemId: string) => void; // <-- add prop
+  onSelectItem?: (itemId: string) => void;
+  isHorizontal?: boolean;
 }
 
 const MediaRow: React.FC<MediaRowProps> = ({
   title,
   items,
   isLoading = false,
-  onSelectItem, // <-- add prop
+  onSelectItem,
+  isHorizontal = false,
 }) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -70,7 +72,11 @@ const MediaRow: React.FC<MediaRowProps> = ({
             return (
               <div
                 key={uniqueKey}
-                className="flex-none w-[160px] sm:w-[180px] md:w-[200px] aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
+                className={`flex-none bg-gray-800 animate-pulse rounded-md ${
+                  isHorizontal
+                    ? "w-[240px] sm:w-[280px] md:w-[310px] aspect-video"
+                    : "w-[160px] sm:w-[180px] md:w-[200px] aspect-[2/3]"
+                }`}
               ></div>
             );
           })}
@@ -96,17 +102,19 @@ const MediaRow: React.FC<MediaRowProps> = ({
           {items.map((item) => (
             <div
               key={item.Id}
-              className="flex-none w-[160px] sm:w-[180px] md:w-[200px] transition-transform"
+              className={`flex-none w-[160px] sm:w-[180px] transition-transform ${
+              isHorizontal ? "md:w-[310px] md:h-[200px] pt-1" : "md:w-[200px]"
+              }`}
               onClick={() => {
-                if (onSelectItem) {
-                  onSelectItem(item.Id);
-                }
+              if (onSelectItem) {
+                onSelectItem(item.Id);
+              }
               }}
               role={onSelectItem ? "button" : undefined}
               {...(onSelectItem && { tabIndex: 0 })}
               style={onSelectItem ? { cursor: "pointer" } : undefined}
             >
-              <MediaCard key={item.Id} item={item} />
+              <MediaCard key={item.Id} item={item} isHorizontal={isHorizontal} />
             </div>
           ))}
         </div>
@@ -119,6 +127,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
             onScrollLeft={() => scroll("left")}
             onScrollRight={() => scroll("right")}
             itemsLength={items.length}
+            isHorizontal={isHorizontal}
           />
         )}
       </div>

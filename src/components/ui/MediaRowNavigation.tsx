@@ -9,6 +9,7 @@ interface MediaRowNavigationProps {
   onScrollLeft: () => void;
   onScrollRight: () => void;
   itemsLength: number;
+  isHorizontal?: boolean;
 }
 
 const MediaRowNavigation: React.FC<MediaRowNavigationProps> = ({
@@ -18,13 +19,15 @@ const MediaRowNavigation: React.FC<MediaRowNavigationProps> = ({
   onScrollLeft,
   onScrollRight,
   itemsLength,
+  isHorizontal = false,
 }) =>
   itemsLength > 1 ? (
     <>
       <button
         onClick={onScrollLeft}
         className={clsx(
-          "absolute top-1/2 left-0 -translate-y-1/2 -ml-4 z-20",
+          "absolute left-0 -translate-y-1/2 -ml-4 z-20",
+          isHorizontal ? "top-[35%]" : "top-[40%]",
           "w-12 h-12 rounded-full bg-black/50 text-white flex items-center justify-center",
           "transition-opacity backdrop-blur-sm hover:bg-black/80",
           "opacity-0",
@@ -37,7 +40,8 @@ const MediaRowNavigation: React.FC<MediaRowNavigationProps> = ({
       <button
         onClick={onScrollRight}
         className={clsx(
-          "absolute top-1/2 right-0 -translate-y-1/2 -mr-4 z-20",
+          "absolute right-0 -translate-y-1/2 -mr-4 z-20",
+          isHorizontal ? "top-[35%]" : "top-[40%]",
           "w-12 h-12 rounded-full bg-black/50 text-white flex items-center justify-center",
           "transition-opacity backdrop-blur-sm hover:bg-black/80",
           "opacity-0",

@@ -4,6 +4,8 @@ export interface JellyfinConfig {
   userId?: string;
   marlinSearchUrl?: string;
   marlinSearchToken?: string;
+  moviesParentId?: string;
+  seriesParentId?: string;
 }
 
 export interface UserLogin {
@@ -102,6 +104,7 @@ export interface MediaItem {
   Name: string;
   Id: string;
   Type: string;
+  CollectionType?: string;
   ImageTags?: ImageTags;
   BackdropImageTags?: string[];
   ParentBackdropImageTags?: string[];

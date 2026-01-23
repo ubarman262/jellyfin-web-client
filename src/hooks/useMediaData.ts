@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { MediaItem, ItemsResponse, MediaType } from "../types/jellyfin";
 
@@ -12,6 +12,12 @@ export const useMediaData = (
   const [error, setError] = useState<Error | null>(null);
   const [totalItems, setTotalItems] = useState(0);
 
+  // Create stable values for dependencies
+  const limit = options?.limit ?? 20;
+  const startIndex = options?.startIndex ?? 0;
+  const mediaType = options?.mediaType ?? "";
+  const genresString = useMemo(() => (options?.genres ?? []).join('|'), [options?.genres]);
+
   useEffect(() => {
     if (!api || !isAuthenticated) {
       setIsLoading(false);
@@ -24,10 +30,6 @@ export const useMediaData = (
 
       try {
         let result: MediaItem[] | ItemsResponse;
-        const genres = (options?.genres ?? []).join('|');
-        const limit = options?.limit ?? 20;
-        const startIndex = options?.startIndex ?? 0;
-        const mediaType = options?.mediaType ?? "";
 
         switch (type) {
           case "resume":
@@ -51,12 +53,12 @@ export const useMediaData = (
             setTotalItems(result.length);
             break;
           case "movies":
-            result = await api.getMediaByType("Movie", genres, limit, startIndex);
+            result = await api.getMediaByType("Movie", genresString, limit, startIndex);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
           case "series":
-            result = await api.getMediaByType("Series", genres, limit, startIndex);
+            result = await api.getMediaByType("Series", genresString, limit, startIndex);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
@@ -89,15 +91,7 @@ export const useMediaData = (
     };
 
     fetchData();
-  }, [
-    api,
-    isAuthenticated,
-    type,
-    options?.genres,
-    options?.limit,
-    options?.startIndex,
-    options?.mediaType,
-  ]);
+  }, [api, isAuthenticated, type, genresString, limit, startIndex, mediaType]);
 
   return { items, isLoading, error, totalItems };
 };
