@@ -179,7 +179,7 @@ const ShowsPage: React.FC = () => {
     setPage(0);
   };
 
-  // Handle "All" click
+  // Handle "Reset" click
   const handleResetGenres = () => {
     if (selectedGenres.length === 0) return;
     setSelectedGenres([]);
