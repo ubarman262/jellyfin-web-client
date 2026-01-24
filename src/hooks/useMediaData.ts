@@ -4,7 +4,7 @@ import { MediaItem, ItemsResponse, MediaType } from "../types/jellyfin";
 
 export const useMediaData = (
   type: MediaType,
-  options?: { genres?: string[]; limit?: number; startIndex?: number; mediaType?: string }
+  options?: { genres?: string[]; limit?: number; startIndex?: number; mediaType?: string; latest?: boolean }
 ) => {
   const { api, isAuthenticated } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -17,6 +17,7 @@ export const useMediaData = (
   const startIndex = options?.startIndex ?? 0;
   const mediaType = options?.mediaType ?? "";
   const genresString = useMemo(() => (options?.genres ?? []).join('|'), [options?.genres]);
+  const latest = options?.latest ?? false;
 
   useEffect(() => {
     if (!api || !isAuthenticated) {
@@ -53,12 +54,12 @@ export const useMediaData = (
             setTotalItems(result.length);
             break;
           case "movies":
-            result = await api.getMediaByType("Movie", genresString, limit, startIndex);
+            result = await api.getMediaByType("Movie", genresString, limit, startIndex, latest);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
           case "series":
-            result = await api.getMediaByType("Series", genresString, limit, startIndex);
+            result = await api.getMediaByType("Series", genresString, limit, startIndex, latest);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;

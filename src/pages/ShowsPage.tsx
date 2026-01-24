@@ -30,18 +30,20 @@ const ShowsPage: React.FC = () => {
     (g) => g.Name
   );
 
-  const featureFilter = "latest";
+  const featureFilter = "series";
 
   const { items: defaultFeaturedItems } = useMediaData(featureFilter, {
     mediaType: "Series",
-    limit: 3,
+    limit: 6,
+    latest: true,
   });
 
   // Compute featuredItems based on selectedGenres
-  const featuredItems =
+  const featuredItems = (
     selectedGenres.length > 0
       ? items // no limit when genre filter is present
-      : defaultFeaturedItems;
+      : defaultFeaturedItems
+  );
 
   // Remove itemRef logic and use a state for the preview item
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);

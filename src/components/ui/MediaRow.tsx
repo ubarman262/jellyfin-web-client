@@ -74,7 +74,7 @@ const MediaRow: React.FC<MediaRowProps> = ({
                 key={uniqueKey}
                 className={`flex-none bg-gray-800 animate-pulse rounded-md ${
                   isHorizontal
-                    ? "w-[240px] sm:w-[280px] md:w-[310px] aspect-video"
+                    ? "w-[240px] sm:w-[280px] md:w-[300px] aspect-video"
                     : "w-[160px] sm:w-[180px] md:w-[200px] aspect-[2/3]"
                 }`}
               ></div>
