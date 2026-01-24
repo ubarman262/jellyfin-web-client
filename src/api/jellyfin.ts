@@ -25,6 +25,7 @@ class JellyfinApi {
   private readonly marlinSearchClient?: MarlinSearchAPI;
   private moviesParentId?: string;
   private seriesParentId?: string;
+  private collectionsParentId?: string;
 
   constructor(config: JellyfinConfig) {
     // Ensure server URL is properly formatted
@@ -59,12 +60,18 @@ class JellyfinApi {
       config.seriesParentId ??
       localStorage.getItem("jellyfin_series_parent_id") ??
       undefined;
+    this.collectionsParentId =
+      config.collectionsParentId ??
+      localStorage.getItem("jellyfin_collections_parent_id") ??
+      undefined;
 
     // Initialize parent IDs if session exists but parent IDs are missing
     if (
       storedToken &&
       storedUserId &&
-      (!this.moviesParentId || !this.seriesParentId)
+      (!this.moviesParentId ||
+        !this.seriesParentId ||
+        !this.collectionsParentId)
     ) {
       // Use setTimeout to avoid blocking constructor
       setTimeout(() => {
@@ -980,13 +987,14 @@ class JellyfinApi {
       `/Users/${this.userId}/Items`,
       undefined,
       {
-        IncludeItemTypes: "BoxSet",
+        // IncludeItemTypes: "BoxSet",
         Recursive: true,
         Fields: "PrimaryImageTag,SortName",
         SortBy: "SortName",
         SortOrder: "Ascending",
         Limit: limit,
         StartIndex: startIndex,
+        ParentId: this.collectionsParentId,
       },
     );
   }
@@ -1256,7 +1264,6 @@ class JellyfinApi {
    * Handles dynamic collection types for movies and series.
    */
   async initializeLibraryParentIds(): Promise<void> {
-    console.log("In Initialize");
     try {
       const views = await this.getUserViews();
 
@@ -1278,11 +1285,17 @@ class JellyfinApi {
         this.seriesParentId = seriesLibrary.Id;
         localStorage.setItem("jellyfin_series_parent_id", seriesLibrary.Id);
       }
-
-      console.log("Library parent IDs initialized:", {
-        movies: this.moviesParentId,
-        series: this.seriesParentId,
+      const collectionLibrary = views.Items.find((item) => {
+        const collectionType = item.CollectionType?.toLowerCase();
+        return collectionType === "collections" || collectionType === "boxsets";
       });
+      if (collectionLibrary?.Id) {
+        this.collectionsParentId = collectionLibrary.Id;
+        localStorage.setItem(
+          "jellyfin_collections_parent_id",
+          collectionLibrary.Id,
+        );
+      }
     } catch (error) {
       console.error("Failed to initialize library parent IDs:", error);
     }

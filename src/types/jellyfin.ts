@@ -6,6 +6,7 @@ export interface JellyfinConfig {
   marlinSearchToken?: string;
   moviesParentId?: string;
   seriesParentId?: string;
+  collectionsParentId?: string;
 }
 
 export interface UserLogin {
