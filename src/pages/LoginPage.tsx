@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AtSign, Lock, AlertCircle, RotateCcw } from "lucide-react";
@@ -12,6 +12,7 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     // Check for server_url query parameter from both useSearchParams and window.location
@@ -72,6 +73,13 @@ const LoginPage: React.FC = () => {
     navigate("/add-server");
   };
 
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    }
+  };
+
   return (
     <div
       className="min-h-screen w-full bg-black flex flex-col items-center justify-center text-white p-4"
@@ -96,7 +104,12 @@ const LoginPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            onKeyDown={handleFormKeyDown}
+            className="space-y-6"
+          >
             <div className="space-y-4">
               {/* Username */}
               <div>

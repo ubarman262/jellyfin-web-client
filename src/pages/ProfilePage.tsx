@@ -1,41 +1,71 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import ProfileSection from "../components/ui/profile/ProfileSection";
 import QuickConnectSection from "../components/ui/profile/QuickConnectSection";
 import DisplaySection from "../components/ui/profile/DisplaySection";
 import MarlinSearchSection from "../components/ui/profile/MarlinSearchSection";
+import HomeSection from "../components/ui/profile/HomeSection";
+import PlaybackSection from "../components/ui/profile/PlaybackSection";
+import SubtitlesSection from "../components/ui/profile/SubtitlesSection";
+import ProfileSectionsList, {
+  ProfileSectionItem,
+} from "../components/ui/profile/ProfileSectionsList";
+import { useAuth } from "../context/AuthContext";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("Profile");
+  const { logout } = useAuth();
+  const [activeSection, setActiveSection] = useState("Profile");
 
-  const tabs = [
-    { id: "Profile", label: "Profile" },
-    { id: "QuickConnect", label: "Quick Connect" },
-    { id: "Display", label: "Display" },
-    { id: "Home", label: "Home" },
-    { id: "Playback", label: "Playback" },
-    { id: "Subtitles", label: "Subtitles" },
-    { id: "Plugins", label: "Plugins" },
-  ];
+  const sections = useMemo<ProfileSectionItem[]>(
+    () => [
+      { id: "Profile", label: "Profile", description: "Account info" },
+      {
+        id: "QuickConnect",
+        label: "Quick Connect",
+        description: "Pair devices quickly",
+      },
+      { id: "Display", label: "Display", description: "Theme & layout" },
+      { id: "Home", label: "Home", description: "Landing preferences" },
+      {
+        id: "Playback",
+        label: "Playback",
+        description: "Player behavior",
+      },
+      {
+        id: "Subtitles",
+        label: "Subtitles",
+        description: "Caption settings",
+      },
+      { id: "Plugins", label: "Plugins", description: "Extensions" },
+    ],
+    []
+  );
+
+  const handleSignOut = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   const renderContent = () => {
-    switch (activeTab) {
+    switch (activeSection) {
       case "Profile":
         return <ProfileSection />;
       case "QuickConnect":
         return <QuickConnectSection />;
       case "Display":
         return <DisplaySection />;
+      case "Home":
+        return <HomeSection />;
+      case "Playback":
+        return <PlaybackSection />;
+      case "Subtitles":
+        return <SubtitlesSection />;
       case "Plugins":
         return <MarlinSearchSection />;
       default:
-        return (
-          <div className="text-center text-zinc-400 py-12">
-            <p>{activeTab} settings coming soon...</p>
-          </div>
-        );
+        return null;
     }
   };
 
@@ -53,28 +83,15 @@ const ProfilePage: React.FC = () => {
           <h1 className="text-2xl font-semibold">Profile</h1>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-zinc-700 mb-8">
-          <nav className="flex space-x-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? "border-blue-500 text-blue-500"
-                    : "border-transparent text-zinc-400 hover:text-white hover:border-zinc-300"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
         {/* Content */}
-        <div className="max-w-4xl">
-          {renderContent()}
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
+          <ProfileSectionsList
+            sections={sections}
+            activeSectionId={activeSection}
+            onSelect={setActiveSection}
+            onSignOut={handleSignOut}
+          />
+          <div className="max-w-4xl">{renderContent()}</div>
         </div>
       </div>
     </div>

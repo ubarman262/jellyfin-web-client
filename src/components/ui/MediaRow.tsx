@@ -91,19 +91,19 @@ const MediaRow: React.FC<MediaRowProps> = ({
 
   return (
     <div className="mb-8 group/row">
-      <h2 className="text-xl font-medium text-white mb-2">{title}</h2>
+      <h2 className="text-xl font-medium text-white mb-2 px-[5px]">{title}</h2>
 
       <div className="relative">
         <div
           ref={rowRef}
-          className="flex overflow-x-scroll scrollbar-hide gap-4 pb-4"
+          className="flex overflow-x-scroll scrollbar-hide gap-4 pb-2 p-[5px]"
           onScroll={checkArrows}
         >
           {items.map((item) => (
             <div
               key={item.Id}
               className={`flex-none w-[160px] sm:w-[180px] transition-transform ${
-              isHorizontal ? "md:w-[310px] md:h-[200px] pt-1" : "md:w-[200px]"
+              isHorizontal ? "md:w-[300px] md:h-[200px] pt-1" : "md:w-[200px]"
               }`}
               onClick={() => {
               if (onSelectItem) {

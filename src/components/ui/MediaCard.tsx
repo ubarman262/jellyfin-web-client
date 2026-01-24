@@ -14,6 +14,7 @@ interface MediaCardProps {
   featured?: boolean;
   onSelectItem?: (itemId: string) => void;
   isHorizontal?: boolean;
+  fluid?: boolean;
 }
 
 function getImageUrl(
@@ -170,7 +171,7 @@ const CardContent: React.FC<CardContentProps & { touchDevice?: boolean }> = ({
             <span className="border border-gray-500 px-1">{rating}</span>
           )}
           {(isMovie || isEpisode) && item.RunTimeTicks && (
-            <span className="bg-gray-800 px-1 rounded text-[10px] uppercase tracking-wide">
+            <span className="border border-gray-500 px-1 uppercase">
               {Math.floor(item.RunTimeTicks / 600000000)} min
             </span>
           )}
@@ -218,6 +219,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
   featured = false,
   onSelectItem,
   isHorizontal = false,
+  fluid = false,
 }) => {
   const { api } = useAuth();
   const navigate = useNavigate();
@@ -314,19 +316,28 @@ const MediaCard: React.FC<MediaCardProps> = ({
     aspectClasses =
       "aspect-[16/7] min-h-[150px] max-h-[160px] flex-row flex border border-white/20";
   } else {
-    aspectClasses = "w-full aspect-[2/3] z-10";
+    aspectClasses = "w-full aspect-[2/3] z-10 border border-white/20";
   }
 
   return (
-    <div>
+    <div
+      className={clsx(
+        isHorizontal ? "w-[300px]" : fluid ? "w-full" : "w-[200px]",
+        "",
+      )}
+    >
       <div
         className={clsx(
-          "group relative transition-all duration-300 overflow-hidden bg-gray-900 cursor-pointer rounded-md",
+          "group relative transition-all duration-300 overflow-hidden bg-gray-900 cursor-pointer rounded-xl",
           aspectClasses,
           // isHovered && "z-10 shadow-xl",
           isHovered && "scale-[1.03] shadow-xl",
 
-          isHorizontal ? "w-[300px]" : "max-w-[200px] max-h-[300px]",
+          isHorizontal
+            ? "w-[300px]"
+            : fluid
+              ? "w-full"
+              : "max-w-[200px] max-h-[300px]",
         )}
         onMouseEnter={() => {
           if (!touchDevice) setIsHovered(true);
@@ -346,17 +357,18 @@ const MediaCard: React.FC<MediaCardProps> = ({
             alt={title}
             className={clsx(
               isHorizontal
-                ? "object-cover h-full min-w-[300px] rounded-l-md"
-                : "w-full h-full object-cover rounded-md",
-              isHorizontal ? "" : "max-w-[200px] max-h-[300px]",
+                ? "object-cover h-full min-w-[300px]"
+                : "w-full h-full object-cover",
+              isHorizontal ? "" : fluid ? "" : "max-w-[200px] max-h-[300px]",
             )}
           />
         ) : (
           <div
             className={clsx(
               isHorizontal
-                ? "flex items-center justify-center bg-gray-800 rounded-l-md h-full min-w-[200px]"
-                : "w-full h-full flex items-center justify-center bg-gray-800 rounded-md max-w-[200px] max-h-[300px]",
+                ? "flex items-center justify-center bg-gray-800 h-full min-w-[200px]"
+                : "w-full h-full flex items-center justify-center bg-gray-800",
+              isHorizontal ? "" : fluid ? "" : "max-w-[200px] max-h-[300px]",
             )}
           >
             <span className="text-gray-400">{title}</span>
@@ -372,7 +384,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
           </div>
         )}
 
-        <div
+        {/* <div
           className={clsx(
             isHorizontal
               ? "flex-1 flex flex-col justify-center px-4 py-2"
@@ -401,7 +413,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
             boxSetFirstMovieId={boxSetFirstMovieId}
             touchDevice={touchDevice}
           />
-        </div>
+        </div> */}
       </div>
       <div className="mt-2 text-center">
         <h3 className="text-white font-medium text-xs md:text-sm truncate">

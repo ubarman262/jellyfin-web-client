@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Navbar from "../components/layout/Navbar";
+import PageTemplate from "../components/layout/PageTemplate";
 import MediaCard from "../components/ui/MediaCard";
 import { useMediaData } from "../hooks/useMediaData";
 
@@ -15,13 +15,15 @@ const FavouritesPage: React.FC = () => {
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white">
-      <Navbar />
-      <div className="px-14 pt-24 pb-16 pl-2 pr-2">
+    <PageTemplate>
+      <div className="pt-24 pb-16 px-14">
         {(() => {
+          const gridClasses =
+            "grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-4 gap-y-8";
+
           if (isLoading) {
             return (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className={gridClasses}>
                 {Array.from({ length: PAGE_SIZE }).map((_, i) => {
                   const skeletonKey = `skeleton-${page}-${i}`;
                   return (
@@ -36,9 +38,9 @@ const FavouritesPage: React.FC = () => {
           } else if (items.length > 0) {
             return (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 px-14">
+                <div className={gridClasses}>
                   {items.map((item) => (
-                    <MediaCard key={item.Id} item={item} />
+                    <MediaCard key={item.Id} item={item} fluid />
                   ))}
                 </div>
                 {totalPages > 1 && (
@@ -75,7 +77,7 @@ const FavouritesPage: React.FC = () => {
           }
         })()}
       </div>
-    </div>
+    </PageTemplate>
   );
 };
 
