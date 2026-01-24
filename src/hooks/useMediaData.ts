@@ -4,7 +4,13 @@ import { MediaItem, ItemsResponse, MediaType } from "../types/jellyfin";
 
 export const useMediaData = (
   type: MediaType,
-  options?: { genres?: string[]; limit?: number; startIndex?: number; mediaType?: string; latest?: boolean }
+  options?: {
+    genres?: string[];
+    limit?: number;
+    startIndex?: number;
+    mediaType?: string;
+    latest?: boolean;
+  },
 ) => {
   const { api, isAuthenticated } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -16,7 +22,10 @@ export const useMediaData = (
   const limit = options?.limit ?? 20;
   const startIndex = options?.startIndex ?? 0;
   const mediaType = options?.mediaType ?? "";
-  const genresString = useMemo(() => (options?.genres ?? []).join('|'), [options?.genres]);
+  const genresString = useMemo(
+    () => (options?.genres ?? []).join("|"),
+    [options?.genres],
+  );
   const latest = options?.latest ?? false;
 
   useEffect(() => {
@@ -54,12 +63,24 @@ export const useMediaData = (
             setTotalItems(result.length);
             break;
           case "movies":
-            result = await api.getMediaByType("Movie", genresString, limit, startIndex, latest);
+            result = await api.getMediaByType(
+              "Movie",
+              genresString,
+              limit,
+              startIndex,
+              latest,
+            );
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
           case "series":
-            result = await api.getMediaByType("Series", genresString, limit, startIndex, latest);
+            result = await api.getMediaByType(
+              "Series",
+              genresString,
+              limit,
+              startIndex,
+              latest,
+            );
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
@@ -69,7 +90,7 @@ export const useMediaData = (
             setTotalItems(result.TotalRecordCount);
             break;
           case "collections":
-            result = await api.getAllBoxSets();
+            result = await api.getAllBoxSets(limit, startIndex);
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
             break;
@@ -83,7 +104,7 @@ export const useMediaData = (
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err : new Error("An unknown error occurred")
+          err instanceof Error ? err : new Error("An unknown error occurred"),
         );
         console.error("Error fetching media data:", err);
       } finally {
@@ -118,7 +139,7 @@ export const useMediaItem = (itemId: string | undefined) => {
         setItem(result);
       } catch (err) {
         setError(
-          err instanceof Error ? err : new Error("An unknown error occurred")
+          err instanceof Error ? err : new Error("An unknown error occurred"),
         );
         console.error("Error fetching media item:", err);
       } finally {
@@ -163,7 +184,7 @@ export const useSearch = (searchTerm: string, limit: number = 100) => {
         setTotalResults(result.TotalRecordCount);
       } catch (err) {
         setError(
-          err instanceof Error ? err : new Error("An unknown error occurred")
+          err instanceof Error ? err : new Error("An unknown error occurred"),
         );
         console.error("Error searching:", err);
       } finally {
@@ -192,7 +213,7 @@ export const useSearch = (searchTerm: string, limit: number = 100) => {
         setSuggestions(result.Items);
       } catch (err) {
         setError(
-          err instanceof Error ? err : new Error("An unknown error occurred")
+          err instanceof Error ? err : new Error("An unknown error occurred"),
         );
         console.error("Error searching:", err);
       }
@@ -206,7 +227,14 @@ export const useSearch = (searchTerm: string, limit: number = 100) => {
     return () => clearTimeout(timeoutId);
   }, [api, isAuthenticated, searchTerm]);
 
-  return { results, isLoading, error, totalResults, suggestions, reloadSuggestions };
+  return {
+    results,
+    isLoading,
+    error,
+    totalResults,
+    suggestions,
+    reloadSuggestions,
+  };
 };
 
 export const useGenres = (mediaType: string = "") => {
@@ -230,7 +258,7 @@ export const useGenres = (mediaType: string = "") => {
         setGenres(result.Items);
       } catch (err) {
         setError(
-          err instanceof Error ? err : new Error("An unknown error occurred")
+          err instanceof Error ? err : new Error("An unknown error occurred"),
         );
         console.error("Error fetching genres:", err);
       } finally {

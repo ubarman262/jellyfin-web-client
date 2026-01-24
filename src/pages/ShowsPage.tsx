@@ -180,7 +180,7 @@ const ShowsPage: React.FC = () => {
   };
 
   // Handle "All" click
-  const handleAllGenres = () => {
+  const handleResetGenres = () => {
     if (selectedGenres.length === 0) return;
     setSelectedGenres([]);
     setPage(0);
@@ -229,9 +229,9 @@ const ShowsPage: React.FC = () => {
               className="px-14 absolute top-20 z-30 flex items-center gap-4"
               ref={genreMenuRef}
             >
-              <span className="font-bold text-4xl text-white">Shows</span>
+              <span className="font-bold text-4xl text-white text-shadow">Shows</span>
               <button
-                className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-700 rounded text-lg font-semibold focus:outline-none"
+                className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-700 rounded-xl text-lg font-semibold focus:outline-none"
                 style={{ backdropFilter: "blur(4px)" }}
                 onClick={() => setGenreMenuOpen((open) => !open)}
               >
@@ -258,18 +258,18 @@ const ShowsPage: React.FC = () => {
                 )}
               </button>
               {genreMenuOpen && (
-                <div className="absolute z-20 top-[52px] left-[123px] bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[540px] max-h-96 overflow-y-auto">
+                <div className="absolute z-20 top-[52px] left-[200px] bg-neutral-900 border border-gray-700 rounded shadow-lg py-4 px-8 min-w-[540px] max-h-96 overflow-y-auto">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
                     <button
-                      className={`text-left py-1 px-2 rounded hover:bg-gray-800 ${
-                        selectedGenres.length === 0
+                      className={`text-center py-1 px-2 rounded-xl border border-gray-700 cursor-pointer ${
+                        selectedGenres.length > 0
                           ? "font-bold text-white"
-                          : "text-gray-200"
+                          : "text-gray-600"
                       }`}
-                      onClick={handleAllGenres}
-                      disabled={genres.length === 0}
+                      onClick={handleResetGenres}
+                      disabled={selectedGenres.length === 0}
                     >
-                      All
+                      Reset
                     </button>
                     {genres.length === 0 ? (
                       <span className="col-span-3 text-gray-400">

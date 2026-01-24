@@ -279,3 +279,7 @@ input[type="range"].volume-slider:focus {
 input[type="range"].volume-slider::-webkit-slider-thumb:focus {
   outline: none;
 }
+
+.text-shadow {
+  text-shadow: 1px 1px 5px #00000033;
+}

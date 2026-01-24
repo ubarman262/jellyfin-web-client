@@ -33,6 +33,7 @@ import EpisodesList from "./EpisodesList";
 import MarkWatchedButton from "./MarkWatchedButton";
 import MoreLikeThisSection from "./MoreLikeThisSection";
 import PlayButton from "./playButton";
+import SeriesDetailsSection from "./SeriesDetailsSection";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
 
 const MediaDetailsDrawer = () => {
@@ -915,40 +916,12 @@ const MediaDetailsDrawer = () => {
                   {/* --- Series Details Section --- */}
                   {(isSeries || isEpisode) &&
                     (item.SeriesId || item.SeriesName) && (
-                      <div>
-                        <h3 className="mt-10 text-xl font-semibold text-white mb-4">
-                          About
-                        </h3>
-                        <div className=" flex flex-col md:flex-row gap-6 items-start bg-[#262729] rounded-lg">
-                          {/* Series Primary Image */}
-                          {seriesDetails?.Id &&
-                            seriesDetails?.ImageTags?.Primary && (
-                              <img
-                                src={
-                                  api && seriesDetails
-                                    ? api.getImageUrl(
-                                        seriesDetails.Id,
-                                        "Primary",
-                                        180
-                                      )
-                                    : ""
-                                }
-                                alt={seriesDetails?.Name ?? "Series"}
-                                className="rounded-l-lg w-[80px] md:w-[140px] object-cover bg-neutral-800"
-                                style={{ flexShrink: 0 }}
-                              />
-                            )}
-                          <div className="flex-1 p-6 flex flex-col justify-between h-[200px]">
-                            <div className="font-semibold text-lg text-white mb-1">
-                              {seriesDetails?.Name ??
-                                (item ? item.SeriesName ?? item.Name : "")}
-                            </div>
-                            <div className="text-gray-300 text-sm max-w-xl mb-2">
-                              {seriesDetails?.Overview}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <SeriesDetailsSection
+                        api={api}
+                        item={item}
+                        seriesDetails={seriesDetails}
+                        onSelectSeries={(seriesId) => handleSelectItem(seriesId)}
+                      />
                     )}
                   {/* --- End Series Details Section --- */}
 

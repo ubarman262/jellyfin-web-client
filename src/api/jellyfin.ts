@@ -94,7 +94,7 @@ class JellyfinApi {
       } catch (error) {
         console.warn(
           "Failed to parse marlinSearchConfig from localStorage:",
-          error
+          error,
         );
       }
     }
@@ -153,7 +153,7 @@ class JellyfinApi {
     method: "get" | "post" | "put" | "delete",
     endpoint: string,
     data?: unknown,
-    params?: unknown
+    params?: unknown,
   ): Promise<T> {
     try {
       const url = `${this.serverUrl}/emby${endpoint}`;
@@ -171,12 +171,12 @@ class JellyfinApi {
       if (axios.isAxiosError(error)) {
         if (error.code === "ECONNABORTED") {
           throw new Error(
-            "Connection timeout. Please check if the Jellyfin server is accessible."
+            "Connection timeout. Please check if the Jellyfin server is accessible.",
           );
         }
         if (!error.response) {
           throw new Error(
-            `Network error: Unable to connect to Jellyfin server at ${this.serverUrl}. Please verify the server URL and ensure the server is running.`
+            `Network error: Unable to connect to Jellyfin server at ${this.serverUrl}. Please verify the server URL and ensure the server is running.`,
           );
         }
         if (error.response.status === 401) {
@@ -185,7 +185,7 @@ class JellyfinApi {
           throw new Error("Authentication failed. Please log in again.");
         }
         throw new Error(
-          `Server error: ${error.response.data?.Message ?? error.message}`
+          `Server error: ${error.response.data?.Message ?? error.message}`,
         );
       }
       throw error;
@@ -217,7 +217,7 @@ class JellyfinApi {
         {
           Username: credentials.username,
           Pw: credentials.password,
-        }
+        },
       );
 
       // Save auth data
@@ -269,7 +269,7 @@ class JellyfinApi {
       {
         Limit: limit,
         Fields: "UserData",
-      }
+      },
     ).then((response) => response.Items);
   }
 
@@ -294,7 +294,7 @@ class JellyfinApi {
 
   async getLatestMedia(
     mediaType: string = "",
-    limit: number = 16
+    limit: number = 16,
   ): Promise<MediaItem[]> {
     let parentId = null;
     if (mediaType === "Movie") {
@@ -312,7 +312,7 @@ class JellyfinApi {
         Fields: "Overview,Genres,PrimaryImageAspectRatio",
         ImageTypeLimit: 1,
         ParentId: parentId,
-      }
+      },
     );
   }
 
@@ -325,7 +325,7 @@ class JellyfinApi {
         Limit: limit,
         Fields:
           "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
-      }
+      },
     );
   }
 
@@ -334,7 +334,7 @@ class JellyfinApi {
     genres?: string,
     limit: number = 20,
     startIndex: number = 0,
-    latest: boolean = false
+    latest: boolean = false,
   ): Promise<ItemsResponse> {
     let parentId = null;
     if (mediaType === "Movie") {
@@ -357,14 +357,14 @@ class JellyfinApi {
         Genres: genres,
         IncludeItemTypes: mediaType,
         ParentId: parentId,
-      }
+      },
     );
   }
 
   async getFavourites(
     limit: number = 20,
     startIndex: number = 0,
-    mediaType?: string
+    mediaType?: string,
   ): Promise<ItemsResponse> {
     return this.makeRequest<ItemsResponse>(
       "get",
@@ -380,7 +380,7 @@ class JellyfinApi {
         Filters: "IsFavorite",
         Fields:
           "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
-      }
+      },
     );
   }
 
@@ -392,14 +392,14 @@ class JellyfinApi {
       {
         Fields:
           "Overview,Genres,PrimaryImageTag,BackdropImageTags,MediaStreams,RemoteTrailers,Chapters",
-      }
+      },
     );
   }
 
   async getMediaByGenre(
     genreId: string,
     mediaType: string = "",
-    limit: number = 20
+    limit: number = 20,
   ): Promise<ItemsResponse> {
     return this.makeRequest<ItemsResponse>(
       "get",
@@ -411,7 +411,7 @@ class JellyfinApi {
         Recursive: true,
         Limit: limit,
         Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
-      }
+      },
     );
   }
 
@@ -425,20 +425,14 @@ class JellyfinApi {
 
   async search(
     searchTerm: string,
-    limit: number = 100
+    limit: number = 100,
   ): Promise<ItemsResponse> {
-    console.log("Search called with term:", searchTerm);
-    console.log("MarlinSearch client exists:", !!this.marlinSearchClient);
-
     const isMarlinAvailable = await this.isMarlinSearchAvailable();
-    console.log("MarlinSearch available:", isMarlinAvailable);
 
     // Try MarlinSearch first if available
     if (this.marlinSearchClient && isMarlinAvailable) {
-      console.log("Using MarlinSearch for query:", searchTerm);
       try {
         const marlinResults = await this.marlinSearchClient.search(searchTerm);
-        console.log("MarlinSearch results:", marlinResults);
 
         if (marlinResults.ids && marlinResults.ids.length > 0) {
           // Fetch full MediaItem details for each ID
@@ -453,7 +447,7 @@ class JellyfinApi {
                 console.warn(`Failed to fetch item ${id}:`, error);
                 return null;
               }
-            })
+            }),
           );
 
           // Filter out failed requests and null results
@@ -472,7 +466,7 @@ class JellyfinApi {
       } catch (error) {
         console.warn(
           "MarlinSearch failed, falling back to Jellyfin search:",
-          error
+          error,
         );
       }
     }
@@ -490,7 +484,7 @@ class JellyfinApi {
         IncludeItemTypes: "Movie,Series",
         ImageTypeLimit: 1,
         EnableTotalRecordCount: false,
-      }
+      },
     );
   }
 
@@ -498,7 +492,7 @@ class JellyfinApi {
     itemId: string,
     imageType: string = "Primary",
     maxWidth?: number,
-    maxHeight?: number
+    maxHeight?: number,
   ): string {
     let url = `${this.serverUrl}/emby/Items/${itemId}/Images/${imageType}`;
 
@@ -535,12 +529,12 @@ class JellyfinApi {
 
   async getPlaybackInfo(
     itemId: string,
-    options: PlaybackInfoOptions
+    options: PlaybackInfoOptions,
   ): Promise<MediaSourceResponse> {
     return this.makeRequest<MediaSourceResponse>(
       "post",
       `/Items/${itemId}/PlaybackInfo`,
-      options
+      options,
     );
   }
 
@@ -590,13 +584,13 @@ class JellyfinApi {
       JSON.stringify({
         MediaSourceId: item.Id,
         DeviceId: this.deviceId,
-      })
+      }),
     );
 
     // Safely access MediaStreams and filter by Type === 'Subtitle'
     const subtitles =
       response?.MediaSources?.[0]?.MediaStreams?.filter(
-        (stream) => stream.Type === "Subtitle"
+        (stream) => stream.Type === "Subtitle",
       ) ?? []; // fallback to empty array if undefined
 
     return subtitles;
@@ -604,7 +598,7 @@ class JellyfinApi {
 
   async fetchSelectedSubtitle(
     itemId: string,
-    subtitleStreamIndex: number
+    subtitleStreamIndex: number,
   ): Promise<[]> {
     const endpoint = `/Videos/${itemId}/${itemId}/Subtitles/${subtitleStreamIndex}/0/Stream.js`;
     const response = await this.makeRequest<{
@@ -633,7 +627,7 @@ class JellyfinApi {
     itemId: string,
     positionSeconds: number,
     audioStreamIndex?: number,
-    subtitleStreamIndex?: number
+    subtitleStreamIndex?: number,
   ) {
     if (!this.userId || !this.accessToken) return;
     try {
@@ -741,7 +735,7 @@ class JellyfinApi {
           "Overview,Genres,PrimaryImageTag,BackdropImageTags,ProductionYear",
         SortBy: "ProductionYear,SortName",
         SortOrder: "Descending",
-      }
+      },
     );
   }
 
@@ -752,7 +746,7 @@ class JellyfinApi {
    */
   async getSeriesNextUp(
     seriesId: string,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<MediaItem[]> {
     return this.makeRequest<ItemsResponse>("get", `/Shows/NextUp`, undefined, {
       SeriesId: seriesId,
@@ -775,7 +769,7 @@ class JellyfinApi {
       {
         UserId: this.userId,
         Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
-      }
+      },
     );
     return data.Items ?? [];
   }
@@ -787,7 +781,7 @@ class JellyfinApi {
    */
   async getEpisodes(
     seriesId: string,
-    seasonId: string | undefined
+    seasonId: string | undefined,
   ): Promise<MediaItem[]> {
     const data = await this.makeRequest<ItemsResponse>(
       "get",
@@ -800,7 +794,7 @@ class JellyfinApi {
         SortOrder: "Ascending",
         Fields:
           "ItemCounts,PrimaryImageAspectRatio,CanDelete,Overview,MediaSourceCount",
-      }
+      },
     );
     return data.Items ?? [];
   }
@@ -817,7 +811,7 @@ class JellyfinApi {
       "post",
       `/Users/${this.userId}/PlayedItems/${itemId}`,
       undefined,
-      { DatePlayed: date }
+      { DatePlayed: date },
     );
   }
 
@@ -829,7 +823,7 @@ class JellyfinApi {
     if (!this.userId) throw new Error("User not authenticated");
     await this.makeRequest(
       "delete",
-      `/Users/${this.userId}/PlayedItems/${itemId}`
+      `/Users/${this.userId}/PlayedItems/${itemId}`,
     );
   }
 
@@ -840,18 +834,18 @@ class JellyfinApi {
    */
   async markAsFavourite(
     itemId: string,
-    isFavorite: boolean = true
+    isFavorite: boolean = true,
   ): Promise<void> {
     if (!this.userId) throw new Error("User not authenticated");
     if (isFavorite) {
       await this.makeRequest(
         "post",
-        `/Users/${this.userId}/FavoriteItems/${itemId}`
+        `/Users/${this.userId}/FavoriteItems/${itemId}`,
       );
     } else {
       await this.makeRequest(
         "delete",
-        `/Users/${this.userId}/FavoriteItems/${itemId}`
+        `/Users/${this.userId}/FavoriteItems/${itemId}`,
       );
     }
   }
@@ -863,7 +857,7 @@ class JellyfinApi {
       undefined,
       {
         Fields: "RemoteTrailers",
-      }
+      },
     );
   }
 
@@ -874,7 +868,7 @@ class JellyfinApi {
    */
   async getSimilarItems(
     itemId: string,
-    limit: number = 12
+    limit: number = 12,
   ): Promise<ItemsResponse> {
     return this.makeRequest<ItemsResponse>(
       "get",
@@ -884,7 +878,7 @@ class JellyfinApi {
         userId: this.userId,
         limit,
         fields: "PrimaryImageAspectRatio,CanDelete",
-      }
+      },
     );
   }
 
@@ -930,7 +924,7 @@ class JellyfinApi {
    */
   async getStudioByName(
     name: string,
-    limit: number = 5
+    limit: number = 5,
   ): Promise<ItemsResponse> {
     if (!this.userId) throw new Error("User not authenticated");
     return this.makeRequest<ItemsResponse>("get", `/Studios`, undefined, {
@@ -951,7 +945,7 @@ class JellyfinApi {
   async getItemsByStudioId(
     studioId: string,
     limit: number = 48,
-    startIndex: number = 0
+    startIndex: number = 0,
   ): Promise<ItemsResponse> {
     if (!this.userId) throw new Error("User not authenticated");
     return this.makeRequest<ItemsResponse>(
@@ -968,7 +962,7 @@ class JellyfinApi {
         SortOrder: "Ascending",
         ImageTypeLimit: 1,
         IncludeItemTypes: "Movie, Series",
-      }
+      },
     );
   }
 
@@ -976,7 +970,10 @@ class JellyfinApi {
    * Get all BoxSets (collections) for the current user.
    * @returns ItemsResponse containing all BoxSets.
    */
-  async getAllBoxSets(): Promise<ItemsResponse> {
+  async getAllBoxSets(
+    limit: number = 20,
+    startIndex: number = 0,
+  ): Promise<ItemsResponse> {
     if (!this.userId) throw new Error("User not authenticated");
     return this.makeRequest<ItemsResponse>(
       "get",
@@ -988,7 +985,9 @@ class JellyfinApi {
         Fields: "PrimaryImageTag,SortName",
         SortBy: "SortName",
         SortOrder: "Ascending",
-      }
+        Limit: limit,
+        StartIndex: startIndex,
+      },
     );
   }
 
@@ -1009,7 +1008,7 @@ class JellyfinApi {
         Fields: "PrimaryImageTag,SortName",
         SortBy: "SortName",
         SortOrder: "Ascending",
-      }
+      },
     );
     const boxSets = boxSetsResp.Items ?? [];
 
@@ -1020,7 +1019,7 @@ class JellyfinApi {
     let firstWord =
       itemNameWords.find(
         (word) =>
-          !ignoreWords.includes(word.toLowerCase()) && isNaN(Number(word))
+          !ignoreWords.includes(word.toLowerCase()) && isNaN(Number(word)),
       ) ?? itemNameWords[0];
     // Remove trailing colon if present
     firstWord = firstWord.replace(/:$/, "");
@@ -1054,7 +1053,7 @@ class JellyfinApi {
         Fields: "PrimaryImageTag,SortName",
         SortBy: "SortName",
         SortOrder: "Ascending",
-      }
+      },
     );
     return itemsResp.Items ?? [];
   }
@@ -1067,7 +1066,7 @@ class JellyfinApi {
    */
   async uploadUserProfileImage(
     userId: string,
-    file: File | Blob
+    file: File | Blob,
   ): Promise<void> {
     const url = `${this.serverUrl}/emby/Users/${userId}/Images/Primary`;
 
@@ -1117,7 +1116,7 @@ class JellyfinApi {
     file: File,
     language: string = "eng",
     isForced: boolean = false,
-    isHearingImpaired: boolean = false
+    isHearingImpaired: boolean = false,
   ): Promise<void> {
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -1171,11 +1170,11 @@ class JellyfinApi {
    */
   async searchRemoteSubtitles(
     itemId: string,
-    language: string
+    language: string,
   ): Promise<RemoteSubtitleInfo[]> {
     return this.makeRequest<RemoteSubtitleInfo[]>(
       "get",
-      `/Items/${itemId}/RemoteSearch/Subtitles/${language}`
+      `/Items/${itemId}/RemoteSearch/Subtitles/${language}`,
     );
   }
 
@@ -1187,11 +1186,11 @@ class JellyfinApi {
    */
   async downloadRemoteSubtitle(
     itemId: string,
-    subtitleId: string
+    subtitleId: string,
   ): Promise<void> {
     await this.makeRequest(
       "post",
-      `/Items/${itemId}/RemoteSearch/Subtitles/${subtitleId}`
+      `/Items/${itemId}/RemoteSearch/Subtitles/${subtitleId}`,
     );
   }
 
@@ -1219,7 +1218,7 @@ class JellyfinApi {
     localStorage.setItem("marlinSearchConfig", JSON.stringify(config));
     console.log(
       "Saved to localStorage:",
-      localStorage.getItem("marlinSearchConfig")
+      localStorage.getItem("marlinSearchConfig"),
     );
 
     // Reinitialize the client
@@ -1247,7 +1246,7 @@ class JellyfinApi {
       "get",
       `/Users/${this.userId}/Views`,
       undefined,
-      {}
+      {},
     );
   }
 
@@ -1263,7 +1262,7 @@ class JellyfinApi {
 
       // Find movies library (can be "movies" or "Movie" collection type)
       const moviesLibrary = views.Items.find(
-        (item) => item.CollectionType?.toLowerCase() === "movies"
+        (item) => item.CollectionType?.toLowerCase() === "movies",
       );
       if (moviesLibrary?.Id) {
         this.moviesParentId = moviesLibrary.Id;
