@@ -52,10 +52,6 @@ const SearchPage: React.FC = () => {
     navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
   };
 
-  const handleItemClick = (itemId: string) => {
-    navigate("/search?item=" + itemId);
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
@@ -71,25 +67,20 @@ const SearchPage: React.FC = () => {
             onSubmit={handleSubmit}
             className="flex items-center max-w-2xl mx-auto"
           >
-            <div className="relative flex-1">
+            <div className="relative flex-1 shadow-lg shadow-black/30 rounded-lg">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon size={20} className="text-gray-400" />
+              <SearchIcon size={20} className="text-gray-400" />
               </div>
               <input
-                type="text"
-                placeholder="Search for Movies, Shows..."
-                value={searchQuery}
-                onChange={handleInputChange}
-                className="bg-gray-800 w-full pl-10 pr-4 py-3 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-red-600"
+              type="text"
+              placeholder="Search the cosmic catalog..."
+              value={searchQuery}
+              onChange={handleInputChange}
+              className="bg-gray-800 w-full pl-10 pr-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
           </form>
         </div>
-
-        {/* Genre Section */}
-        {/* <div className="container mx-auto px-4 mt-[-2rem] z-10">
-          <GenreSection />
-        </div> */}
 
         {/* Suggestions when searchQuery is empty */}
         {!searchQuery && suggestions.length > 0 && (
@@ -98,33 +89,27 @@ const SearchPage: React.FC = () => {
               <h2 className="text-xl font-medium text-left">Suggestions</h2>
               <button
                 type="button"
-                className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-white/20 rounded-lg hover:bg-gray-700 transition-colors"
                 onClick={reloadSuggestions}
                 aria-label="Shuffle suggestions"
+                title="Shuffle suggestions"
               >
-                <ShuffleIcon size={20} className="text-red-500" />
+                <ShuffleIcon size={20} className="text-red-400" />
                 <span className="text-sm text-white">Shuffle</span>
               </button>
             </div>
             <div className="">
-              {suggestions.map((item) => (
-                <div
-                  key={item.Id}
-                  onClick={() => handleItemClick(item.Id)}
-                  className="cursor-pointer"
-                >
-                  <MediaCard item={item} />
-                </div>
-              ))}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-4 gap-y-8">
+                {suggestions.map((item) => (
+                  <MediaCard key={item.Id} item={item} fluid />
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Results */}
         {(() => {
-          const gridClasses =
-            "grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-6 gap-y-8";
-
           let resultsContent;
           if (isLoading) {
             resultsContent = (
