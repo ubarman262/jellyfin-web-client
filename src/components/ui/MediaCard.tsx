@@ -81,7 +81,7 @@ function getImageAsset(
 ) {
   if (!api) return { url: "", blurHash: undefined };
 
-  const size = featured ? 400 : 200;
+  const size = featured ? 600 : 400;
   const hasPrimaryImage = !!item.ImageTags?.Primary;
   const hasBackdropImage = !!(
     item.BackdropImageTags && item.BackdropImageTags.length > 0
