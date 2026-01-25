@@ -12,6 +12,11 @@ import {
   RemoteSubtitleInfo,
   UserLogin,
 } from "../types/jellyfin";
+import {
+  getMarlinResultId,
+  getMarlinResultTitle,
+  getMarlinSearchIds,
+} from "../utils/items";
 import MarlinSearchAPI, {
   createMarlinSearchClient,
   SearchResponseResult,
@@ -494,10 +499,11 @@ class JellyfinApi {
           onlyIds: true,
         });
 
-        if (marlinResults.ids && marlinResults.ids.length > 0) {
+        const marlinIds = getMarlinSearchIds(marlinResults);
+        if (marlinIds && marlinIds.length > 0) {
           // Fetch full MediaItem details for each ID
           const mediaItems: MediaItem[] = [];
-          const idsToFetch = marlinResults.ids.slice(0, limit);
+          const idsToFetch = marlinIds.slice(0, limit);
 
           const results = await Promise.allSettled(
             idsToFetch.map(async (id) => {
@@ -1411,15 +1417,11 @@ class JellyfinApi {
   }
 
   getMarlinResultId(result: SearchResponseResult | null): string | null {
-    if (!result || !Array.isArray(result) || result.length === 0) return null;
-    const first = result[0] as { Id?: unknown };
-    return typeof first?.Id === "string" ? first.Id : null;
+    return getMarlinResultId(result);
   }
 
   getMarlinResultTitle(result: SearchResponseResult | null): string | null {
-    if (!result || !Array.isArray(result) || result.length === 0) return null;
-    const first = result[0] as { Name?: unknown };
-    return typeof first?.Name === "string" ? first.Name : null;
+    return getMarlinResultTitle(result);
   }
 }
 

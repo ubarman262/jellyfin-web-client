@@ -1,85 +1,67 @@
-import React, { useEffect, useState } from "react";
-import HeroBanner from "../components/ui/HeroBanner";
-import MediaRow from "../components/ui/MediaRow";
+import React, { Suspense } from "react";
 import PageTemplate from "../components/layout/PageTemplate";
-import { useMediaData } from "../hooks/useMediaData";
-import { MediaItem } from "../types/jellyfin";
+
+const HeroSection = React.lazy(
+  () => import("../components/ui/Home/HeroSection"),
+);
+const ContinueWatchingSection = React.lazy(
+  () => import("../components/ui/Home/ContinueWatchingSection"),
+);
+const NextUpSection = React.lazy(
+  () => import("../components/ui/Home/NextUpSection"),
+);
+const LatestMoviesSection = React.lazy(
+  () => import("../components/ui/Home/LatestMoviesSection"),
+);
+const LatestShowsSection = React.lazy(
+  () => import("../components/ui/Home/LatestShowsSection"),
+);
 
 const HomePage: React.FC = () => {
-  const [featuredItems, setFeaturedItems] = useState<MediaItem[] | null>(null);
-
-  const { items: resumeItems, isLoading: resumeLoading } = useMediaData(
-    "resume",
-    { limit: 20 }
-  );
-  const { items: nextUpItems, isLoading: nextUpLoading } = useMediaData(
-    "nextup",
-    { limit: 20 }
-  );
-
-  const { items: latestItems } = useMediaData("latest");
-
-  const { items: latestMovies, isLoading: LatestMoviesLoading } = useMediaData(
-    "latest",
-    { limit: 20, mediaType: "Movie" }
-  );
-  const { items: latestShows, isLoading: LatestShowsLoading } = useMediaData(
-    "latest",
-    { limit: 20, mediaType: "Series" }
-  );
-
-  useEffect(() => {
-    // Select a featured item from latest or movies
-    if (latestItems.length > 0) {
-      // Find an item with backdrop image
-      const itemsWithBackdrop = latestItems.filter(
-        (item) => item.BackdropImageTags && item.BackdropImageTags.length > 0
-      );
-
-      if (itemsWithBackdrop) {
-        setFeaturedItems(itemsWithBackdrop);
-      } else {
-        setFeaturedItems(latestItems);
-      }
-    }
-  }, [latestItems]);
-
   return (
     <PageTemplate>
       {/* Hero Section */}
-      {featuredItems ? (
-        <HeroBanner items={featuredItems} />
-      ) : (
-        <div className="w-full h-[85vh] bg-neutral-800 animate-pulse"></div>
-      )}
+      <Suspense
+        fallback={
+          <div className="w-full h-[85vh] bg-neutral-800 animate-pulse"></div>
+        }
+      >
+        <HeroSection />
+      </Suspense>
 
       {/* Content Rows */}
       <div className="px-14 mt-[20px] relative z-10 sm:mt-[-4rem] mb-16">
-        <MediaRow
-          title="Continue Watching"
-          items={resumeItems}
-          isLoading={resumeLoading}
-          isHorizontal={true}
-        />
+        <Suspense
+          fallback={
+            <div className="w-full h-48 mt-6 bg-neutral-800 animate-pulse rounded-md"></div>
+          }
+        >
+          <ContinueWatchingSection />
+        </Suspense>
 
-        <MediaRow
-          title="Next Up"
-          items={nextUpItems}
-          isLoading={nextUpLoading}
-          isHorizontal={true}
-        />
+        <Suspense
+          fallback={
+            <div className="w-full h-48 mt-6 bg-neutral-800 animate-pulse rounded-md"></div>
+          }
+        >
+          <NextUpSection />
+        </Suspense>
 
-        <MediaRow
-          title="Latest Movies"
-          items={latestMovies}
-          isLoading={LatestMoviesLoading}
-        />
+        <Suspense
+          fallback={
+            <div className="w-full h-48 mt-6 bg-neutral-800 animate-pulse rounded-md"></div>
+          }
+        >
+          <LatestMoviesSection />
+        </Suspense>
 
-        <MediaRow
-          title="Latest Shows"
-          items={latestShows}
-          isLoading={LatestShowsLoading}
-        />
+        <Suspense
+          fallback={
+            <div className="w-full h-48 mt-6 bg-neutral-800 animate-pulse rounded-md"></div>
+          }
+        >
+          <LatestShowsSection />
+        </Suspense>
 
         {/* Studios Section */}
         {/* <StudiosSection /> */}

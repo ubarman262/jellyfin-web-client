@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useRecoilState, useSetRecoilState } from "recoil";
 import { useLocation } from "react-router-dom";
+import { useRecoilState, useSetRecoilState } from "recoil";
+import PageTemplate from "../components/layout/PageTemplate";
 import MediaCard from "../components/ui/MediaCard";
 import MoreInfoButton from "../components/ui/moreInfoButton";
 import PlayButton from "../components/ui/playButton";
@@ -11,7 +12,6 @@ import { useMediaData } from "../hooks/useMediaData";
 import activeItem from "../states/atoms/ActiveItem";
 import drawerState from "../states/atoms/DrawerOpen";
 import { FUNNY_ENDING_LINES_MOVIES, MediaItem } from "../types/jellyfin";
-import PageTemplate from "../components/layout/PageTemplate";
 
 const PAGE_SIZE = 30;
 const FILTERED_PAGE_SIZE = 1000;
@@ -227,7 +227,9 @@ const MoviesPage: React.FC = () => {
               className="px-14 absolute top-20 z-30 flex items-center gap-4"
               ref={genreMenuRef}
             >
-              <span className="font-bold text-4xl text-white text-shadow">Movies</span>
+              <span className="font-bold text-4xl text-white text-shadow">
+                Movies
+              </span>
               <button
                 className="flex items-center gap-2 px-6 py-2 bg-neutral-900/80 border border-gray-700 rounded-xl text-lg font-semibold focus:outline-none"
                 style={{ backdropFilter: "blur(4px)" }}

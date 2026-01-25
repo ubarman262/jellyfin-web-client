@@ -12,6 +12,7 @@ import {
 import MuteButton from "./MuteButton";
 import ProgressiveImage from "./ProgressiveImage";
 import ReplayButton from "./ReplayButton";
+import { decode } from "blurhash";
 
 interface ButtonPositionProps {
   top?: number | string;
@@ -44,14 +45,53 @@ const YouTubeWithProgressiveFallback = ({
   const [trailerStarted, setTrailerStarted] = useState(false);
   const [trailerEnded, setTrailerEnded] = useState(false);
 
-  useImperativeHandle(playerRef, () => ({
-    play: () => {
-      if (player && typeof player.playVideo === "function") player.playVideo();
-    },
-    pause: () => {
-      if (player && typeof player.pauseVideo === "function") player.pauseVideo();
-    },
-  }), [player]);
+  const [blurDataUrl, setBlurDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!item) return;
+    const currentItem = item;
+    const backdropTag =
+      currentItem.BackdropImageTags?.[0] ??
+      currentItem.ParentBackdropImageTags?.[0];
+
+    if (backdropTag) {
+      const blurHash = currentItem.ImageBlurHashes?.Backdrop?.[backdropTag];
+      if (blurHash) {
+        try {
+          const width = 32;
+          const height = 18;
+          const pixels = decode(blurHash, width, height);
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            const imageData = ctx.createImageData(width, height);
+            imageData.data.set(pixels);
+            ctx.putImageData(imageData, 0, 0);
+            setBlurDataUrl(canvas.toDataURL());
+          }
+        } catch {
+          setBlurDataUrl(null);
+        }
+      }
+    }
+  }, [item]);
+
+  useImperativeHandle(
+    playerRef,
+    () => ({
+      play: () => {
+        if (player && typeof player.playVideo === "function")
+          player.playVideo();
+      },
+      pause: () => {
+        if (player && typeof player.pauseVideo === "function")
+          player.pauseVideo();
+      },
+    }),
+    [player],
+  );
 
   useEffect(() => {
     const fetchAndSetTrailer = async () => {
@@ -94,11 +134,24 @@ const YouTubeWithProgressiveFallback = ({
         <div
           className={clsx(
             "w-full h-full object-cover absolute inset-0 transition-opacity duration-700",
-            trailerStarted && !trailerEnded ? "opacity-0" : "opacity-100"
+            trailerStarted && !trailerEnded ? "opacity-0" : "opacity-100",
           )}
-          style={{ objectFit: "cover", zIndex: 1 }}
+          // style={{ objectFit: "cover", zIndex: 1 }}
+          style={{
+            backgroundImage: blurDataUrl ? `url(${blurDataUrl})` : undefined,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            maxHeight: "80vh",
+            objectFit: "cover",
+            zIndex: 1,
+          }}
         >
-          <ProgressiveImage src={backdropUrl} onLoad={handleBackdropLoad} />
+          <ProgressiveImage
+            item={item}
+            src={backdropUrl}
+            onLoad={handleBackdropLoad}
+          />
         </div>
       )}
       {youtubeId && !trailerEnded && backdropLoaded && (
@@ -153,7 +206,7 @@ const YouTubeWithProgressiveFallback = ({
         setIsMuted={setIsMuted}
         player={player}
         size={buttonSize}
-        position={buttonPosition} 
+        position={buttonPosition}
       />
 
       <ReplayButton

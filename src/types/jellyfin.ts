@@ -108,6 +108,12 @@ export interface MediaItem {
   CollectionType?: string;
   ImageTags?: ImageTags;
   BackdropImageTags?: string[];
+  ImageBlurHashes?: {
+    Primary?: Record<string, string>;
+    Backdrop?: Record<string, string>;
+    Thumb?: Record<string, string>;
+    Logo?: Record<string, string>;
+  };
   ParentBackdropImageTags?: string[];
   ParentPrimaryImageTag?: string;
   ParentBackdropItemId?: string;

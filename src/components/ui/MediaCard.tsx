@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import React, { useEffect, useState } from "react";
+import { decode } from "blurhash";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSetRecoilState } from "recoil";
 import JellyfinApi from "../../api/jellyfin";
 import { useAuth } from "../../context/AuthContext";
@@ -36,13 +37,49 @@ interface MediaCardProps {
   fluid?: boolean;
 }
 
-function getImageUrl(
+type ImageTypeKey = "Primary" | "Backdrop" | "Thumb" | "Logo";
+
+function getImageTagForType(
+  item: MediaItem,
+  imageType: ImageTypeKey,
+  useParent: boolean,
+): string | undefined {
+  if (imageType === "Backdrop") {
+    return useParent
+      ? item.ParentBackdropImageTags?.[0]
+      : item.BackdropImageTags?.[0];
+  }
+  if (imageType === "Primary") {
+    return useParent ? item.ParentPrimaryImageTag : item.ImageTags?.Primary;
+  }
+  if (imageType === "Thumb") {
+    return item.ImageTags?.Thumb;
+  }
+  if (imageType === "Logo") {
+    return useParent ? item.ParentLogoImageTag : item.ImageTags?.Logo;
+  }
+  return undefined;
+}
+
+function getBlurHashForType(
+  item: MediaItem,
+  imageType: ImageTypeKey,
+  tag?: string,
+): string | undefined {
+  const hashes = item.ImageBlurHashes?.[imageType];
+  if (!hashes) return undefined;
+  if (tag && hashes[tag]) return hashes[tag];
+  const first = Object.values(hashes)[0];
+  return typeof first === "string" ? first : undefined;
+}
+
+function getImageAsset(
   api: JellyfinApi | null,
   item: MediaItem,
   featured: boolean,
   isHorizontal?: boolean,
 ) {
-  if (!api) return "";
+  if (!api) return { url: "", blurHash: undefined };
 
   const size = featured ? 400 : 200;
   const hasPrimaryImage = !!item.ImageTags?.Primary;
@@ -51,49 +88,62 @@ function getImageUrl(
   );
   const hasThumbImage = !!item.ImageTags?.Thumb;
 
+  const build = (
+    imageType: ImageTypeKey,
+    imageId: string,
+    useParent: boolean,
+  ) => {
+    const tag = getImageTagForType(item, imageType, useParent);
+    const blurHash = getBlurHashForType(item, imageType, tag);
+    return {
+      url: api.getImageUrl(imageId, imageType, size),
+      blurHash,
+    };
+  };
+
   switch (item.Type) {
     case "Episode":
       if (isHorizontal && item.SeriesId) {
-        return api.getImageUrl(item.SeriesId, "Thumb", size);
+        return build("Thumb", item.SeriesId, true);
       } else if (item.SeriesId) {
-        return api.getImageUrl(item.SeriesId, "Primary", size);
+        return build("Primary", item.SeriesId, true);
       }
       break;
     case "Series":
       if (hasPrimaryImage) {
-        return api.getImageUrl(item.Id, "Primary", size);
+        return build("Primary", item.Id, false);
       }
       break;
     case "EpisodeInSearch":
       if (hasPrimaryImage) {
-        return api.getImageUrl(item.Id, "Primary", size);
+        return build("Primary", item.Id, false);
       } else if (item.SeriesId) {
-        return api.getImageUrl(item.SeriesId, "Primary", size);
+        return build("Primary", item.SeriesId, true);
       }
       break;
     case "Movie":
       if (isHorizontal) {
         if (hasThumbImage) {
-          return api.getImageUrl(item.Id, "Thumb", size);
+          return build("Thumb", item.Id, false);
         } else if (hasBackdropImage) {
-          return api.getImageUrl(item.Id, "Backdrop", size);
+          return build("Backdrop", item.Id, false);
         }
       } else if (hasPrimaryImage) {
-        return api.getImageUrl(item.Id, "Primary", size);
+        return build("Primary", item.Id, false);
       } else if (hasBackdropImage) {
-        return api.getImageUrl(item.Id, "Backdrop", size);
+        return build("Backdrop", item.Id, false);
       }
       break;
     default:
       if (hasPrimaryImage) {
-        return api.getImageUrl(item.Id, "Primary", size);
+        return build("Primary", item.Id, false);
       }
       if (hasBackdropImage) {
-        return api.getImageUrl(item.Id, "Backdrop", size);
+        return build("Backdrop", item.Id, false);
       }
       break;
   }
-  return "";
+  return { url: "", blurHash: undefined };
 }
 
 function getProgressPercent(item: MediaItem) {
@@ -119,12 +169,18 @@ const MediaCard: React.FC<MediaCardProps> = ({
 }) => {
   const { api } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [blurDataUrl, setBlurDataUrl] = useState<string | null>(null);
   // Track if device is touch
   const [touchDevice, setTouchDevice] = useState(false);
   const [showQualityIndicators, setShowQualityIndicators] = useState(
     readShowQualitySetting(),
   );
-  const imageUrl = getImageUrl(api, item, featured, isHorizontal);
+  const imageAsset = useMemo(
+    () => getImageAsset(api, item, featured, isHorizontal),
+    [api, item, featured, isHorizontal],
+  );
+  const imageUrl = imageAsset.url;
   const title = item.Name;
   const progressPercent = getProgressPercent(item);
 
@@ -143,6 +199,56 @@ const MediaCard: React.FC<MediaCardProps> = ({
   useEffect(() => {
     setTouchDevice(isTouchDevice());
   }, []);
+
+  useEffect(() => {
+    setIsImageLoaded(false);
+  }, [imageUrl]);
+
+  useEffect(() => {
+    if (!imageUrl) return;
+    let cancelled = false;
+    const img = new globalThis.Image();
+    img.onload = () => {
+      if (!cancelled) setIsImageLoaded(true);
+    };
+    img.onerror = () => {
+      if (!cancelled) setIsImageLoaded(true);
+    };
+    img.src = imageUrl;
+    if (img.complete) {
+      setIsImageLoaded(true);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
+
+  useEffect(() => {
+    if (!imageAsset.blurHash) {
+      setBlurDataUrl(null);
+      return;
+    }
+
+    try {
+      const width = 32;
+      const height = 32;
+      const pixels = decode(imageAsset.blurHash, width, height);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        setBlurDataUrl(null);
+        return;
+      }
+      const imageData = ctx.createImageData(width, height);
+      imageData.data.set(pixels);
+      ctx.putImageData(imageData, 0, 0);
+      setBlurDataUrl(canvas.toDataURL());
+    } catch {
+      setBlurDataUrl(null);
+    }
+  }, [imageAsset.blurHash]);
 
   useEffect(() => {
     const updateSettings = () => {
@@ -209,16 +315,32 @@ const MediaCard: React.FC<MediaCardProps> = ({
         role="button"
       >
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={title}
+          <div
             className={clsx(
-              isHorizontal
-                ? "object-cover h-full min-w-[300px]"
-                : "w-full h-full object-cover",
-              isHorizontal ? "" : fluid ? "" : "max-w-[200px] max-h-[300px]",
+              "relative w-full h-full bg-gray-800",
+              "bg-center bg-cover",
             )}
-          />
+            style={
+              blurDataUrl
+                ? { backgroundImage: `url(${blurDataUrl})` }
+                : undefined
+            }
+          >
+            <img
+              src={imageUrl}
+              alt={title}
+              onLoad={() => setIsImageLoaded(true)}
+              onError={() => setIsImageLoaded(true)}
+              className={clsx(
+                isHorizontal
+                  ? "object-cover h-full min-w-[300px]"
+                  : "w-full h-full object-cover",
+                isHorizontal ? "" : fluid ? "" : "max-w-[200px] max-h-[300px]",
+                "transition-opacity duration-500",
+                isImageLoaded ? "opacity-100" : "opacity-0",
+              )}
+            />
+          </div>
         ) : (
           <div
             className={clsx(

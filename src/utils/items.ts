@@ -1,5 +1,6 @@
 import JellyfinApi from "../api/jellyfin";
 import { MediaItem, People, Studios } from "../types/jellyfin";
+import { SearchResponseResult } from "../api/marlin-search";
 
 const getBackdropUrl = (api: JellyfinApi, item: MediaItem) => {
   if (item?.BackdropImageTags?.length) {
@@ -129,6 +130,30 @@ const sortSeasons = (seasons: MediaItem[]): MediaItem[] => {
   return [...seasons].sort((a, b) => (a.IndexNumber ?? 0) - (b.IndexNumber ?? 0));
 }
 
+const getMarlinSearchIds = (
+  result: SearchResponseResult,
+): string[] | null => {
+  if (Array.isArray(result)) return null;
+  if ("ids" in result && Array.isArray(result.ids)) return result.ids;
+  return null;
+};
+
+const getMarlinResultId = (
+  result: SearchResponseResult | null,
+): string | null => {
+  if (!result || !Array.isArray(result) || result.length === 0) return null;
+  const first = result[0] as { Id?: unknown };
+  return typeof first?.Id === "string" ? first.Id : null;
+};
+
+const getMarlinResultTitle = (
+  result: SearchResponseResult | null,
+): string | null => {
+  if (!result || !Array.isArray(result) || result.length === 0) return null;
+  const first = result[0] as { Name?: unknown };
+  return typeof first?.Name === "string" ? first.Name : null;
+};
+
 
 export {
   getBackdropUrl,
@@ -140,5 +165,8 @@ export {
   getDirectors,
   getWriters,
   getStudios,
-  sortSeasons
+  sortSeasons,
+  getMarlinSearchIds,
+  getMarlinResultId,
+  getMarlinResultTitle
 };

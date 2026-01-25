@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { decode } from "blurhash";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import { useAuth } from "../../context/AuthContext";
@@ -17,6 +18,10 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
 }) => {
   const { api } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loadedBackdrops, setLoadedBackdrops] = useState<
+    Record<string, boolean>
+  >({});
+  const [blurDataUrl, setBlurDataUrl] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Touch swipe state
@@ -78,9 +83,37 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
   useEffect(() => {
     if (!api || items.length === 0) return;
     const currentItem = items[currentIndex];
-    if (currentItem.BackdropImageTags?.length) {
-      const img = new globalThis.Image();
-      img.src = api.getImageUrl(currentItem.Id, "Backdrop", 1920);
+    const backdropTag =
+      currentItem.BackdropImageTags?.[0] ??
+      currentItem.ParentBackdropImageTags?.[0];
+
+    if (backdropTag) {
+      const blurHash = currentItem.ImageBlurHashes?.Backdrop?.[backdropTag];
+      if (blurHash) {
+        try {
+          const width = 32;
+          const height = 18;
+          const pixels = decode(blurHash, width, height);
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            const imageData = ctx.createImageData(width, height);
+            imageData.data.set(pixels);
+            ctx.putImageData(imageData, 0, 0);
+            setBlurDataUrl(canvas.toDataURL());
+          } else {
+            setBlurDataUrl(null);
+          }
+        } catch {
+          setBlurDataUrl(null);
+        }
+      } else {
+        setBlurDataUrl(null);
+      }
+    } else {
+      setBlurDataUrl(null);
     }
 
     if (autoSlideInterval > 0 && !isDrawerOpen) {
@@ -145,9 +178,16 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
         const isActive = index === currentIndex;
         const genres = item.Genres ?? [];
         const overview = item.Overview ?? "";
-        const backdropUrl = item.BackdropImageTags?.length
-          ? api.getImageUrl(item.Id, "Backdrop", 1920)
+        const backdropTag =
+          item.BackdropImageTags?.[0] ?? item.ParentBackdropImageTags?.[0];
+        const backdropItemId = item.BackdropImageTags?.length
+          ? item.Id
+          : item.ParentBackdropItemId ?? item.Id;
+        const backdropUrl = backdropTag
+          ? api.getImageUrl(backdropItemId, "Backdrop", 1920)
           : "";
+        const isActiveBackdropLoaded =
+          isActive && !!backdropUrl && loadedBackdrops[backdropUrl] === true;
 
         return (
           <div
@@ -202,27 +242,51 @@ const HeroBanner: React.FC<HeroBannerProps> = ({
             {/* Desktop/Tablet original layout */}
             <div className="hidden md:block">
               {backdropUrl ? (
-                <>
+                <div
+                  className="absolute inset-0 w-full h-full bg-neutral-900 bg-center bg-cover"
+                  style={
+                    blurDataUrl && isActive
+                      ? { backgroundImage: `url(${blurDataUrl})` }
+                      : undefined
+                  }
+                >
                   <img
                     src={backdropUrl}
                     alt={item.Name}
-                    className="w-full h-full object-cover object-center"
+                    onLoad={() => {
+                      if (!backdropUrl) return;
+                      setLoadedBackdrops((prev) => ({
+                        ...prev,
+                        [backdropUrl]: true,
+                      }));
+                    }}
+                    onError={() => {
+                      if (!backdropUrl) return;
+                      setLoadedBackdrops((prev) => ({
+                        ...prev,
+                        [backdropUrl]: true,
+                      }));
+                    }}
+                    className={clsx(
+                      "w-full h-full object-cover object-center transition-opacity duration-500",
+                      isActiveBackdropLoaded ? "opacity-100" : "opacity-0",
+                    )}
                     draggable={false}
                   />
-                  {/* <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/70 via-neutral-900/40 to-neutral-900/10" /> */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/60 to-transparent" />
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-44 pointer-events-none"
-                    style={{
-                      background:
-                        "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
-                      zIndex: 10,
-                    }}
-                  />
-                </>
+                </div>
               ) : (
                 <div className="absolute inset-0 bg-neutral-900" />
               )}
+              {/* Gradients on top of everything */}
+              <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/60 to-transparent" />
+              <div
+                className="absolute bottom-0 left-0 right-0 h-44 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
+                  zIndex: 10,
+                }}
+              />
               <div className="absolute inset-0 flex items-end md:items-end bottom-32">
                 <div className="container pl-6 md:pl-12">
                   <div className="max-w-2xl space-y-4">
