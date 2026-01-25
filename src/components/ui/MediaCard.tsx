@@ -375,10 +375,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
           </div>
         )}
 
-        {progressPercent > 0 && !isHorizontal && (
-          <div className="absolute left-0 right-0 bottom-0 h-1.5 bg-black/40 z-10">
+        {progressPercent > 0 && (
+          <div className="absolute left-0 right-0 bottom-0 h-1 rounded-lg bg-[rgba(128,128,128,.5)] z-10 m-4">
             <div
-              className="h-full bg-[var(--accent-secondary)] transition-all"
+              className="h-full bg-gray-50 rounded-lg transition-all"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
