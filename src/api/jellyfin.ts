@@ -275,7 +275,7 @@ class JellyfinApi {
       undefined,
       {
         Limit: limit,
-        Fields: "UserData",
+        Fields: "UserData, IsHD, Is4K",
       },
     ).then((response) => response.Items);
   }
@@ -287,7 +287,7 @@ class JellyfinApi {
 
     return this.makeRequest<ItemsResponse>("get", `/Shows/NextUp`, undefined, {
       Limit: limit,
-      Fields: "PrimaryImageAspectRatio",
+      Fields: "PrimaryImageAspectRatio, IsHD, Is4K",
       UserId: this.userId,
       ImageTypeLimit: 1,
       EnableImageTypes: "Primary,Backdrop,Banner,Thumb",
@@ -316,7 +316,7 @@ class JellyfinApi {
       undefined,
       {
         Limit: limit,
-        Fields: "Overview,Genres,PrimaryImageAspectRatio",
+        Fields: "Overview,Genres,PrimaryImageAspectRatio, IsHD, Is4K",
         ImageTypeLimit: 1,
         ParentId: parentId,
       },
@@ -331,7 +331,7 @@ class JellyfinApi {
       {
         Limit: limit,
         Fields:
-          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers, IsHD, Is4K",
       },
     );
   }
@@ -360,7 +360,7 @@ class JellyfinApi {
         SortBy: latest ? "DateCreated,SortName" : "SortName",
         SortOrder: latest ? "Descending" : "Ascending",
         Fields:
-          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers, IsHD, Is4K",
         Genres: genres,
         IncludeItemTypes: mediaType,
         ParentId: parentId,
@@ -386,7 +386,7 @@ class JellyfinApi {
         SortOrder: "Ascending",
         Filters: "IsFavorite",
         Fields:
-          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers",
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,RemoteTrailers, IsHD, Is4K",
       },
     );
   }
@@ -398,7 +398,7 @@ class JellyfinApi {
       undefined,
       {
         Fields:
-          "Overview,Genres,PrimaryImageTag,BackdropImageTags,MediaStreams,RemoteTrailers,Chapters",
+          "Overview,Genres,PrimaryImageTag,BackdropImageTags,MediaStreams,RemoteTrailers,Chapters, IsHD, Is4K",
       },
     );
   }
@@ -417,7 +417,7 @@ class JellyfinApi {
         IncludeItemTypes: mediaType,
         Recursive: true,
         Limit: limit,
-        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags",
+        Fields: "Overview,Genres,PrimaryImageTag,BackdropImageTags, IsHD, Is4K",
       },
     );
   }
@@ -487,7 +487,7 @@ class JellyfinApi {
         SearchTerm: searchTerm,
         Recursive: true,
         Limit: limit,
-        Fields: "PrimaryImageAspectRatio,CanDelete,MediaSourceCount",
+        Fields: "PrimaryImageAspectRatio,CanDelete,MediaSourceCount, IsHD, Is4K",
         IncludeItemTypes: "Movie,Series",
         ImageTypeLimit: 1,
         EnableTotalRecordCount: false,

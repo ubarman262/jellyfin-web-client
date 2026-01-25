@@ -375,6 +375,15 @@ const MediaCard: React.FC<MediaCardProps> = ({
           </div>
         )}
 
+        {/* Quality Badge (HD/4K) */}
+        {(item.IsHD || item.Is4K) && (
+          <div className="absolute top-1 right-2 z-20">
+            <span className="bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded">
+              {item.Is4K ? "4K" : "HD"}
+            </span>
+          </div>
+        )}
+
         {progressPercent > 0 && (
           <div className="absolute left-0 right-0 bottom-0 h-1 rounded-lg bg-[rgba(128,128,128,.5)] z-10 m-4">
             <div

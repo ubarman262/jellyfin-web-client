@@ -136,6 +136,8 @@ export interface MediaItem {
     Url: string;
     Name: string;
   }>;
+  IsHD?: boolean;
+  Is4K?: boolean;
   UserData: {
     PlaybackPositionTicks?: number;
     Played?: boolean;
