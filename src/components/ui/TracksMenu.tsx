@@ -16,6 +16,7 @@ interface TracksMenuProps {
   subtitleTracks: MediaStream[];
   selectedSubtitleIndex: number | string | null;
   setSelectedSubtitleIndex: (index: number | string | null) => void;
+  onSelectLocalSubtitle?: (file: File) => void;
   onUploadLocalSubtitle?: (file: File) => void; // new prop
   localSubtitleName?: string | null;
   localSubtitleFile?: File | null; // new prop
@@ -40,6 +41,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
   subtitleTracks,
   selectedSubtitleIndex,
   setSelectedSubtitleIndex,
+  onSelectLocalSubtitle,
   onUploadLocalSubtitle, // new prop
   localSubtitleName,
   localSubtitleFile, // new prop

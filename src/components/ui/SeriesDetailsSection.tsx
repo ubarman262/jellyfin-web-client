@@ -1,27 +1,25 @@
 import React from "react";
+import { useAuth } from "../../context/AuthContext";
 import { MediaItem } from "../../types/jellyfin";
-import JellyfinApi from "../../api/jellyfin";
 
 interface SeriesDetailsSectionProps {
-  api: JellyfinApi | null;
   item: MediaItem;
   seriesDetails: MediaItem | null;
   onSelectSeries: (seriesId: string) => void;
 }
 
 const SeriesDetailsSection: React.FC<SeriesDetailsSectionProps> = ({
-  api,
   item,
   seriesDetails,
   onSelectSeries,
 }) => {
-  if (!item || (!item.SeriesId && !item.SeriesName)) {
+  const { api } = useAuth();
+  if (!api || !item || (!item.SeriesId && !item.SeriesName)) {
     return null;
   }
 
   const seriesId = item.SeriesId;
-  const seriesName =
-    seriesDetails?.Name ?? (item.SeriesName ?? item.Name ?? "");
+  const seriesName = seriesDetails?.Name ?? item.SeriesName ?? item.Name ?? "";
   const seriesOverview = seriesDetails?.Overview ?? "";
   const year = seriesDetails?.ProductionYear;
   const rating = seriesDetails?.OfficialRating;

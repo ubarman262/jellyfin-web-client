@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { MediaItem, ItemsResponse, MediaType } from "../types/jellyfin";
+import { ItemsResponse, MediaItem, MediaType } from "../types/jellyfin";
 
 export const useMediaData = (
   type: MediaType,

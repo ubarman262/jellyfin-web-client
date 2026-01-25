@@ -21,6 +21,7 @@ import { useSetRecoilState } from "recoil";
 import NextEpisodeButton from "../components/ui/nextEpisodeButton";
 import SubtitleTrack from "../components/ui/SubtitleTrack";
 import TracksMenu from "../components/ui/TracksMenu";
+import SubtitleEditModal from "../components/ui/SubtitleEditModal";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
 import isDrawerOpen from "../states/atoms/DrawerOpen";
@@ -49,6 +50,85 @@ function isIOSSafari() {
 }
 const isIOS = isIOSSafari();
 
+const USER_SETTINGS_KEY = "jellyfin_user_settings";
+
+type SubtitleFontFamily =
+  | "default"
+  | "sans"
+  | "serif"
+  | "mono"
+  | "inter"
+  | "roboto"
+  | "poppins"
+  | "montserrat"
+  | "lato"
+  | "raleway";
+type SubtitleFontWeight = "regular" | "bold";
+type SubtitleBackground = "none" | "shadow" | "solid";
+
+type SubtitleSettings = {
+  positionPx: number;
+  fontFamily: SubtitleFontFamily;
+  fontWeight: SubtitleFontWeight;
+  background: SubtitleBackground;
+  sizePx: number;
+  previewEnabled: boolean;
+};
+
+type UserSettings = {
+  subtitles?: Partial<SubtitleSettings>;
+};
+
+const DEFAULT_SUBTITLE_SETTINGS: SubtitleSettings = {
+  positionPx: 0,
+  fontFamily: "default",
+  fontWeight: "regular",
+  background: "shadow",
+  sizePx: 28,
+  previewEnabled: true,
+};
+
+function readUserSettings(): UserSettings {
+  if (globalThis.window === undefined) return {};
+  try {
+    const raw = localStorage.getItem(USER_SETTINGS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as UserSettings;
+  } catch {
+    return {};
+  }
+}
+
+function writeUserSettings(settings: UserSettings) {
+  if (globalThis.window === undefined) return;
+  localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(settings));
+  globalThis.window.dispatchEvent(new Event("user-settings-updated"));
+}
+
+function readSubtitleSettings(): SubtitleSettings {
+  const stored = readUserSettings().subtitles ?? {};
+  const legacyPosition = (stored as { position?: string }).position;
+  const legacyPositionPx = (() => {
+    switch (legacyPosition) {
+      case "middle":
+        return -60;
+      case "lower":
+        return 40;
+      case "bottom":
+      default:
+        return 0;
+    }
+  })();
+  return {
+    ...DEFAULT_SUBTITLE_SETTINGS,
+    positionPx:
+      typeof (stored as { positionPx?: number }).positionPx === "number"
+        ? (stored as { positionPx: number }).positionPx
+        : legacyPositionPx,
+    ...stored,
+  };
+}
+
 const MediaPlayerPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
   const { item, isLoading } = useMediaItem(itemId);
@@ -74,12 +154,16 @@ const MediaPlayerPage: React.FC = () => {
   const [controlsHideDelay, setControlsHideDelay] = useState(3000);
   const [subtitleTracks, setSubtitleTracks] = useState<MediaStream[]>([]);
   const [tracksMenuOpen, setTracksMenuOpen] = useState(false);
+  const [subtitleEditModalOpen, setSubtitleEditModalOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
   const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(
     null
   );
   const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null); // new state
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
+  const [subtitleSettings, setSubtitleSettings] = useState<SubtitleSettings>(
+    readSubtitleSettings(),
+  );
 
   // --- Add state for episodes menu visibility ---
   const [showEpisodesMenu, setShowEpisodesMenu] = useState(false);
@@ -87,6 +171,37 @@ const MediaPlayerPage: React.FC = () => {
   const episodesButtonRef = useRef<HTMLButtonElement | null>(null); // <-- add ref for the button
 
   const [showOrientationOverlay, setShowOrientationOverlay] = useState(false);
+
+  useEffect(() => {
+    const updateFromStorage = () => {
+      setSubtitleSettings(readSubtitleSettings());
+    };
+    updateFromStorage();
+    globalThis.window?.addEventListener(
+      "user-settings-updated",
+      updateFromStorage,
+    );
+    globalThis.window?.addEventListener("storage", updateFromStorage);
+    return () => {
+      globalThis.window?.removeEventListener(
+        "user-settings-updated",
+        updateFromStorage,
+      );
+      globalThis.window?.removeEventListener("storage", updateFromStorage);
+    };
+  }, []);
+
+  const updateSubtitleSettings = (partial: Partial<SubtitleSettings>) => {
+    setSubtitleSettings((prev) => {
+      const next = { ...prev, ...partial };
+      const current = readUserSettings();
+      writeUserSettings({
+        ...current,
+        subtitles: next,
+      });
+      return next;
+    });
+  };
 
   // Detect orientation for mobile devices
   useEffect(() => {
@@ -771,13 +886,16 @@ const MediaPlayerPage: React.FC = () => {
     setSubtitleDelayMs(0);
   };
 
-  const [subtitleFontSize, setSubtitleFontSize] = useState<number>(28);
-
   const increaseSubtitleFontSize = () =>
-    setSubtitleFontSize((prev) => Math.min(prev + 2, 72));
+    updateSubtitleSettings({
+      sizePx: Math.min(subtitleSettings.sizePx + 2, 72),
+    });
   const decreaseSubtitleFontSize = () =>
-    setSubtitleFontSize((prev) => Math.max(prev - 2, 12));
-  const resetSubtitleFontSize = () => setSubtitleFontSize(28);
+    updateSubtitleSettings({
+      sizePx: Math.max(subtitleSettings.sizePx - 2, 12),
+    });
+  const resetSubtitleFontSize = () =>
+    updateSubtitleSettings({ sizePx: DEFAULT_SUBTITLE_SETTINGS.sizePx });
 
   const handleBack = () => {
     if (!item) return;
@@ -1341,7 +1459,11 @@ const MediaPlayerPage: React.FC = () => {
                   : undefined
               }
               subtitleDelayMs={subtitleDelayMs}
-              fontSize={subtitleFontSize}
+              fontSize={subtitleSettings.sizePx}
+              subtitlePositionPx={subtitleSettings.positionPx}
+              subtitleFontFamily={subtitleSettings.fontFamily}
+              subtitleFontWeight={subtitleSettings.fontWeight}
+              subtitleBackground={subtitleSettings.background}
             />
           )}
         </div>
@@ -1968,10 +2090,11 @@ const MediaPlayerPage: React.FC = () => {
                   isOpen={tracksMenuOpen}
                   setIsOpen={setTracksMenuOpen}
                   // Pass font size props
-                  subtitleFontSize={subtitleFontSize}
+                  subtitleFontSize={subtitleSettings.sizePx}
                   increaseSubtitleFontSize={increaseSubtitleFontSize}
                   decreaseSubtitleFontSize={decreaseSubtitleFontSize}
                   resetSubtitleFontSize={resetSubtitleFontSize}
+                  onOpenSubtitleEditModal={() => setSubtitleEditModalOpen(true)}
                 />
                 {/* PiP Button */}
                 <button
@@ -2040,6 +2163,15 @@ const MediaPlayerPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {item && (
+        <SubtitleEditModal
+          isOpen={subtitleEditModalOpen}
+          onClose={() => setSubtitleEditModalOpen(false)}
+          item={item}
+          subtitleTracks={subtitleTracks}
+          onSubtitlesUpdated={getSubtitles}
+        />
+      )}
     </>
   );
 };

@@ -13,6 +13,20 @@ type SubtitleTrackProps = {
   localSubtitleFileUrl?: string; // URL for the local subtitle file (object URL)
   subtitleDelayMs: number;
   fontSize?: number; // <-- Add this prop for font size
+  subtitlePositionPx?: number;
+  subtitleFontFamily?:
+    | "default"
+    | "sans"
+    | "serif"
+    | "mono"
+    | "inter"
+    | "roboto"
+    | "poppins"
+    | "montserrat"
+    | "lato"
+    | "raleway";
+  subtitleFontWeight?: "regular" | "bold";
+  subtitleBackground?: "none" | "shadow" | "solid";
   videoEl?: HTMLVideoElement | null; // access native textTracks
 };
 
@@ -24,6 +38,10 @@ const SubtitleTrack = ({
   localSubtitleFileUrl,
   subtitleDelayMs,
   fontSize = 36, // <-- Default font size
+  subtitlePositionPx = 0,
+  subtitleFontFamily = "default",
+  subtitleFontWeight = "regular",
+  subtitleBackground = "shadow",
   videoEl,
 }: SubtitleTrackProps) => {
   interface SubtitleEvent {
@@ -251,6 +269,58 @@ const SubtitleTrack = ({
 
   if (!overlayHtml) return null;
 
+  const positionBottom = "10%";
+
+  const fontFamily = (() => {
+    switch (subtitleFontFamily) {
+      case "inter":
+        return "Inter, system-ui, -apple-system, Segoe UI, sans-serif";
+      case "roboto":
+        return "Roboto, system-ui, -apple-system, Segoe UI, sans-serif";
+      case "poppins":
+        return "Poppins, system-ui, -apple-system, Segoe UI, sans-serif";
+      case "montserrat":
+        return "Montserrat, system-ui, -apple-system, Segoe UI, sans-serif";
+      case "lato":
+        return "Lato, system-ui, -apple-system, Segoe UI, sans-serif";
+      case "raleway":
+        return "Raleway, system-ui, -apple-system, Segoe UI, sans-serif";
+      case "sans":
+        return "Arial, Helvetica, sans-serif";
+      case "serif":
+        return "Georgia, Times, serif";
+      case "mono":
+        return "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      case "default":
+      default:
+        return "inherit";
+    }
+  })();
+
+  const fontWeight = subtitleFontWeight === "bold" ? 700 : 400;
+
+  const backgroundStyles = (() => {
+    switch (subtitleBackground) {
+      case "solid":
+        return {
+          backgroundColor: "rgba(0,0,0,0.6)",
+          textShadow: "none",
+        };
+      case "none":
+        return {
+          backgroundColor: "transparent",
+          textShadow: "none",
+        };
+      case "shadow":
+      default:
+        return {
+          backgroundColor: "transparent",
+          textShadow:
+            "0 2px 8px #000, 0 0px 2px #000, 0 0px 8px #000, 0 0px 16px #000, 0 0px 32px #000",
+        };
+    }
+  })();
+
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-24">
       <div
@@ -259,13 +329,15 @@ const SubtitleTrack = ({
           left: "50%",
           transform: "translateX(-50%)",
           fontSize: `${fontSize}px`,
+          fontFamily,
+          fontWeight,
           maxWidth: "90vw",
           lineHeight: 1.25,
           wordBreak: "break-word",
           pointerEvents: "none",
-          // Remove background, keep strong text shadow for readability
-          textShadow:
-            "0 2px 8px #000, 0 0px 2px #000, 0 0px 8px #000, 0 0px 16px #000, 0 0px 32px #000",
+          bottom: positionBottom,
+          transform: `translate(-50%, ${subtitlePositionPx}px)`,
+          ...backgroundStyles,
         }}
       >
         <div dangerouslySetInnerHTML={{ __html: overlayHtml }} />

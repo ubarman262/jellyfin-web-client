@@ -1,13 +1,32 @@
 import clsx from "clsx";
-import { Info, Play } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useSetRecoilState } from "recoil";
 import JellyfinApi from "../../api/jellyfin";
 import { useAuth } from "../../context/AuthContext";
-import { MediaItem } from "../../types/jellyfin";
-import { useSetRecoilState } from "recoil";
-import isDrawerOpen from "../../states/atoms/DrawerOpen";
 import activeItem from "../../states/atoms/ActiveItem";
+import isDrawerOpen from "../../states/atoms/DrawerOpen";
+import { MediaItem } from "../../types/jellyfin";
+
+const USER_SETTINGS_KEY = "jellyfin_user_settings";
+const DEFAULT_SHOW_QUALITY = false;
+
+type UserSettings = {
+  home?: {
+    showQualityIndicators?: boolean;
+  };
+};
+
+function readShowQualitySetting() {
+  if (globalThis.window === undefined) return DEFAULT_SHOW_QUALITY;
+  try {
+    const raw = localStorage.getItem(USER_SETTINGS_KEY);
+    if (!raw) return DEFAULT_SHOW_QUALITY;
+    const settings = JSON.parse(raw) as UserSettings;
+    return settings.home?.showQualityIndicators ?? DEFAULT_SHOW_QUALITY;
+  } catch {
+    return DEFAULT_SHOW_QUALITY;
+  }
+}
 
 interface MediaCardProps {
   item: MediaItem;
@@ -91,129 +110,6 @@ function getProgressPercent(item: MediaItem) {
   return 0;
 }
 
-interface CardContentProps {
-  item: MediaItem;
-  isEpisode: boolean;
-  isMovie: boolean;
-  isSeries: boolean;
-  nextUoId?: string;
-  seasonNum?: number;
-  episodeNum?: number;
-  showName?: string;
-  year?: number;
-  rating?: string;
-  title: string;
-  navigate: ReturnType<typeof useNavigate>;
-  onCardClick: React.Dispatch<React.SetStateAction<string>>;
-  // Add these for BoxSet support
-  isBoxSet?: boolean;
-  boxSetFirstMovieId?: string;
-}
-
-const CardContent: React.FC<CardContentProps & { touchDevice?: boolean }> = ({
-  item,
-  isEpisode,
-  isMovie,
-  isSeries,
-  seasonNum,
-  episodeNum,
-  showName,
-  year,
-  rating,
-  title,
-  nextUoId,
-  navigate,
-  onCardClick,
-  isBoxSet,
-  boxSetFirstMovieId,
-  touchDevice,
-}) => {
-  const location = useLocation();
-
-  let titleContent;
-  if (isEpisode) {
-    titleContent = (
-      <>
-        <span>
-          {title}
-          {seasonNum !== undefined && episodeNum !== undefined && (
-            <span className="ml-2 text-xs text-gray-300">
-              S{seasonNum}E{episodeNum}
-            </span>
-          )}
-        </span>
-        {showName && (
-          <div className="text-xs text-gray-400 truncate">{showName}</div>
-        )}
-      </>
-    );
-  } else {
-    titleContent = title;
-  }
-
-  // Use first movie in BoxSet if present
-  let playbackId: string | undefined;
-  if (isBoxSet && boxSetFirstMovieId) {
-    playbackId = boxSetFirstMovieId;
-  } else if (isSeries) {
-    playbackId = nextUoId;
-  } else {
-    playbackId = item.Id;
-  }
-
-  return (
-    <>
-      <h3 className="text-white font-medium truncate">{titleContent}</h3>
-      {!touchDevice && (
-        <div className="flex items-center gap-2 text-xs text-gray-300 mt-1">
-          {year && <span>{year}</span>}
-          {rating && (
-            <span className="border border-gray-500 px-1">{rating}</span>
-          )}
-          {(isMovie || isEpisode) && item.RunTimeTicks && (
-            <span className="border border-gray-500 px-1 uppercase">
-              {Math.floor(item.RunTimeTicks / 600000000)} min
-            </span>
-          )}
-        </div>
-      )}
-      {!touchDevice && (
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const firstSegment = location.pathname.split("/")[1];
-              navigate(`/play/${playbackId}`, {
-                state: { callbackPath: `/${firstSegment}` },
-              });
-            }}
-            className="flex items-center justify-center bg-white text-black rounded-full w-8 h-8 hover:bg-red-600 hover:text-white transition-colors"
-            tabIndex={-1}
-            aria-label={`Play ${title}`}
-          >
-            <Play size={16} className="ml-0.5" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onCardClick(item.Id);
-            }}
-            className="flex items-center justify-center bg-gray-700 text-white rounded-full w-8 h-8 hover:bg-white hover:text-black transition-colors"
-            tabIndex={-1}
-            aria-label={`More info about ${title}`}
-          >
-            <Info size={16} />
-          </button>
-        </div>
-      )}
-    </>
-  );
-};
-
 const MediaCard: React.FC<MediaCardProps> = ({
   item,
   featured = false,
@@ -222,78 +118,18 @@ const MediaCard: React.FC<MediaCardProps> = ({
   fluid = false,
 }) => {
   const { api } = useAuth();
-  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   // Track if device is touch
   const [touchDevice, setTouchDevice] = useState(false);
-
-  const [targetId, setTargetId] = useState<string>(item.Id);
-  // BoxSet state
-  const [boxSetFirstMovieId, setBoxSetFirstMovieId] = useState<
-    string | undefined
-  >(undefined);
-  const isBoxSet = item.Type === "BoxSet";
-  const isEpisode = item.Type === "Episode";
-  const isMovie = item.Type === "Movie";
-  const isSeries = item.Type === "Series";
-  const seasonNum = isEpisode ? item.ParentIndexNumber : undefined;
-  const episodeNum = isEpisode ? item.IndexNumber : undefined;
-  const showName = isEpisode ? item.SeriesName : undefined;
+  const [showQualityIndicators, setShowQualityIndicators] = useState(
+    readShowQualitySetting(),
+  );
   const imageUrl = getImageUrl(api, item, featured, isHorizontal);
-  const year = item.ProductionYear;
-  const rating = item.OfficialRating;
   const title = item.Name;
   const progressPercent = getProgressPercent(item);
 
   const setIsDrawerOpen = useSetRecoilState(isDrawerOpen);
   const setActiveTiemId = useSetRecoilState(activeItem);
-
-  useEffect(() => {
-    async function resolveTargetId() {
-      if (!isSeries) {
-        return;
-      }
-
-      // 1. Try NextUp
-      if (api) {
-        const nextUp = await api.getSeriesNextUp(item.Id, 1);
-        if (Array.isArray(nextUp) && nextUp.length > 0) {
-          setTargetId(nextUp[0].Id);
-          return;
-        }
-      }
-
-      // fallback to series id
-      setTargetId(item.Id);
-    }
-
-    resolveTargetId();
-  }, [isSeries, api, item]);
-
-  // Fetch first movie in BoxSet if item is a BoxSet
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchBoxSetFirstMovie() {
-      if (!api || !isBoxSet) {
-        setBoxSetFirstMovieId(undefined);
-        return;
-      }
-      try {
-        const movies = await api.getBoxSetMovies(item.Id);
-        if (!cancelled && movies && movies.length > 0) {
-          setBoxSetFirstMovieId(movies[0].Id);
-        } else if (!cancelled) {
-          setBoxSetFirstMovieId(undefined);
-        }
-      } catch {
-        if (!cancelled) setBoxSetFirstMovieId(undefined);
-      }
-    }
-    fetchBoxSetFirstMovie();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, isBoxSet, item]);
 
   const handleCardClick = (id: string) => {
     if (onSelectItem) {
@@ -306,6 +142,27 @@ const MediaCard: React.FC<MediaCardProps> = ({
 
   useEffect(() => {
     setTouchDevice(isTouchDevice());
+  }, []);
+
+  useEffect(() => {
+    const updateSettings = () => {
+      setShowQualityIndicators(readShowQualitySetting());
+    };
+
+    updateSettings();
+    globalThis.window?.addEventListener(
+      "user-settings-updated",
+      updateSettings,
+    );
+    globalThis.window?.addEventListener("storage", updateSettings);
+
+    return () => {
+      globalThis.window?.removeEventListener(
+        "user-settings-updated",
+        updateSettings,
+      );
+      globalThis.window?.removeEventListener("storage", updateSettings);
+    };
   }, []);
 
   // Determine aspect ratio and layout classes
@@ -376,10 +233,19 @@ const MediaCard: React.FC<MediaCardProps> = ({
         )}
 
         {/* Quality Badge (HD/4K) */}
-        {(item.IsHD || item.Is4K) && (
+        {showQualityIndicators && (item.IsHD || item.Is4K) && (
           <div className="absolute top-1 right-2 z-20">
             <span className="bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded">
               {item.Is4K ? "4K" : "HD"}
+            </span>
+          </div>
+        )}
+
+        {/* Child Count */}
+        {item.Type === "BoxSet" && item.ChildCount !== undefined && (
+          <div className="absolute top-1 right-1 z-20">
+            <span className="bg-[rgb(31,80,189)] text-white text-[10px] font-bold w-6 h-6 flex items-center justify-center rounded-full">
+              {item.ChildCount}
             </span>
           </div>
         )}
@@ -392,37 +258,6 @@ const MediaCard: React.FC<MediaCardProps> = ({
             />
           </div>
         )}
-
-        {/* <div
-          className={clsx(
-            isHorizontal
-              ? "flex-1 flex flex-col justify-center px-4 py-2"
-              : "absolute inset-0 flex flex-col justify-end p-3 text-start",
-            isHorizontal ? "" : "bg-gradient-to-t from-black/90 to-transparent",
-            touchDevice
-              ? "opacity-100"
-              : "opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-          )}
-        >
-          <CardContent
-            item={item}
-            isEpisode={isEpisode}
-            isMovie={isMovie}
-            isSeries={isSeries}
-            nextUoId={targetId}
-            seasonNum={seasonNum}
-            episodeNum={episodeNum}
-            showName={showName}
-            year={year}
-            rating={rating}
-            title={title}
-            navigate={navigate}
-            onCardClick={() => handleCardClick(item.Id)}
-            isBoxSet={isBoxSet}
-            boxSetFirstMovieId={boxSetFirstMovieId}
-            touchDevice={touchDevice}
-          />
-        </div> */}
       </div>
       <div className="mt-2 text-center">
         <h3 className="text-white font-medium text-xs md:text-sm truncate">

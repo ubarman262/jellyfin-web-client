@@ -157,6 +157,7 @@ export interface MediaItem {
     StartPositionTicks: number;
     EndPositionTicks: number;
   }>;
+  ChildCount?: number;
 }
 export interface Studios {
   Name: string;

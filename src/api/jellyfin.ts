@@ -12,7 +12,10 @@ import {
   RemoteSubtitleInfo,
   UserLogin,
 } from "../types/jellyfin";
-import MarlinSearchAPI, { createMarlinSearchClient } from "./marlin-search";
+import MarlinSearchAPI, {
+  createMarlinSearchClient,
+  SearchResponseResult,
+} from "./marlin-search";
 class JellyfinApi {
   private readonly serverUrl: string;
   private readonly apiKey?: string;
@@ -22,7 +25,7 @@ class JellyfinApi {
   private readonly deviceName: string;
   private readonly clientName: string;
   private readonly clientVersion: string;
-  private readonly marlinSearchClient?: MarlinSearchAPI;
+  private marlinSearchClient?: MarlinSearchAPI;
   private moviesParentId?: string;
   private seriesParentId?: string;
   private collectionsParentId?: string;
@@ -88,8 +91,30 @@ class JellyfinApi {
     // Initialize MarlinSearch if configured (check both config and localStorage)
     let marlinSearchUrl = config.marlinSearchUrl;
     let marlinSearchToken = config.marlinSearchToken;
+    let marlinSearchEnabled = marlinSearchUrl ? true : undefined;
 
-    // Check localStorage for marlinSearchConfig object
+    // Check localStorage for jellyfin_user_settings plugin config
+    try {
+      const storedSettings = localStorage.getItem("jellyfin_user_settings");
+      if (storedSettings) {
+        const parsedSettings = JSON.parse(storedSettings);
+        const plugin = parsedSettings?.plugins?.marlinSearch;
+        if (plugin) {
+          marlinSearchEnabled = plugin.enabled ?? marlinSearchEnabled;
+          if (plugin.config?.baseUrl) {
+            marlinSearchUrl = plugin.config.baseUrl;
+            marlinSearchToken = plugin.config.authToken;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "Failed to parse jellyfin_user_settings from localStorage:",
+        error,
+      );
+    }
+
+    // Fallback to legacy marlinSearchConfig if still present and no new config
     if (!marlinSearchUrl) {
       try {
         const storedConfig = localStorage.getItem("marlinSearchConfig");
@@ -97,6 +122,32 @@ class JellyfinApi {
           const parsedConfig = JSON.parse(storedConfig);
           marlinSearchUrl = parsedConfig.baseUrl;
           marlinSearchToken = parsedConfig.authToken;
+          marlinSearchEnabled = true;
+
+          const currentSettings = localStorage.getItem(
+            "jellyfin_user_settings",
+          );
+          const parsedSettings = currentSettings
+            ? JSON.parse(currentSettings)
+            : {};
+          const updated = {
+            ...parsedSettings,
+            plugins: {
+              ...parsedSettings?.plugins,
+              marlinSearch: {
+                enabled: true,
+                config: {
+                  baseUrl: marlinSearchUrl,
+                  authToken: marlinSearchToken,
+                },
+              },
+            },
+          };
+          localStorage.setItem(
+            "jellyfin_user_settings",
+            JSON.stringify(updated),
+          );
+          localStorage.removeItem("marlinSearchConfig");
         }
       } catch (error) {
         console.warn(
@@ -106,8 +157,8 @@ class JellyfinApi {
       }
     }
 
-    if (marlinSearchUrl) {
-      (this as any).marlinSearchClient = createMarlinSearchClient({
+    if (marlinSearchUrl && marlinSearchEnabled !== false) {
+      this.marlinSearchClient = createMarlinSearchClient({
         baseUrl: marlinSearchUrl,
         authToken: marlinSearchToken || undefined,
         timeout: 5000,
@@ -439,7 +490,9 @@ class JellyfinApi {
     // Try MarlinSearch first if available
     if (this.marlinSearchClient && isMarlinAvailable) {
       try {
-        const marlinResults = await this.marlinSearchClient.search(searchTerm);
+        const marlinResults = await this.marlinSearchClient.search(searchTerm, {
+          onlyIds: true,
+        });
 
         if (marlinResults.ids && marlinResults.ids.length > 0) {
           // Fetch full MediaItem details for each ID
@@ -487,7 +540,8 @@ class JellyfinApi {
         SearchTerm: searchTerm,
         Recursive: true,
         Limit: limit,
-        Fields: "PrimaryImageAspectRatio,CanDelete,MediaSourceCount, IsHD, Is4K",
+        Fields:
+          "PrimaryImageAspectRatio,CanDelete,MediaSourceCount, IsHD, Is4K",
         IncludeItemTypes: "Movie,Series",
         ImageTypeLimit: 1,
         EnableTotalRecordCount: false,
@@ -989,7 +1043,7 @@ class JellyfinApi {
       {
         // IncludeItemTypes: "BoxSet",
         Recursive: true,
-        Fields: "PrimaryImageTag,SortName",
+        Fields: "PrimaryImageTag,SortName,ChildCount",
         SortBy: "SortName",
         SortOrder: "Ascending",
         Limit: limit,
@@ -997,6 +1051,24 @@ class JellyfinApi {
         ParentId: this.collectionsParentId,
       },
     );
+  }
+
+  async findBoxSetItemsByChildId(
+    itemId: string,
+  ): Promise<SearchResponseResult | null> {
+    const isMarlinAvailable = await this.isMarlinSearchAvailable();
+    if (this.marlinSearchClient && isMarlinAvailable) {
+      try {
+        const marlinResults = await this.marlinSearchClient.search(itemId, {
+          includeItemTypes: "BoxSet",
+          attributesToRetrieve: "Id,Name",
+        });
+        return marlinResults;
+      } catch (error) {
+        console.warn("MarlinSearch failed. Unable to find BoxSet:", error);
+      }
+    }
+    return null;
   }
 
   /**
@@ -1047,15 +1119,15 @@ class JellyfinApi {
 
   /**
    * Get all movies in a BoxSet (collection).
-   * @param boxSetId The BoxSet (collection) ID.
+   * @param collectionId The BoxSet (collection) ID.
    */
-  async getBoxSetMovies(boxSetId: string): Promise<MediaItem[]> {
+  async getBoxSetMovies(collectionId: string): Promise<MediaItem[]> {
     const itemsResp = await this.makeRequest<ItemsResponse>(
       "get",
       `/Users/${this.userId}/Items`,
       undefined,
       {
-        ParentId: boxSetId,
+        ParentId: collectionId,
         IncludeItemTypes: "Movie",
         Recursive: false,
         Fields: "PrimaryImageTag,SortName",
@@ -1223,14 +1295,23 @@ class JellyfinApi {
       authToken: token,
     };
 
-    localStorage.setItem("marlinSearchConfig", JSON.stringify(config));
-    console.log(
-      "Saved to localStorage:",
-      localStorage.getItem("marlinSearchConfig"),
-    );
+    const raw = localStorage.getItem("jellyfin_user_settings");
+    const parsed = raw ? JSON.parse(raw) : {};
+    const updated = {
+      ...parsed,
+      plugins: {
+        ...parsed?.plugins,
+        marlinSearch: {
+          enabled: true,
+          config,
+        },
+      },
+    };
+    localStorage.setItem("jellyfin_user_settings", JSON.stringify(updated));
+    console.log("Saved to localStorage:", updated);
 
     // Reinitialize the client
-    (this as any).marlinSearchClient = createMarlinSearchClient({
+    this.marlinSearchClient = createMarlinSearchClient({
       baseUrl: url,
       authToken: token,
       timeout: 5000,
@@ -1241,8 +1322,20 @@ class JellyfinApi {
    * Remove MarlinSearch configuration
    */
   removeMarlinSearchConfig(): void {
-    localStorage.removeItem("marlinSearchConfig");
-    (this as any).marlinSearchClient = undefined;
+    const raw = localStorage.getItem("jellyfin_user_settings");
+    const parsed = raw ? JSON.parse(raw) : {};
+    const updated = {
+      ...parsed,
+      plugins: {
+        ...parsed?.plugins,
+        marlinSearch: {
+          enabled: false,
+          config: null,
+        },
+      },
+    };
+    localStorage.setItem("jellyfin_user_settings", JSON.stringify(updated));
+    this.marlinSearchClient = undefined;
   }
 
   /**
@@ -1315,6 +1408,18 @@ class JellyfinApi {
    */
   getSeriesParentId(): string | undefined {
     return this.seriesParentId;
+  }
+
+  getMarlinResultId(result: SearchResponseResult | null): string | null {
+    if (!result || !Array.isArray(result) || result.length === 0) return null;
+    const first = result[0] as { Id?: unknown };
+    return typeof first?.Id === "string" ? first.Id : null;
+  }
+
+  getMarlinResultTitle(result: SearchResponseResult | null): string | null {
+    if (!result || !Array.isArray(result) || result.length === 0) return null;
+    const first = result[0] as { Name?: unknown };
+    return typeof first?.Name === "string" ? first.Name : null;
   }
 }
 

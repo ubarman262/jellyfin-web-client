@@ -1,16 +1,16 @@
+import { ArrowLeft } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
-import ProfileSection from "../components/ui/profile/ProfileSection";
-import QuickConnectSection from "../components/ui/profile/QuickConnectSection";
 import DisplaySection from "../components/ui/profile/DisplaySection";
-import MarlinSearchSection from "../components/ui/profile/MarlinSearchSection";
 import HomeSection from "../components/ui/profile/HomeSection";
 import PlaybackSection from "../components/ui/profile/PlaybackSection";
-import SubtitlesSection from "../components/ui/profile/SubtitlesSection";
+import PluginsSection from "../components/ui/profile/PluginsSection";
+import ProfileSection from "../components/ui/profile/ProfileSection";
 import ProfileSectionsList, {
   ProfileSectionItem,
 } from "../components/ui/profile/ProfileSectionsList";
+import QuickConnectSection from "../components/ui/profile/QuickConnectSection";
+import SubtitlesSection from "../components/ui/profile/SubtitlesSection";
 import { useAuth } from "../context/AuthContext";
 
 const ProfilePage: React.FC = () => {
@@ -40,7 +40,7 @@ const ProfilePage: React.FC = () => {
       },
       { id: "Plugins", label: "Plugins", description: "Extensions" },
     ],
-    []
+    [],
   );
 
   const handleSignOut = async () => {
@@ -63,7 +63,7 @@ const ProfilePage: React.FC = () => {
       case "Subtitles":
         return <SubtitlesSection />;
       case "Plugins":
-        return <MarlinSearchSection />;
+        return <PluginsSection />;
       default:
         return null;
     }

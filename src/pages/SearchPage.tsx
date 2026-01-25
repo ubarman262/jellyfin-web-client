@@ -3,8 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import MediaCard from "../components/ui/MediaCard";
-import { useSearch } from "../hooks/useMediaData";
 import MediaRow from "../components/ui/MediaRow";
+import { useSearch } from "../hooks/useMediaData";
 
 const SearchPage: React.FC = () => {
   const location = useLocation();
@@ -106,7 +106,7 @@ const SearchPage: React.FC = () => {
                 <span className="text-sm text-white">Shuffle</span>
               </button>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="">
               {suggestions.map((item) => (
                 <div
                   key={item.Id}
@@ -122,16 +122,19 @@ const SearchPage: React.FC = () => {
 
         {/* Results */}
         {(() => {
+          const gridClasses =
+            "grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-6 gap-y-8";
+
           let resultsContent;
           if (isLoading) {
             resultsContent = (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {Array.from({ length: 12 }).map((_, i) => {
                   const uniqueKey = `skeleton-${Date.now()}-${i}`;
                   return (
                     <div
                       key={uniqueKey}
-                      className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
+                      className="w-[200px] aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
                     ></div>
                   );
                 })}
@@ -156,6 +159,7 @@ const SearchPage: React.FC = () => {
                     .filter((item) => item.Type === "Episode")
                     .map((item) => ({ ...item, Type: "EpisodeInSearch" }))}
                   isLoading={isLoading}
+                  isHorizontal
                 />
               </div>
             );
@@ -185,9 +189,7 @@ const SearchPage: React.FC = () => {
               {searchQuery && (
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-medium">
-                    {isLoading
-                      ? "Searching..."
-                      : `${totalResults} results`}
+                    {isLoading ? "Searching..." : `${totalResults} results`}
                   </h2>
                   {/* Remove duplicate count, keep only in heading */}
                 </div>

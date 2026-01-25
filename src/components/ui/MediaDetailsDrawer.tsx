@@ -1,14 +1,14 @@
 import {
   Calendar,
+  ChevronLeft,
   Clock,
   Download,
   Heart,
   Loader2,
   Star,
   X,
-  ChevronLeft,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isMobile } from "react-device-detect";
 import { Sheet } from "react-modal-sheet";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -18,7 +18,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useMediaItem } from "../../hooks/useMediaData";
 import activeItem from "../../states/atoms/ActiveItem";
 import isDrawerOpen from "../../states/atoms/DrawerOpen";
-import { DRAWER_PATHS, ItemsResponse, MediaItem } from "../../types/jellyfin";
+import { DRAWER_PATHS, MediaItem } from "../../types/jellyfin";
 import { formatRuntime } from "../../utils/formatters";
 import {
   getDirectors,
@@ -35,6 +35,7 @@ import MoreLikeThisSection from "./MoreLikeThisSection";
 import PlayButton from "./playButton";
 import SeriesDetailsSection from "./SeriesDetailsSection";
 import YouTubeWithProgressiveFallback from "./YouTubeWithProgressiveFallback";
+import MediaRow from "./MediaRow";
 
 const MediaDetailsDrawer = () => {
   const { api } = useAuth();
@@ -127,7 +128,7 @@ const MediaDetailsDrawer = () => {
       params.set("item", activeItemId);
       navigate(
         { pathname: basePath, search: params.toString() },
-        { replace: false }
+        { replace: false },
       );
     }
     // When modal closes, remove ?item from URL if present
@@ -137,7 +138,7 @@ const MediaDetailsDrawer = () => {
         DRAWER_PATHS.find((p) => location.pathname.startsWith(p)) ?? "/home";
       navigate(
         { pathname: basePath, search: params.toString() },
-        { replace: true }
+        { replace: true },
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,124 +146,40 @@ const MediaDetailsDrawer = () => {
 
   // Move these hooks to the top level, before any return/conditional
   const [movieTab, setMovieTab] = useState<"collection" | "more" | "trailers">(
-    "more"
+    "more",
   );
   const isMovie = useMemo(() => item?.Type === "Movie", [item]);
 
   // Track if the movie has a BoxSet
   const [hasBoxSet, setHasBoxSet] = useState(false);
+  const [userSelectedTab, setUserSelectedTab] = useState(false);
 
-  // --- Collection (BoxSet) and MoreLikeThis (Similar) state and cache ---
-  const [collectionItems, setCollectionItems] = useState<MediaItem[]>([]);
-  const [collectionLoading, setCollectionLoading] = useState(false);
-  const collectionCache = useRef<Record<string, MediaItem[]>>({});
+  // Reset user selection when active item changes
+  useEffect(() => {
+    setUserSelectedTab(false);
+  }, [activeItemId]);
 
-  const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
-  const [similarLoading, setSimilarLoading] = useState(false);
-  const similarCache = useRef<Record<string, MediaItem[]>>({});
+  // Default to Collection tab when a BoxSet exists (only before user interaction)
+  useEffect(() => {
+    if (userSelectedTab) return;
+    if (hasBoxSet) {
+      setMovieTab("collection");
+    } else {
+      setMovieTab("more");
+    }
+  }, [hasBoxSet, userSelectedTab]);
+
+  // --- Collection (BoxSet) state (managed in CollectionSection) ---
+  const [collectionTitle, setCollectionTitle] = useState<string>("Collection");
 
   // Add BoxSet tab state
   const isBoxSet = useMemo(() => item?.Type === "BoxSet", [item]);
   const [boxSetMovies, setBoxSetMovies] = useState<MediaItem[]>([]);
-  const [boxSetLoading, setBoxSetLoading] = useState(false);
   const boxSetCache = useRef<Record<string, MediaItem[]>>({});
 
-  // Fetch BoxSet movies when item changes and is a movie
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCollection = async () => {
-      if (!api || !item?.Id || !isMovie) {
-        setCollectionItems([]);
-        setCollectionLoading(false);
-        return;
-      }
-      // Check cache
-      if (collectionCache.current[item.Id]) {
-        setCollectionItems(collectionCache.current[item.Id]);
-        setCollectionLoading(false);
-        return;
-      }
-      setCollectionLoading(true);
-      try {
-        const foundBoxSet = await api.findBoxSetForItem(item);
-        if (!foundBoxSet) {
-          setCollectionItems([]);
-          setCollectionLoading(false);
-          return;
-        }
-        let movies = await api.getBoxSetMovies(foundBoxSet.Id);
-        movies = movies.slice().sort((a, b) => {
-          const aYear =
-            a.ProductionYear ??
-            (a.PremiereDate ? new Date(a.PremiereDate).getFullYear() : 0);
-          const bYear =
-            b.ProductionYear ??
-            (b.PremiereDate ? new Date(b.PremiereDate).getFullYear() : 0);
-          if (aYear !== bYear) return aYear - bYear;
-          if (a.PremiereDate && b.PremiereDate) {
-            return (
-              new Date(a.PremiereDate).getTime() -
-              new Date(b.PremiereDate).getTime()
-            );
-          }
-          return 0;
-        });
-        if (!cancelled) {
-          collectionCache.current[item.Id] = movies;
-          setCollectionItems(movies);
-        }
-      } catch {
-        if (!cancelled) setCollectionItems([]);
-      } finally {
-        if (!cancelled) setCollectionLoading(false);
-      }
-    };
-    fetchCollection();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, item, isMovie]);
+  // Collection logic moved to CollectionSection
 
-  // Fetch Similar items when item changes
-  useEffect(() => {
-    let cancelled = false;
-    const fetchSimilar = async () => {
-      if (!api || !item) {
-        setSimilarItems([]);
-        setSimilarLoading(false);
-        return;
-      }
-      const id = item.Type === "Episode" ? item.SeriesId : item.Id;
-      if (!id) {
-        setSimilarItems([]);
-        setSimilarLoading(false);
-        return;
-      }
-      // Check cache
-      if (similarCache.current[id]) {
-        setSimilarItems(similarCache.current[id]);
-        setSimilarLoading(false);
-        return;
-      }
-      setSimilarLoading(true);
-      try {
-        const res: ItemsResponse = await api.getSimilarItems(id, 12);
-        const filtered = res.Items.filter((m) => m.Id !== id);
-        if (!cancelled) {
-          similarCache.current[id] = filtered;
-          setSimilarItems(filtered);
-        }
-      } catch {
-        if (!cancelled) setSimilarItems([]);
-      } finally {
-        if (!cancelled) setSimilarLoading(false);
-      }
-    };
-    fetchSimilar();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, item]);
+  // Similar logic moved to MoreLikeThisSection
 
   // Fetch BoxSet movies when item is a BoxSet
   useEffect(() => {
@@ -270,16 +187,13 @@ const MediaDetailsDrawer = () => {
     const fetchBoxSetMovies = async () => {
       if (!api || !item?.Id || !isBoxSet) {
         setBoxSetMovies([]);
-        setBoxSetLoading(false);
         return;
       }
       // Check cache
       if (boxSetCache.current[item.Id]) {
         setBoxSetMovies(boxSetCache.current[item.Id]);
-        setBoxSetLoading(false);
         return;
       }
-      setBoxSetLoading(true);
       try {
         let movies = await api.getBoxSetMovies(item.Id);
         movies = movies.slice().sort((a, b) => {
@@ -304,8 +218,6 @@ const MediaDetailsDrawer = () => {
         }
       } catch {
         if (!cancelled) setBoxSetMovies([]);
-      } finally {
-        if (!cancelled) setBoxSetLoading(false);
       }
     };
     fetchBoxSetMovies();
@@ -345,7 +257,7 @@ const MediaDetailsDrawer = () => {
         setActiveItemId(newItemId);
       }
     },
-    [activeItemId, setActiveItemId]
+    [activeItemId, setActiveItemId],
   );
 
   // Back button handler
@@ -482,34 +394,34 @@ const MediaDetailsDrawer = () => {
                     <div
                       className="absolute left-8 z-20 flex items-end"
                       style={{
-                      bottom:
-                        item?.UserData?.PlaybackPositionTicks &&
-                        item?.RunTimeTicks
-                        ? 30
-                        : 15,
-                      width: isMobile ? "50vw" : "32%",
-                      minWidth: 100,
-                      maxWidth: 400,
-                      height: "auto",
-                      aspectRatio: "4/1",
-                      justifyContent: "flex-start",
+                        bottom:
+                          item?.UserData?.PlaybackPositionTicks &&
+                          item?.RunTimeTicks
+                            ? 30
+                            : 15,
+                        width: isMobile ? "50vw" : "32%",
+                        minWidth: 100,
+                        maxWidth: 400,
+                        height: "auto",
+                        aspectRatio: "4/1",
+                        justifyContent: "flex-start",
                       }}
                     >
                       <img
-                      src={itemLogo}
-                      alt={item ? `${item.Name} logo` : "logo"}
-                      style={{
-                        maxWidth: "100%",
-                        maxHeight: "90px",
-                        minHeight: "40px",
-                        width: "auto",
-                        height: "auto",
-                        objectFit: "contain",
-                        background: "rgba(0,0,0,0.0)",
-                        pointerEvents: "none",
-                        display: "block",
-                        margin: 0,
-                      }}
+                        src={itemLogo}
+                        alt={item ? `${item.Name} logo` : "logo"}
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "90px",
+                          minHeight: "40px",
+                          width: "auto",
+                          height: "auto",
+                          objectFit: "contain",
+                          background: "rgba(0,0,0,0.0)",
+                          pointerEvents: "none",
+                          display: "block",
+                          margin: 0,
+                        }}
                       />
                     </div>
                   ) : (
@@ -542,14 +454,14 @@ const MediaDetailsDrawer = () => {
                                 (item.UserData.PlaybackPositionTicks /
                                   item.RunTimeTicks) *
                                   100,
-                                100
+                                100,
                               )}%`,
                             }}
                           />
                         </div>
                         <div className="text-white text-xs font-medium whitespace-nowrap px-2 py-1 rounded">
                           {Math.round(
-                            item.UserData.PlaybackPositionTicks / 600000000
+                            item.UserData.PlaybackPositionTicks / 600000000,
                           )}{" "}
                           of {Math.round(item.RunTimeTicks / 600000000)}m
                         </div>
@@ -581,7 +493,7 @@ const MediaDetailsDrawer = () => {
                             itemId={
                               isBoxSet && boxSetMovies.length > 0
                                 ? boxSetMovies[0].Id
-                                : item?.Id ?? ""
+                                : (item?.Id ?? "")
                             }
                             type={item?.Type ?? ""}
                             // width={400}
@@ -647,13 +559,13 @@ const MediaDetailsDrawer = () => {
                                 try {
                                   await api.markAsFavourite(
                                     item.Id,
-                                    !isFavourite
+                                    !isFavourite,
                                   );
                                   setIsFavourite((prev) => !prev);
                                 } catch (err) {
                                   console.error(
                                     "Error toggling favorite:",
-                                    err
+                                    err,
                                   );
                                 }
                               }}
@@ -739,7 +651,7 @@ const MediaDetailsDrawer = () => {
                                 year: "numeric",
                                 month: "numeric",
                                 day: "numeric",
-                              }
+                              },
                             )}
                           </span>
                         )}
@@ -846,70 +758,61 @@ const MediaDetailsDrawer = () => {
                     </>
                   )}
 
-                  {/* Movie Tabs Section */}
+                  {/* Tabs Section */}
                   {(isMovie || isSeries) && (
                     <div className="mt-10">
                       {/* Tabs */}
-                      {collectionLoading || similarLoading ? (
-                        // Skeleton for the whole tabs section (tabs + content)
-                        <div>
-                          <div className="flex gap-4">
-                            {["one", "two", "three", "four", "five"].map(
-                              (label) => (
-                                <div
-                                  key={`skeleton-tab-${label}`}
-                                  className="w-[200px] h-[250px] bg-gray-800 rounded-lg animate-pulse"
-                                />
-                              )
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex border-b border-neutral-700 mb-4">
-                            {hasBoxSet && (
-                              <button
-                                className={`px-4 py-2 font-semibold ${
-                                  movieTab === "collection"
-                                    ? "border-b-2 border-red-600 text-white"
-                                    : "text-gray-400"
-                                }`}
-                                onClick={() => setMovieTab("collection")}
-                              >
-                                Collection
-                              </button>
-                            )}
-                            <button
-                              className={`px-4 py-2 font-semibold ${
-                                movieTab === "more"
-                                  ? "border-b-2 border-red-600 text-white"
-                                  : "text-gray-400"
-                              }`}
-                              onClick={() => setMovieTab("more")}
-                            >
-                              More Like This
-                            </button>
-                          </div>
-                          {/* Tab Content */}
-                          <div>
-                            {movieTab === "collection" && hasBoxSet && (
-                              <CollectionSection
-                                items={collectionItems}
-                                isLoading={collectionLoading}
-                                onSelectItem={handleSelectItem} // <-- pass handler
-                              />
-                            )}
-                            {movieTab === "more" && (
-                              <MoreLikeThisSection
-                                item={item}
-                                items={similarItems}
-                                isLoading={similarLoading}
-                                onSelectItem={handleSelectItem} // <-- pass handler
-                              />
-                            )}
-                          </div>
-                        </>
-                      )}
+                      <div className="flex border-b border-neutral-700 mb-4">
+                        {hasBoxSet && (
+                          <button
+                            className={`px-4 py-2 font-semibold ${
+                              movieTab === "collection"
+                                ? "border-b-2 border-red-600 text-white"
+                                : "text-gray-400"
+                            }`}
+                            onClick={() => {
+                              setUserSelectedTab(true);
+                              setMovieTab("collection");
+                            }}
+                          >
+                            {collectionTitle}
+                          </button>
+                        )}
+                        <button
+                          className={`px-4 py-2 font-semibold ${
+                            movieTab === "more"
+                              ? "border-b-2 border-red-600 text-white"
+                              : "text-gray-400"
+                          }`}
+                          onClick={() => {
+                            setUserSelectedTab(true);
+                            setMovieTab("more");
+                          }}
+                        >
+                          More Like This
+                        </button>
+                      </div>
+                      {/* Tab Content */}
+                      <div>
+                        <CollectionSection
+                          item={item}
+                          isMovie={isMovie}
+                          isActive={movieTab === "collection"}
+                          onCollectionStateChange={({
+                            hasBoxSet: nextHasBoxSet,
+                            title,
+                          }) => {
+                            setHasBoxSet(nextHasBoxSet);
+                            setCollectionTitle(title);
+                          }}
+                          onSelectItem={handleSelectItem} // <-- pass handler
+                        />
+                        <MoreLikeThisSection
+                          item={item}
+                          isActive={movieTab === "more"}
+                          onSelectItem={handleSelectItem} // <-- pass handler
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -917,10 +820,11 @@ const MediaDetailsDrawer = () => {
                   {(isSeries || isEpisode) &&
                     (item.SeriesId || item.SeriesName) && (
                       <SeriesDetailsSection
-                        api={api}
                         item={item}
                         seriesDetails={seriesDetails}
-                        onSelectSeries={(seriesId) => handleSelectItem(seriesId)}
+                        onSelectSeries={(seriesId) =>
+                          handleSelectItem(seriesId)
+                        }
                       />
                     )}
                   {/* --- End Series Details Section --- */}
@@ -930,14 +834,14 @@ const MediaDetailsDrawer = () => {
                     <div className="mt-10">
                       {/* Tabs for BoxSet */}
                       <h3 className="text-xl font-semibold text-white mb-4">
-                        Movies{" "}
-                        {boxSetMovies.length > 0 && `(${boxSetMovies.length})`}
+                        Movies
                       </h3>
                       {/* Tab Content */}
                       <div>
-                        <CollectionSection
+                        <MediaRow
+                          title=""
                           items={boxSetMovies}
-                          isLoading={boxSetLoading}
+                          isLoading={!boxSetMovies.length}
                           onSelectItem={handleSelectItem} // <-- pass handler
                         />
                       </div>
