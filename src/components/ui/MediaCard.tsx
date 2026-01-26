@@ -277,7 +277,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
     aspectClasses = "w-full aspect-[16/9]";
   } else if (isHorizontal) {
     aspectClasses =
-      "aspect-[16/7] min-h-[150px] max-h-[160px] flex-row flex border border-white/20";
+      "aspect-[16/8] min-h-[150px] max-h-[160px] flex-row flex border border-white/20";
   } else {
     aspectClasses = "w-full aspect-[2/3] z-10 border border-white/20";
   }
