@@ -24,10 +24,6 @@ const HeroSection: React.FC = () => {
   if (!featuredItems) {
     return (
       <div className="relative w-full h-[95vh] overflow-hidden mb-8">
-        {/* Arrow placeholders */}
-        <div className="absolute left-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 rounded-full bg-neutral-700/60 animate-pulse" />
-        <div className="absolute right-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 rounded-full bg-neutral-700/60 animate-pulse" />
-
         {/* Mobile skeleton */}
         <div className="md:hidden flex justify-center items-center h-full mx-4">
           <div className="relative w-full h-full aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/10 flex flex-col justify-end bg-neutral-800 animate-pulse" style={{ maxHeight: "80vh" }}>

@@ -21,7 +21,7 @@ const PageTemplate: React.FC<PageTemplateProps> = ({
 }) => {
   const resolvedChildren = isLoading
     ? loadingFallback ?? (
-        <div className="w-full h-[85vh] bg-neutral-800 animate-pulse"></div>
+        <div className="w-full bg-neutral-800 animate-pulse"></div>
       )
     : children;
 

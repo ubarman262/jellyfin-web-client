@@ -142,16 +142,11 @@ const YouTubeWithProgressiveFallback = ({
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
-            maxHeight: "80vh",
             objectFit: "cover",
             zIndex: 1,
           }}
         >
-          <ProgressiveImage
-            item={item}
-            src={backdropUrl}
-            onLoad={handleBackdropLoad}
-          />
+          <ProgressiveImage src={backdropUrl} onLoad={handleBackdropLoad} />
         </div>
       )}
       {youtubeId && !trailerEnded && backdropLoaded && (

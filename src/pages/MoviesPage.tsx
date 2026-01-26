@@ -1,11 +1,10 @@
-import clsx from "clsx";
+// import clsx from "clsx";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import PageTemplate from "../components/layout/PageTemplate";
+import FeaturedMediaOverlay from "../components/ui/FeaturedMediaOverlay";
 import MediaCard from "../components/ui/MediaCard";
-import MoreInfoButton from "../components/ui/moreInfoButton";
-import PlayButton from "../components/ui/playButton";
 import YouTubeWithProgressiveFallback from "../components/ui/YouTubeWithProgressiveFallback";
 import { useAuth } from "../context/AuthContext";
 import { useMediaData } from "../hooks/useMediaData";
@@ -75,8 +74,8 @@ const MoviesPage: React.FC = () => {
 
   const item = previewItem;
 
-  const officialRating = item?.OfficialRating ?? [];
-  const overview = item?.Overview ?? "";
+  // const officialRating = item?.OfficialRating ?? [];
+  // const overview = item?.Overview ?? "";
 
   // Fetch movies for current page/genre(s)
   const {
@@ -185,7 +184,7 @@ const MoviesPage: React.FC = () => {
     setPage(0);
   };
 
-  const setActiveTiemId = useSetRecoilState(activeItem);
+  const setActiveItemId = useSetRecoilState(activeItem);
   const [IsDrawerOpen, setIsDrawerOpen] = useRecoilState(drawerState);
   const playerRef = useRef<{ play: () => void; pause: () => void }>(null);
   const youtubeSectionRef = useRef<HTMLDivElement>(null);
@@ -312,94 +311,16 @@ const MoviesPage: React.FC = () => {
                 buttonPosition={{ bottom: "14rem", right: "12rem" }}
                 playerRef={playerRef}
               />
-              {/* Logo and Overview overlay */}
+              {/* Logo, Year, Genres, Overview, Rating overlay */}
               {api && item && (
-                <div className="absolute px-14 bottom-80 z-10 max-w-2xl">
-                  {item.ImageTags?.Logo ? (
-                    <img
-                      src={api.getImageUrl(item.Id, "Logo", 400)}
-                      alt={item.Name}
-                      className="max-h-20 md:max-h-28 w-auto object-contain mb-4"
-                      style={{ display: "inline-block" }}
-                    />
-                  ) : (
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                      {item.Name}
-                    </h1>
-                  )}
-                </div>
+                <FeaturedMediaOverlay
+                  item={item}
+                  genres={genres}
+                  setActiveItemId={setActiveItemId}
+                  setIsDrawerOpen={setIsDrawerOpen}
+                />
               )}
-              <div
-                className={clsx(
-                  "flex items-center gap-3 text-sm text-gray-300 transition-transform duration-700 delay-100 absolute px-14 bottom-72 z-10 max-w-2xl mb-2",
-                  "translate-y-0 opacity-100",
-                )}
-              >
-                {item.ProductionYear && <span>{item.ProductionYear}</span>}
-                {genres?.length > 0 && (
-                  <>
-                    <span className="w-1 h-1 rounded-full bg-gray-500" />
-                    <span>{genres.slice(0, 3).join(", ")}</span>
-                  </>
-                )}
-              </div>
-              <p
-                className={clsx(
-                  "text-sm text-gray-300 line-clamp-3 md:line-clamp-4 transition-transform duration-700 delay-200 md:w-3/5 absolute px-14 bottom-60 z-10 max-w-2xl mb-2",
-                  "translate-y-0 opacity-100",
-                )}
-                style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
-              >
-                {overview.split(" ").length > 20
-                  ? `${overview.split(" ").slice(0, 20).join(" ")}...`
-                  : overview}
-              </p>
-              <div className="absolute px-14 bottom-44 z-10 max-w-2xl flex gap-4">
-                <PlayButton
-                  itemId={item.Id}
-                  type={item.Type}
-                  width={200}
-                  height={50}
-                />
-                <MoreInfoButton
-                  onClick={() => {
-                    setActiveTiemId(item.Id);
-                    setIsDrawerOpen(true);
-                  }}
-                  width={200}
-                  height={50}
-                />
-              </div>
-              <div>
-                <span
-                  className="absolute right-0 bottom-[14rem] z-10 max-w-2xl w-40"
-                  style={{
-                    background: "rgba(55, 65, 81, 0.55)", // bg-gray-700/55
-                    color: "#fff",
-                    // borderRadius: "0.375rem", // rounded
-                    padding: "0.5rem 1.25rem", // px-5 py-2
-                    fontWeight: 500,
-                    fontSize: "1.25rem", // text-lg
-                    letterSpacing: "0.01em",
-                    display: "inline-block",
-                    borderLeft: "4px solid rgba(255,255,255,0.5)",
-                    backdropFilter: "blur(2px)",
-                  }}
-                >
-                  {officialRating}
-                </span>
-              </div>
             </div>
-            {/* Fade overlay between video and details */}
-            <div
-              className="absolute bottom-0 left-0 right-0 h-[200px] pointer-events-none"
-              style={{
-                background:
-                  "linear-gradient(to bottom, rgba(23,23,23,0) 0%, #171717 90%)",
-                zIndex: 10,
-                transition: "height 0.3s ease",
-              }}
-            />
           </div>
 
           <div className="px-14">
