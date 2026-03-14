@@ -324,9 +324,15 @@ export default function EpisodesList({
                   >
                     <img
                       src={
-                        ep.ImageTags?.Primary && api
-                          ? api.getImageUrl(ep.Id, "Primary", 400)
-                          : ""
+                        (() => {
+                          const hasPrimaryImage = !!ep.ImageTags?.Primary;
+                          if (hasPrimaryImage) {
+                            return api ? api.getImageUrl(ep.Id, "Primary", 400) : "";
+                          } else if (seriesId) {
+                            return api ? api.getImageUrl(seriesId, "Primary", 400) : "";
+                          } 
+                          return "";
+                        })()
                       }
                       alt={ep.Name}
                       className="w-full h-full object-cover"
@@ -450,9 +456,15 @@ export default function EpisodesList({
                   >
                     <img
                       src={
-                        ep.ImageTags?.Primary && api
-                          ? api.getImageUrl(ep.Id, "Primary", 400)
-                          : ""
+                        (() => {
+                          const hasPrimaryImage = !!ep.ImageTags?.Primary;
+                          if (hasPrimaryImage) {
+                            return api ? api.getImageUrl(ep.Id, "Primary", 400) : "";
+                          } else if (seriesId) {
+                            return api ? api.getImageUrl(seriesId, "Primary", 400) : "";
+                          } 
+                          return "";
+                        })()
                       }
                       alt={ep.Name}
                       className="w-full h-full object-cover"

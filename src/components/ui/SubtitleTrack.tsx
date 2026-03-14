@@ -327,7 +327,6 @@ const SubtitleTrack = ({
         className="absolute bottom-10 w-auto text-center text-white p-2 rounded"
         style={{
           left: "50%",
-          transform: "translateX(-50%)",
           fontSize: `${fontSize}px`,
           fontFamily,
           fontWeight,

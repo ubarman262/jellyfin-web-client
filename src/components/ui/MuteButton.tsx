@@ -45,8 +45,12 @@ function MuteButton({
           onClick={() => {
             setIsMuted((prev) => {
               if (player) {
-                if (!prev) player.mute();
-                else player.unMute();
+                try {
+                  if (!prev) player.mute();
+                  else player.unMute();
+                } catch (error) {
+                  console.error("Error toggling mute on YouTube video:", error);
+                }
               }
               return !prev;
             });

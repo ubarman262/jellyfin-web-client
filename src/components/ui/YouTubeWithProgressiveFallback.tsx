@@ -82,12 +82,20 @@ const YouTubeWithProgressiveFallback = ({
     playerRef,
     () => ({
       play: () => {
-        if (player && typeof player.playVideo === "function")
-          player.playVideo();
+        try {
+          if (player && typeof player.playVideo === "function")
+            player.playVideo();
+        } catch (error) {
+          console.error("Error playing YouTube video:", error);
+        }
       },
       pause: () => {
-        if (player && typeof player.pauseVideo === "function")
-          player.pauseVideo();
+        try {
+          if (player && typeof player.pauseVideo === "function")
+            player.pauseVideo();
+        } catch (error) {
+          console.error("Error pausing YouTube video:", error);
+        }
       },
     }),
     [player],
@@ -100,7 +108,7 @@ const YouTubeWithProgressiveFallback = ({
       setTrailerEnded(false);
       setBackdropLoaded(false);
 
-      if (!open || !item) return;
+      if (!item) return;
 
       const url = await fetchTrailerUrl(item, api);
       setTrailerUrl(url);

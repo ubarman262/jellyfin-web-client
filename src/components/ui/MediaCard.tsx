@@ -103,22 +103,17 @@ function getImageAsset(
 
   switch (item.Type) {
     case "Episode":
-      if (isHorizontal && item.SeriesId) {
-        return build("Thumb", item.SeriesId, true);
-      } else if (item.SeriesId) {
+      if (item.SeriesId && !isHorizontal) {
+        return build("Primary", item.SeriesId, true);
+      } else if (isHorizontal && hasPrimaryImage) {
+        return build("Primary", item.Id, false);
+      } else if (isHorizontal && item.SeriesId) {
         return build("Primary", item.SeriesId, true);
       }
       break;
     case "Series":
       if (hasPrimaryImage) {
         return build("Primary", item.Id, false);
-      }
-      break;
-    case "EpisodeInSearch":
-      if (hasPrimaryImage) {
-        return build("Primary", item.Id, false);
-      } else if (item.SeriesId) {
-        return build("Primary", item.SeriesId, true);
       }
       break;
     case "Movie":
@@ -199,10 +194,6 @@ const MediaCard: React.FC<MediaCardProps> = ({
   useEffect(() => {
     setTouchDevice(isTouchDevice());
   }, []);
-
-  useEffect(() => {
-    setIsImageLoaded(false);
-  }, [imageUrl]);
 
   useEffect(() => {
     if (!imageUrl) return;
@@ -330,7 +321,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
               src={imageUrl}
               alt={title}
               onLoad={() => setIsImageLoaded(true)}
-              onError={() => setIsImageLoaded(true)}
+              onError={() => setIsImageLoaded(false)}
               className={clsx(
                 isHorizontal
                   ? "object-cover h-full min-w-[300px]"
@@ -373,7 +364,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
         )}
 
         {progressPercent > 0 && (
-          <div className="absolute left-0 right-0 bottom-0 h-1 rounded-lg bg-[rgba(128,128,128,.5)] z-10 m-4">
+          <div className="absolute left-0 right-0 bottom-0 h-1 rounded-lg bg-[rgba(128,128,128,.5)] z-10">
             <div
               className="h-full bg-gray-50 rounded-lg transition-all"
               style={{ width: `${progressPercent}%` }}
@@ -383,7 +374,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
       </div>
       <div className="mt-2 text-center">
         <h3 className="text-white font-medium text-xs md:text-sm truncate">
-          {item.Name}
+          {item.Type === "Episode" ? item.SeriesName : item.Name}
         </h3>
         <p className="text-gray-400 text-[10px] md:text-xs truncate">
           {(() => {
@@ -395,8 +386,9 @@ const MediaCard: React.FC<MediaCardProps> = ({
               const episodeInfo = `S${item.ParentIndexNumber}:E${item.IndexNumber}`;
               const nameAppend = item.Name ? ` - ${item.Name}` : "";
               return episodeInfo + nameAppend;
+            } else {
+              return item.ProductionYear || item.SeriesName || "";
             }
-            return item.ProductionYear || item.SeriesName || "";
           })()}
         </p>
       </div>

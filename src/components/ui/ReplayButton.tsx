@@ -48,8 +48,12 @@ export default function ReplayButton({
             setTrailerStarted(false);
             // Seek to 0 and play again if player is available
             if (player && typeof player.seekTo === "function") {
-              player.seekTo(0);
-              player.playVideo();
+              try {
+                player.seekTo(0);
+                player.playVideo();
+              } catch (error) {
+                console.error("Error replaying YouTube video:", error);
+              }
             }
           }}
           aria-label="Replay Trailer"

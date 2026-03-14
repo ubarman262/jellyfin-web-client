@@ -69,14 +69,14 @@ const SearchPage: React.FC = () => {
           >
             <div className="relative flex-1 shadow-lg shadow-black/30 rounded-lg">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon size={20} className="text-gray-400" />
+                <SearchIcon size={20} className="text-gray-400" />
               </div>
               <input
-              type="text"
-              placeholder="Search the cosmic catalog..."
-              value={searchQuery}
-              onChange={handleInputChange}
-              className="bg-gray-800 w-full pl-10 pr-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-600"
+                type="text"
+                placeholder="Search the cosmic catalog..."
+                value={searchQuery}
+                onChange={handleInputChange}
+                className="bg-gray-800 w-full pl-10 pr-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
           </form>
@@ -140,9 +140,7 @@ const SearchPage: React.FC = () => {
                 />
                 <MediaRow
                   title="Episodes"
-                  items={results
-                    .filter((item) => item.Type === "Episode")
-                    .map((item) => ({ ...item, Type: "EpisodeInSearch" }))}
+                  items={results.filter((item) => item.Type === "Episode")}
                   isLoading={isLoading}
                   isHorizontal
                 />
