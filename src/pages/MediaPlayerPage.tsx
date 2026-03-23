@@ -1,36 +1,34 @@
 import clsx from "clsx";
 import Hls from "hls.js";
 import {
-  ChevronsLeft,
-  ChevronsRight,
   GalleryVerticalEnd,
   Maximize,
   Minimize,
   Pause,
+  PictureInPicture2,
   Play,
+  RotateCcw,
+  RotateCw,
+  Settings,
   SkipBack,
   SkipForward,
   Volume1,
   Volume2,
   VolumeX,
-  PictureInPicture2, // Add PiP icon
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSetRecoilState } from "recoil";
+import NewTabLink from "../assets/svg/new-tab-link.svg";
+import EpisodesList from "../components/ui/EpisodesList";
 import NextEpisodeButton from "../components/ui/nextEpisodeButton";
+import SubtitleEditModal from "../components/ui/SubtitleEditModal";
 import SubtitleTrack from "../components/ui/SubtitleTrack";
 import TracksMenu from "../components/ui/TracksMenu";
-import SubtitleEditModal from "../components/ui/SubtitleEditModal";
 import { useAuth } from "../context/AuthContext";
 import { useMediaItem } from "../hooks/useMediaData";
 import isDrawerOpen from "../states/atoms/DrawerOpen";
 import { MediaItem, MediaStream } from "../types/jellyfin";
-import SkipIntroButton from "../components/ui/skipIntroButton";
-import EpisodesList from "../components/ui/EpisodesList";
-import RewindIcon from "../assets/svg/rewind-10-seconds.svg";
-import ForwardIcon from "../assets/svg/forward-10-seconds.svg";
-import NewTabLink from "../assets/svg/new-tab-link.svg";
 
 interface VideoElementWithHls extends HTMLVideoElement {
   __hlsInstance?: Hls | null;
@@ -157,7 +155,7 @@ const MediaPlayerPage: React.FC = () => {
   const [subtitleEditModalOpen, setSubtitleEditModalOpen] = useState(false);
   const [localSubtitleUrl, setLocalSubtitleUrl] = useState<string | null>(null);
   const [localSubtitleName, setLocalSubtitleName] = useState<string | null>(
-    null
+    null,
   );
   const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null); // new state
   const [subtitleDelayMs, setSubtitleDelayMs] = useState(0);
@@ -169,6 +167,9 @@ const MediaPlayerPage: React.FC = () => {
   const [showEpisodesMenu, setShowEpisodesMenu] = useState(false);
   const episodesMenuRef = useRef<HTMLDivElement | null>(null);
   const episodesButtonRef = useRef<HTMLButtonElement | null>(null); // <-- add ref for the button
+
+  // Quality menu ref
+  const qualityMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [showOrientationOverlay, setShowOrientationOverlay] = useState(false);
 
@@ -203,6 +204,20 @@ const MediaPlayerPage: React.FC = () => {
     });
   };
 
+  // Video quality state
+  const [maxBitrate, setMaxBitrate] = useState<number | undefined>(undefined);
+
+  // Quality menu state
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+
+  const qualities = [
+    { label: "Original (Max Quality)", value: undefined },
+    { label: "1080p (10 Mbps)", value: 10000000 },
+    { label: "720p (4 Mbps)", value: 4000000 },
+    { label: "480p (1.5 Mbps)", value: 1500000 },
+    { label: "360p (720 kbps)", value: 720000 },
+  ];
+
   // Detect orientation for mobile devices
   useEffect(() => {
     function checkOrientation() {
@@ -212,7 +227,9 @@ const MediaPlayerPage: React.FC = () => {
         return;
       }
       // Use window.orientation or matchMedia
-      const landscape = globalThis.matchMedia("(orientation: landscape)").matches;
+      const landscape = globalThis.matchMedia(
+        "(orientation: landscape)",
+      ).matches;
       setShowOrientationOverlay(!landscape);
     }
     checkOrientation();
@@ -260,6 +277,20 @@ const MediaPlayerPage: React.FC = () => {
     };
   }, [showEpisodesMenu]);
 
+  useEffect(() => {
+    if (!showQualityMenu) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (qualityMenuRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      setShowQualityMenu(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showQualityMenu]);
+
   // Audio tracks state
   const [audioTracks, setAudioTracks] = useState<
     { id: number; label: string; language: string }[]
@@ -281,14 +312,14 @@ const MediaPlayerPage: React.FC = () => {
   const [nextEpisode, setNextEpisode] = useState<MediaItem | null>(null);
   // Previous episode state
   const [previousEpisode, setPreviousEpisode] = useState<MediaItem | null>(
-    null
+    null,
   );
   // Flag to force starting video from the beginning, e.g., for next/prev episode
   const [forceStartFromBeginning, setForceStartFromBeginning] = useState(false);
 
   // --- Intro skip state ---
   const [intro, setIntro] = useState<{ start: number; end: number } | null>(
-    null
+    null,
   );
   const [hasSkippedIntro, setHasSkippedIntro] = useState(false);
 
@@ -305,13 +336,13 @@ const MediaPlayerPage: React.FC = () => {
         n.includes("title sequence")
       );
     },
-    []
+    [],
   );
 
   // Improved: returns true if chapter is a "real" scene (not intro-like)
   const isNonIntroChapter = React.useCallback(
     (name: string | undefined): boolean => !isIntroChapter(name),
-    [isIntroChapter]
+    [isIntroChapter],
   );
 
   // Detect intro marker when item changes
@@ -326,13 +357,13 @@ const MediaPlayerPage: React.FC = () => {
 
       // Find all intro chapters
       const introChapters = chaptersWithIdx.filter((ch) =>
-        isIntroChapter(ch.Name)
+        isIntroChapter(ch.Name),
       );
       if (introChapters.length > 0) {
         const firstIntro = introChapters[0];
         const lastIntro = introChapters[introChapters.length - 1];
         const start = Math.floor(
-          (firstIntro.StartPositionTicks ?? 0) / 10000000
+          (firstIntro.StartPositionTicks ?? 0) / 10000000,
         );
 
         // Find the first non-intro chapter that occurs after the *first* intro chapter
@@ -392,7 +423,7 @@ const MediaPlayerPage: React.FC = () => {
   function setCookie(name: string, value: string, days: number) {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
     document.cookie = `${name}=${encodeURIComponent(
-      value
+      value,
     )}; expires=${expires}; path=/`;
   }
   function getCookie(name: string): string | null {
@@ -426,7 +457,7 @@ const MediaPlayerPage: React.FC = () => {
     let resumeTimeFromUserData = 0;
     if (item.UserData?.PlaybackPositionTicks) {
       resumeTimeFromUserData = Math.floor(
-        item.UserData.PlaybackPositionTicks / 10000000
+        item.UserData.PlaybackPositionTicks / 10000000,
       );
     }
 
@@ -487,7 +518,11 @@ const MediaPlayerPage: React.FC = () => {
       }
     };
 
-    const playbackUrl = api.getPlaybackUrl(item.Id, selectedAudioTrack);
+    const playbackUrl = api.getPlaybackUrl(
+      item.Id,
+      selectedAudioTrack,
+      maxBitrate,
+    );
 
     // --- Report "playing" to Jellyfin when a new video is loaded ---
     const playSessionId = `${api["deviceId"]}-${Date.now()}`;
@@ -565,7 +600,7 @@ const MediaPlayerPage: React.FC = () => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, item, selectedAudioTrack, forceStartFromBeginning]); // Added forceStartFromBeginning
+  }, [api, item, selectedAudioTrack, forceStartFromBeginning, maxBitrate]); // Added forceStartFromBeginning and maxBitrate
 
   // Report playback progress to Jellyfin
   useEffect(() => {
@@ -589,7 +624,7 @@ const MediaPlayerPage: React.FC = () => {
           item.Id,
           pos,
           selectedAudioTrack,
-          typeof selectedSubtitleIndex === "number" ? selectedSubtitleIndex : 0
+          typeof selectedSubtitleIndex === "number" ? selectedSubtitleIndex : 0,
         );
       }
       rafId = requestAnimationFrame(report);
@@ -727,7 +762,7 @@ const MediaPlayerPage: React.FC = () => {
     const newTime = videoRef.current.currentTime + seconds;
     videoRef.current.currentTime = Math.max(
       0,
-      Math.min(newTime, videoRef.current.duration)
+      Math.min(newTime, videoRef.current.duration),
     );
     // Show controls and increase hide delay to 5s when skipping
     setShowControls(true);
@@ -836,7 +871,7 @@ const MediaPlayerPage: React.FC = () => {
             ? null
             : selectedSubtitleIndex,
       }),
-      7
+      7,
     );
   }, [
     item,
@@ -868,6 +903,15 @@ const MediaPlayerPage: React.FC = () => {
   };
 
   const handleSetSelectedSubtitleTrackUI = (index: SubtitleIndex) => {
+    // If the same subtitle is selected again, force a quick toggle to trigger the cue refresh.
+    if (index === selectedSubtitleIndex) {
+      setSelectedSubtitleIndex(null);
+      setTimeout(() => {
+        setSelectedSubtitleIndex(index);
+      }, 50);
+      return;
+    }
+
     // If a new local subtitle is being activated, this function is called with "local".
     // If a server track or "Off" is selected, we just update the index.
     // The localSubtitleUrl and localSubtitleName should persist so the option remains in the menu.
@@ -981,13 +1025,6 @@ const MediaPlayerPage: React.FC = () => {
     }
   }, [nextEpisode, duration, currentTime]);
 
-  // Handler for skip intro
-  const handleSkipIntro = () => {
-    if (!videoRef.current || !intro) return;
-    videoRef.current.currentTime = intro.end;
-    setHasSkippedIntro(true);
-  };
-
   // Set Media Session metadata for iOS/iPadOS control center
   useEffect(() => {
     if (!item || !api) return;
@@ -1061,6 +1098,66 @@ const MediaPlayerPage: React.FC = () => {
 
   // Audio boost state
   const [audioBoost, setAudioBoost] = useState(1); // 1x, 2x, 4x, 6x
+  const nativeVolumeRef = React.useRef<number>(1);
+
+  const createAudioBoostContext = React.useCallback(() => {
+    const video = videoRef.current;
+    if (!video || video.audioContext || video.gainNode) return false;
+
+    try {
+      const AudioContext =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        globalThis.AudioContext || (globalThis as any).webkitAudioContext;
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaElementSource(video);
+      const gainNode = audioContext.createGain();
+
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      video.audioContext = audioContext;
+      video.gainNode = gainNode;
+      return true;
+    } catch (err) {
+      console.warn("Audio boost not supported (WebAudio init failed):", err);
+      return false;
+    }
+  }, []);
+
+  const applyAudioBoostValue = React.useCallback(async (gainValue: number) => {
+    const video = videoRef.current;
+    if (!video) return false;
+
+    if (!video.gainNode || !video.audioContext) {
+      const created = createAudioBoostContext();
+      if (!created) {
+        // Safari/iOS may not support gain>1; use max native gain as fallback.
+        video.muted = false;
+        video.volume = 1;
+        return false;
+      }
+    }
+
+    try {
+      if (video.audioContext?.state === "suspended") {
+        await video.audioContext.resume();
+      }
+
+      if (!video.muted) {
+        nativeVolumeRef.current = video.volume;
+      }
+      video.volume = 0; // mute native output while using WebAudio chain
+      video.muted = false;
+
+      video.gainNode!.gain.setValueAtTime(gainValue, video.audioContext!.currentTime);
+      return true;
+    } catch (err) {
+      console.warn("Audio boost application failed:", err);
+      video.muted = false;
+      video.volume = 1;
+      return false;
+    }
+  }, [createAudioBoostContext]);
 
   // Audio boost toggle handler
   const toggleAudioBoost = () => {
@@ -1068,47 +1165,36 @@ const MediaPlayerPage: React.FC = () => {
       const boostLevels = [1, 2, 4, 6];
       const currentIndex = boostLevels.indexOf(prev);
       const nextIndex = (currentIndex + 1) % boostLevels.length;
-      return boostLevels[nextIndex];
+      const nextBoost = boostLevels[nextIndex];
+
+      requestAnimationFrame(() => {
+        const video = videoRef.current;
+        if (nextBoost === 1) {
+          if (video) {
+            video.muted = false;
+            video.volume = nativeVolumeRef.current || 1;
+            if (video.gainNode && video.audioContext) {
+              try {
+                video.gainNode.gain.setValueAtTime(1, video.audioContext.currentTime);
+              } catch (err) {
+                console.warn("Failed to reset gain to 1:", err);
+              }
+            }
+          }
+        } else {
+          applyAudioBoostValue(nextBoost);
+        }
+      });
+
+      return nextBoost;
     });
   };
 
-  // Apply audio boost to video element
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // Create or update audio context for boost
     if (audioBoost !== 1) {
-      if (!video.audioContext) {
-        try {
-          const AudioContext =
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            globalThis.AudioContext || (globalThis as any).webkitAudioContext;
-          const audioContext = new AudioContext();
-          const source = audioContext.createMediaElementSource(video);
-          const gainNode = audioContext.createGain();
-
-          source.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-
-          video.audioContext = audioContext;
-          video.gainNode = gainNode;
-        } catch (err) {
-          console.warn("Audio boost not supported:", err);
-          return;
-        }
-      }
-
-      if (video.gainNode) {
-        video.gainNode.gain.setValueAtTime(
-          audioBoost,
-          video.audioContext.currentTime
-        );
-      }
-    } else if (video.gainNode && video.audioContext) {
-      video.gainNode.gain.setValueAtTime(1, video.audioContext.currentTime);
+      applyAudioBoostValue(audioBoost);
     }
-  }, [audioBoost]);
+  }, [audioBoost, applyAudioBoostValue]);
 
   // PiP toggle handler
   const togglePiP = async () => {
@@ -1152,7 +1238,7 @@ const MediaPlayerPage: React.FC = () => {
 
     // Remove all previous dynamic tracks
     Array.from(video.querySelectorAll("track[data-dynamic='true']")).forEach(
-      (t) => t.remove()
+      (t) => t.remove(),
     );
 
     // Only add if a subtitle is selected and PiP is active
@@ -1374,7 +1460,7 @@ const MediaPlayerPage: React.FC = () => {
         className={clsx(
           // Use fixed positioning and 100vw/100vh to prevent scrollbars on iPad/square screens
           "fixed inset-0 w-screen h-screen bg-black text-white overflow-hidden",
-          { "cursor-none": !showControls && isPlaying }
+          { "cursor-none": !showControls && isPlaying },
         )}
         onClick={handlePlayerClick}
         onMouseMove={handleMouseMove}
@@ -1455,7 +1541,7 @@ const MediaPlayerPage: React.FC = () => {
               videoEl={videoRef.current}
               localSubtitleFileUrl={
                 selectedSubtitleIndex === "local"
-                  ? localSubtitleUrl ?? undefined
+                  ? (localSubtitleUrl ?? undefined)
                   : undefined
               }
               subtitleDelayMs={subtitleDelayMs}
@@ -1467,21 +1553,6 @@ const MediaPlayerPage: React.FC = () => {
             />
           )}
         </div>
-        {/* Skip Intro Button */}
-        {intro &&
-          !hasSkippedIntro &&
-          currentTime >= intro.start &&
-          currentTime < intro.end && (
-            <div className="absolute bottom-[6rem] right-8 z-50 pointer-events-none">
-              <div className="pointer-events-auto">
-                <SkipIntroButton
-                  onClick={handleSkipIntro}
-                  width={150}
-                  height={50}
-                />
-              </div>
-            </div>
-          )}
 
         {/* Next Episode Button Overlay */}
         {nextEpisode && duration > 0 && duration - currentTime < 30 && (
@@ -1502,12 +1573,16 @@ const MediaPlayerPage: React.FC = () => {
             onClick={() => setShowXRay(false)}
           >
             <div
-              className="absolute left-4 top-[45%] transform -translate-y-1/2 max-w-sm w-full max-h-[80vh] overflow-y-auto scrollbar-hide"
+              className="absolute left-4 top-[10%] transform -translate-y-1/2 max-w-sm w-full max-h-[80vh] bg-[#171717]/50 text-white text-sm rounded-xl overflow-y-auto shadow-lg p-4 z-50 scrollbar-hide"
+              style={{
+                animation: "slideRight 0.3s ease-out forwards",
+                backdropFilter: "blur(20px) saturate(1)",
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               <div>
                 {/* Overview */}
-                <div className="mb-6 bg-black/60 p-4">
+                <div className="mb-6 p-4">
                   <div
                     className="cursor-pointer hover:bg-white/10 p-2 rounded transition-colors group mb-2"
                     onClick={() => {
@@ -1517,9 +1592,9 @@ const MediaPlayerPage: React.FC = () => {
                           : item.Name || "";
                       window.open(
                         `https://www.google.com/search?q=${encodeURIComponent(
-                          searchQuery
+                          searchQuery,
                         )}`,
-                        "_blank"
+                        "_blank",
                       );
                     }}
                   >
@@ -1576,10 +1651,9 @@ const MediaPlayerPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-
                 {/* Cast & Crew */}
                 {item.People && item.People.length > 0 && (
-                  <div className="mb-6 bg-black/60 p-4">
+                  <div className="mb-6 p-4">
                     <h4 className="text-md font-semibold mb-3">Cast & Crew</h4>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {item.People.slice(0, 10).map((person) => (
@@ -1589,9 +1663,9 @@ const MediaPlayerPage: React.FC = () => {
                           onClick={() =>
                             window.open(
                               `https://www.google.com/search?q=${encodeURIComponent(
-                                person.Name || ""
+                                person.Name || "",
                               )}`,
-                              "_blank"
+                              "_blank",
                             )
                           }
                         >
@@ -1601,7 +1675,7 @@ const MediaPlayerPage: React.FC = () => {
                                 person.Id,
                                 "Primary",
                                 40,
-                                60
+                                60,
                               )}
                               alt={person.Name}
                               className="w-8 h-12 object-cover rounded"
@@ -1627,20 +1701,18 @@ const MediaPlayerPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-
                 {/* Studios */}
                 {item.Studios && item.Studios.length > 0 && (
-                  <div className="mb-4 bg-black/60 p-4">
+                  <div className="mb-4 p-4">
                     <h4 className="text-md font-semibold mb-2">Studio</h4>
                     <p className="text-sm text-gray-300">
                       {item.Studios.map((studio) => studio.Name).join(", ")}
                     </p>
                   </div>
                 )}
-
                 {/* Series/Season Info for Episodes */}
                 {item.Type === "Episode" && (
-                  <div className="mb-4 bg-black/60 p-4">
+                  <div className="mb-4 p-4">
                     <h4 className="text-md font-semibold mb-2">Episode Info</h4>
                     <div className="text-sm space-y-1">
                       {item.SeriesName && (
@@ -1675,7 +1747,7 @@ const MediaPlayerPage: React.FC = () => {
           tabIndex={0}
           className={clsx(
             "absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90 transition-opacity duration-300 select-none cursor-default",
-            showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+            showControls ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           onDoubleClick={toggleFullscreen}
           onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling to the video
@@ -1695,22 +1767,6 @@ const MediaPlayerPage: React.FC = () => {
               minHeight: "56px",
             }}
           >
-            {/* X-Ray Button - positioned on the left */}
-            <button
-              onClick={() => setShowXRay(!showXRay)}
-              className={clsx(
-                "bg-black/60 hover:bg-black/80 text-white px-3 py-2 text-sm font-medium transition-all duration-200 border border-white/20 shadow-md",
-                showXRay && "bg-white/10 text-black"
-              )}
-              style={{
-                fontSize: "0.875rem",
-                minHeight: "32px",
-                outline: "none",
-              }}
-            >
-              X-Ray
-            </button>
-
             {/* Title in the center */}
             <div className="flex-1 text-center">
               {item.Type === "Episode" ? (
@@ -1782,11 +1838,11 @@ const MediaPlayerPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Center controls - mobile layout */}
+          {/* Center controls - Play and skip*/}
           {videoLoaded && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
               <div
-                className="flex flex-row items-center justify-center gap-10 sm:gap-20 pointer-events-auto"
+                className="flex flex-row items-center justify-center gap-32 sm:gap-56 pointer-events-auto"
                 style={{
                   marginBottom: "2rem",
                 }}
@@ -1794,62 +1850,36 @@ const MediaPlayerPage: React.FC = () => {
                 <button
                   onClick={() => skip(-10)}
                   onDoubleClick={(e) => e.stopPropagation()}
-                  className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
-                  style={{
-                    touchAction: "manipulation",
-                    minWidth: "56px",
-                    minHeight: "56px",
-                    outline: "none",
-                    backdropFilter: "blur(5px) saturate(1.5)",
-                  }}
+                  className="p-5 transition-colors"
+                  style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }}
                   tabIndex={0}
                   disabled={showOrientationOverlay}
                 >
-                  <img
-                    src={RewindIcon}
-                    alt="Rewind 10 seconds"
-                    className="w-8 h-8"
-                  />
+                  <RotateCcw size={40} color="white" />
                 </button>
                 <button
                   onClick={safeTogglePlay}
                   onDoubleClick={(e) => e.stopPropagation()}
-                  className="bg-white/30 hover:bg-white/40 rounded-full p-7 mx-2 transition-colors shadow-lg"
-                  style={{
-                    touchAction: "manipulation",
-                    minWidth: "72px",
-                    minHeight: "72px",
-                    outline: "none",
-                    backdropFilter: "blur(5px) saturate(1.5)",
-                  }}
+                  className="p-7 mx-2 transition-colors"
+                  style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }}
                   tabIndex={0}
                   disabled={showOrientationOverlay}
                 >
                   {isPlaying ? (
-                    <Pause size={40} strokeWidth="1.5" />
+                    <Pause size={40} fill="white" color="white" />
                   ) : (
-                    <Play size={40} strokeWidth="1.5" />
+                    <Play size={40} fill="white" color="white" />
                   )}
                 </button>
                 <button
                   onClick={() => skip(10)}
                   onDoubleClick={(e) => e.stopPropagation()}
-                  className="bg-white/30 hover:bg-white/40 rounded-full p-5 transition-colors shadow-lg"
-                  style={{
-                    touchAction: "manipulation",
-                    minWidth: "56px",
-                    minHeight: "56px",
-                    outline: "none",
-                    backdropFilter: "blur(5px) saturate(1.5)",
-                  }}
+                  className="p-5 transition-colors"
+                  style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }}
                   tabIndex={0}
                   disabled={showOrientationOverlay}
                 >
-                  <img
-                    src={ForwardIcon}
-                    alt="Forward 10 seconds"
-                    className="w-8 h-8"
-                  />
+                  <RotateCw size={40} color="white" />
                 </button>
               </div>
             </div>
@@ -1941,7 +1971,7 @@ const MediaPlayerPage: React.FC = () => {
               }}
             >
               <div
-                className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start"
+                className="flex items-center gap-7 w-full sm:w-auto justify-center sm:justify-start"
                 style={{ flexWrap: "wrap" }}
               >
                 {previousEpisode && (
@@ -1950,44 +1980,30 @@ const MediaPlayerPage: React.FC = () => {
                     className="text-white hover:text-gray-300 transition-colors"
                     title="Previous Episode"
                   >
-                    <SkipBack size={22} />
+                    <SkipBack size={24} fill="white" color="white" />
                   </button>
                 )}
                 <button
                   onClick={() => skip(-10)}
                   className="text-white hover:text-gray-300 transition-colors"
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    fontSize: "1.1rem",
-                    outline: "none",
-                  }}
                 >
-                  <ChevronsLeft size={28} />
+                  <RotateCcw size={24} color="white" />
                 </button>
                 <button
                   onClick={togglePlay}
                   className="text-white hover:text-gray-300 transition-colors"
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    fontSize: "1.1rem",
-                    outline: "none",
-                  }}
                 >
-                  {isPlaying ? <Pause size={28} /> : <Play size={28} />}
+                  {isPlaying ? (
+                    <Pause size={24} fill="white" color="white" />
+                  ) : (
+                    <Play size={24} fill="white" color="white" />
+                  )}
                 </button>
                 <button
                   onClick={() => skip(10)}
                   className="text-white hover:text-gray-300 transition-colors"
-                  style={{
-                    minWidth: "44px",
-                    minHeight: "44px",
-                    fontSize: "1.1rem",
-                    outline: "none",
-                  }}
                 >
-                  <ChevronsRight size={28} />
+                  <RotateCw size={24} color="white" />
                 </button>
                 {nextEpisode && (
                   <button
@@ -1995,7 +2011,7 @@ const MediaPlayerPage: React.FC = () => {
                     className="text-white hover:text-gray-300 transition-colors"
                     title="Next Episode"
                   >
-                    <SkipForward size={22} />
+                    <SkipForward size={24} fill="white" color="white" />
                   </button>
                 )}
                 <div
@@ -2014,11 +2030,17 @@ const MediaPlayerPage: React.FC = () => {
                     {(() => {
                       let volumeIcon;
                       if (isMuted) {
-                        volumeIcon = <VolumeX size={28} />;
+                        volumeIcon = (
+                          <VolumeX size={28} fill="white" color="white" />
+                        );
                       } else if (volume > 0.5) {
-                        volumeIcon = <Volume2 size={28} />;
+                        volumeIcon = (
+                          <Volume2 size={28} fill="white" color="white" />
+                        );
                       } else {
-                        volumeIcon = <Volume1 size={28} />;
+                        volumeIcon = (
+                          <Volume1 size={28} fill="white" color="white" />
+                        );
                       }
                       return volumeIcon;
                     })()}
@@ -2039,11 +2061,11 @@ const MediaPlayerPage: React.FC = () => {
                   />
                 </div>
                 {/* Audio Boost Button */}
-                <button
+                {/* <button
                   onClick={toggleAudioBoost}
                   className={clsx(
                     "w-2 text-white transition-colors text-xs font-bold px-2 py-1 border-2 border-white cursor-pointer rounded",
-                    audioBoost > 1 && "bg-white/20 text-red-200"
+                    audioBoost > 1 && "bg-white/20 text-red-200",
                   )}
                   title={`Audio Boost: ${audioBoost}x`}
                   style={{
@@ -2054,6 +2076,21 @@ const MediaPlayerPage: React.FC = () => {
                   }}
                 >
                   {audioBoost}x
+                </button> */}
+                {/* X-Ray Button */}
+                <button
+                  onClick={() => setShowXRay(!showXRay)}
+                  className={clsx(
+                    "bg-black/60 hover:bg-black/80 text-white px-3 py-2 text-sm font-medium transition-all duration-200 border border-white/20 shadow-md",
+                    showXRay && "bg-white/10 text-black",
+                  )}
+                  style={{
+                    fontSize: "0.875rem",
+                    minHeight: "32px",
+                    outline: "none",
+                  }}
+                >
+                  X-Ray
                 </button>
               </div>
               <div
@@ -2101,7 +2138,7 @@ const MediaPlayerPage: React.FC = () => {
                   onClick={togglePiP}
                   className={clsx(
                     "text-white hover:text-gray-300 transition-colors",
-                    isPiP && "opacity-70"
+                    isPiP && "opacity-70",
                   )}
                   title="Picture in Picture"
                   disabled={
@@ -2111,6 +2148,47 @@ const MediaPlayerPage: React.FC = () => {
                 >
                   <PictureInPicture2 size={28} />
                 </button>
+                {/* Quality Button */}
+                <div className="flex" ref={qualityMenuRef}>
+                  <button
+                    onClick={() => setShowQualityMenu(!showQualityMenu)}
+                    className="text-white hover:text-gray-300 transition-colors"
+                    title="Video Quality"
+                  >
+                    <Settings size={28} />
+                  </button>
+                  {showQualityMenu && (
+                    <div className="absolute right-0 bottom-10 w-[420px] bg-neutral-900 text-white text-sm rounded shadow-lg p-2 z-50 flex flex-row gap-4">
+                      <div className="flex-1 min-w-[180px]">
+                        <h3 className="text-xs uppercase tracking-wide text-neutral-400 px-2 pb-2 border-b border-neutral-700">
+                          Video Quality
+                        </h3>
+                        <ul className="py-1 max-h-60 overflow-y-auto">
+                          {qualities.map((quality) => (
+                            <li key={quality.label}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMaxBitrate(quality.value);
+                                  setShowQualityMenu(false);
+                                }}
+                                className={clsx(
+                                  "w-full flex items-center justify-between px-3 py-2 cursor-pointer rounded text-left",
+                                  maxBitrate === quality.value
+                                    ? "font-semibold bg-[#ef4444]"
+                                    : "hover:bg-white/10",
+                                )}
+                                aria-pressed={maxBitrate === quality.value}
+                              >
+                                <span>{quality.label}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={toggleFullscreen}
                   className="text-white hover:text-gray-300 transition-colors"
@@ -2144,20 +2222,6 @@ const MediaPlayerPage: React.FC = () => {
                     />
                   </div>
                 )}
-                <style>
-                  {`
-                @keyframes slideUp {
-                  from {
-                    transform: translateY(100%);
-                    opacity: 0;
-                  }
-                  to {
-                    transform: translateY(0);
-                    opacity: 1;
-                  }
-                }
-                `}
-                </style>
               </>
             )}
           </div>

@@ -605,7 +605,7 @@ class JellyfinApi {
     );
   }
 
-  getPlaybackUrl(itemId: string, audioStreamIndex: number = 0): string {
+  getPlaybackUrl(itemId: string, audioStreamIndex: number = 0, videoBitrate?: number): string {
     const params = new URLSearchParams({
       DeviceId: this.deviceId,
       MediaSourceId: itemId,
@@ -613,7 +613,7 @@ class JellyfinApi {
       VideoCodec: "av1,hevc,h264,vp9",
       AudioCodec: "aac",
       AudioStreamIndex: audioStreamIndex.toString(),
-      VideoBitrate: "139616000",
+      VideoBitrate: (videoBitrate ?? 139616000).toString(),
       AudioBitrate: "384000",
       MaxFramerate: "23.976025",
       PlaySessionId: `${this.deviceId}-${Date.now()}`,

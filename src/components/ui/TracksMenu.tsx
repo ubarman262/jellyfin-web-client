@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Captions, Save } from "lucide-react";
+import { Captions, Save, Search } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { LANGUAGE_MAP, MediaStream } from "../../types/jellyfin";
 
@@ -83,6 +83,19 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
     return map[code?.toLowerCase()] || code;
   };
 
+  // Force reselect action for subtitle tracks to ensure updates when re-selecting the same track
+  const handleSubtitleSelection = (index: number | string | null) => {
+    if (index === selectedSubtitleIndex) {
+      setSelectedSubtitleIndex(null);
+      setTimeout(() => {
+        setSelectedSubtitleIndex(index);
+      }, 50);
+    } else {
+      setSelectedSubtitleIndex(index);
+    }
+    // setIsOpen(false); -- Don't close the menu immediately to allow users to adjust subtitle delay and font size after selecting a track
+  };
+
   return (
     <div className="flex" ref={menuRef}>
       <button
@@ -140,31 +153,31 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
               Subtitles
             </h3>
 
-            {/* Subtitle Edit Button */}
-            <button
-              onClick={() => {
-                onOpenSubtitleEditModal();
-                setIsOpen(false);
-              }}
-              className="w-full text-left px-3 py-2 hover:bg-white/10 rounded transition-colors text-sm border border-gray-600 flex items-center gap-2 mb-2"
-            >
-              Search Subtitles
-            </button>
+            {/* Subtitle Edit Button and Upload Label in same row */}
+            <div className="flex gap-2 mt-2 mb-2 pb-2 border-b border-neutral-700">
+              <button
+                onClick={() => {
+                  onOpenSubtitleEditModal();
+                  setIsOpen(false);
+                }}
+                className="flex-1 text-left px-3 py-2 hover:bg-white/10 rounded transition-colors text-sm flex items-center gap-2"
+              >
+                <Search size={16} />
+                Search Subtitles
+              </button>
+            </div>
 
             <div className="my-2" />
             <ul className="py-1 max-h-40 overflow-y-auto">
               <li>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedSubtitleIndex(null);
-                    setIsOpen(false);
-                  }}
                   className={clsx(
                     "w-full flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white/10 rounded text-left",
                     selectedSubtitleIndex === null && "font-semibold",
                   )}
                   aria-pressed={selectedSubtitleIndex === null}
+                  onClick={() => handleSubtitleSelection(null)}
                 >
                   <span>Off</span>
                 </button>
@@ -173,10 +186,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                 <li key="local-subtitle-item">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedSubtitleIndex("local");
-                      setIsOpen(false);
-                    }}
+                    onClick={() => handleSubtitleSelection("local")}
                     className={clsx(
                       "w-full flex items-center justify-between px-3 py-2 cursor-pointer rounded text-left",
                       selectedSubtitleIndex === "local"
@@ -222,10 +232,7 @@ const TracksMenu: React.FC<TracksMenuProps> = ({
                     <li key={track.Index}>
                       <button
                         type="button"
-                        onClick={() => {
-                          setSelectedSubtitleIndex(track.Index);
-                          setIsOpen(false);
-                        }}
+                        onClick={() => handleSubtitleSelection(track.Index)}
                         className={clsx(
                           "w-full flex items-center justify-between px-3 py-2 cursor-pointer rounded text-left",
                           selectedSubtitleIndex === track.Index

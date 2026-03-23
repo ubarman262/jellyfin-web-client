@@ -164,6 +164,7 @@ export interface MediaItem {
     EndPositionTicks: number;
   }>;
   ChildCount?: number;
+  MediaSources?: MediaSource[];
 }
 export interface Studios {
   Name: string;
@@ -331,6 +332,7 @@ export interface MediaStream {
   DisplayLanguage?: string;
   NalLengthSize?: string;
   Title?: string;
+  IsTextSubtitleStream?: boolean;
 }
 
 export interface MediaAttachment {
