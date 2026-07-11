@@ -28,6 +28,12 @@ body {
     Helvetica,
     Arial,
     sans-serif;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+html, body {
+  height: 100%;
 }
 
 .navbar-class {
@@ -98,10 +104,12 @@ video:focus {
 }
 
 video::cue {
-  background-color: rgba(0, 0, 0, 0.473);
-  color: white;
-  font-size: 26px;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8);
+  background-color: var(--subtitle-bg-color, rgba(0, 0, 0, 0.473));
+  color: var(--subtitle-color, white);
+  font-size: var(--subtitle-font-size, 26px);
+  text-shadow: var(--subtitle-text-shadow, 0 1px 1px rgba(0, 0, 0, 0.8));
+  padding: var(--subtitle-padding, 0.25em 0.5em);
+  border-radius: var(--subtitle-border-radius, 0.35rem);
   margin-bottom: 20px;
 }
 

@@ -35,6 +35,17 @@ interface EpisodesListProps {
   variant?: "vertical" | "horizontal";
 }
 
+const seasonCache = new Map<string, Season[]>();
+const episodeCache = new Map<string, Episode[]>();
+
+function buildWatchedMap(episodes: Episode[]) {
+  const watchedMap: { [id: string]: boolean } = {};
+  episodes.forEach((ep) => {
+    watchedMap[ep.Id] = !!ep.UserData?.Played;
+  });
+  return watchedMap;
+}
+
 export default function EpisodesList({
   seriesId,
   initialSeasonId,
@@ -44,12 +55,15 @@ export default function EpisodesList({
   const { api } = useAuth();
   const navigate = useNavigate();
 
-  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [seasons, setSeasons] = useState<Season[]>(() => seasonCache.get(seriesId) ?? []);
   const [seasonsLoading, setSeasonsLoading] = useState(false);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(
     initialSeasonId ?? null
   );
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [episodes, setEpisodes] = useState<Episode[]>(() => {
+    if (!seriesId || !initialSeasonId) return [];
+    return episodeCache.get(`${seriesId}:${initialSeasonId}`) ?? [];
+  });
   const [episodesLoading, setEpisodesLoading] = useState(false);
   const [downloadLoadingMap, setDownloadLoadingMap] = useState<{
     [id: string]: boolean;
@@ -186,18 +200,35 @@ export default function EpisodesList({
       setSelectedSeasonId(null);
       return;
     }
+
+    const cachedSeasons = seasonCache.get(seriesId);
+    if (cachedSeasons) {
+      setSeasons(cachedSeasons);
+      if (!selectedSeasonId) {
+        const season1 = cachedSeasons.find((s) => s.IndexNumber === 1);
+        const fallbackSeason = season1 ?? cachedSeasons[0];
+        if (fallbackSeason) {
+          setSelectedSeasonId(fallbackSeason.Id);
+        }
+      }
+      setSeasonsLoading(false);
+      return;
+    }
+
     setSeasonsLoading(true);
     api
       .getSeasons(seriesId)
       .then((items: Season[]) => {
-        setSeasons(items);
-        if (!items || items.length === 0) {
+        const normalizedItems = items || [];
+        seasonCache.set(seriesId, normalizedItems);
+        setSeasons(normalizedItems);
+        if (!normalizedItems.length) {
           setSelectedSeasonId(null);
           return;
         }
         // Check if user is watching the series (has a next up episode)
         return api.getSeriesNextUp(seriesId, 1).then((nextUp: MediaItem[]) => {
-          selectSeasonBasedOnNextUp(items, nextUp, setSelectedSeasonId);
+          selectSeasonBasedOnNextUp(normalizedItems, nextUp, setSelectedSeasonId);
         });
       })
       .catch(() => {
@@ -205,34 +236,43 @@ export default function EpisodesList({
         setSelectedSeasonId(null);
       })
       .finally(() => setSeasonsLoading(false));
-  }, [api, seriesId]);
+  }, [api, seriesId, selectedSeasonId]);
 
   // Fetch episodes for selected season
   useEffect(() => {
-    if (!api || !seriesId || !selectedSeasonId) {
-      setEpisodes([]);
-      setWatchedMap({});
+    if (!api || !seriesId || !selectedSeasonId || seasonsLoading) {
+      if (!selectedSeasonId) {
+        setEpisodes([]);
+        setWatchedMap({});
+      }
       setEpisodesLoading(false);
       return;
     }
+
+    const cacheKey = `${seriesId}:${selectedSeasonId}`;
+    const cachedEpisodes = episodeCache.get(cacheKey);
+    if (cachedEpisodes) {
+      setEpisodes(cachedEpisodes);
+      setWatchedMap(buildWatchedMap(cachedEpisodes));
+      setEpisodesLoading(false);
+      return;
+    }
+
     setEpisodesLoading(true);
     api
       .getEpisodes(seriesId, selectedSeasonId)
       .then((eps: Episode[]) => {
-        setEpisodes(eps || []);
-        // Initialize watched state map
-        const newWatchedMap: { [id: string]: boolean } = {};
-        eps?.forEach((ep) => {
-          newWatchedMap[ep.Id] = !!ep.UserData?.Played;
-        });
-        setWatchedMap(newWatchedMap);
+        const normalizedEpisodes = eps || [];
+        episodeCache.set(cacheKey, normalizedEpisodes);
+        setEpisodes(normalizedEpisodes);
+        setWatchedMap(buildWatchedMap(normalizedEpisodes));
       })
       .catch(() => {
         setEpisodes([]);
         setWatchedMap({});
       })
       .finally(() => setEpisodesLoading(false));
-  }, [api, seriesId, selectedSeasonId]);
+  }, [api, seriesId, selectedSeasonId, seasonsLoading]);
 
   // Extract episodes list rendering logic into a variable
   let episodesListContent: JSX.Element;

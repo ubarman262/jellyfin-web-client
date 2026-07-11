@@ -324,6 +324,22 @@ class JellyfinApi {
     return !!this.accessToken && !!this.userId;
   }
 
+  getServerUrl(): string {
+    return this.serverUrl;
+  }
+
+  getUserId(): string | undefined {
+    return this.userId;
+  }
+
+  getAccessToken(): string | undefined {
+    return this.accessToken;
+  }
+
+  getDeviceId(): string {
+    return this.deviceId;
+  }
+
   async getResumeItems(limit: number = 16): Promise<MediaItem[]> {
     return this.makeRequest<ItemsResponse>(
       "get",
