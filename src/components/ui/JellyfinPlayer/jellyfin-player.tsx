@@ -1,53 +1,62 @@
-import { useEffect, useMemo, useRef, useState, useCallback, type CSSProperties } from "react";
-import Hls from "hls.js";
-import {
-  Play,
-  Pause,
-  RotateCcw,
-  RotateCw,
-  Volume2,
-  VolumeX,
-  ArrowLeft,
-  Settings as SettingsIcon,
-  Subtitles,
-  PictureInPicture2,
-  Maximize,
-  Minimize,
-  X,
-  Check,
-  Search,
-  ListVideo,
-  ChevronDown,
-  Loader2,
-  SkipBack,
-  SkipForward,
-  PlayCircle,
-  PauseCircle,
-  VolumeOff,
-  Cog,
-  Sliders,
-  Captions,
-  MessageSquareText,
-  PictureInPicture,
-  Maximize2,
-  Minimize2,
-  CircleX,
-  CheckCircle2,
-  Tv,
-  LoaderCircle,
-  Users,
-  UsersRound,
-  type LucideIcon,
-} from "lucide-react";
-import EpisodesList from "../EpisodesList";
 import * as Popover from "@radix-ui/react-popover";
 import * as Slider from "@radix-ui/react-slider";
+import Hls from "hls.js";
+import {
+  ArrowLeft,
+  Captions,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  CircleX,
+  Cog,
+  ListVideo,
+  Loader2,
+  LoaderCircle,
+  Maximize,
+  Maximize2,
+  MessageSquareText,
+  Minimize,
+  Minimize2,
+  Pause,
+  PauseCircle,
+  PictureInPicture,
+  PictureInPicture2,
+  Play,
+  PlayCircle,
+  RotateCcw,
+  RotateCw,
+  Search,
+  Settings as SettingsIcon,
+  SkipBack,
+  SkipForward,
+  Sliders,
+  Subtitles,
+  Tv,
+  Users,
+  UsersRound,
+  Volume2,
+  VolumeOff,
+  VolumeX,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import EpisodesList from "../EpisodesList";
 
 export type IconKey =
   | "play"
   | "pause"
   | "skipBack"
   | "skipForward"
+  | "next"
+  | "previous"
   | "volumeOn"
   | "volumeOff"
   | "settings"
@@ -71,6 +80,8 @@ const BASE_ICONS: IconSet = {
   pause: Pause,
   skipBack: RotateCcw,
   skipForward: RotateCw,
+  next: SkipForward,
+  previous: SkipBack,
   volumeOn: Volume2,
   volumeOff: VolumeX,
   settings: SettingsIcon,
@@ -88,7 +99,13 @@ const BASE_ICONS: IconSet = {
   xray: Users,
 };
 
-export type IconThemeName = "default" | "minimal" | "bold" | "classic" | "filled" | "rounded";
+export type IconThemeName =
+  | "default"
+  | "minimal"
+  | "bold"
+  | "classic"
+  | "filled"
+  | "rounded";
 
 interface IconThemeDef {
   icons: IconSet;
@@ -148,14 +165,19 @@ export type IconThemeInput =
 
 function resolveIconTheme(theme: IconThemeInput | undefined): IconThemeDef {
   if (!theme) return ICON_THEMES.default;
-  if (typeof theme === "string") return ICON_THEMES[theme] ?? ICON_THEMES.default;
+  if (typeof theme === "string")
+    return ICON_THEMES[theme] ?? ICON_THEMES.default;
   if ("overrides" in theme) {
-    const base = theme.base ? ICON_THEMES[theme.base] ?? ICON_THEMES.default : ICON_THEMES.default;
-    return { icons: { ...base.icons, ...theme.overrides }, strokeWidth: base.strokeWidth };
+    const base = theme.base
+      ? (ICON_THEMES[theme.base] ?? ICON_THEMES.default)
+      : ICON_THEMES.default;
+    return {
+      icons: { ...base.icons, ...theme.overrides },
+      strokeWidth: base.strokeWidth,
+    };
   }
   return { icons: { ...BASE_ICONS, ...theme }, strokeWidth: 2 };
 }
-
 
 /**
  * Reusable Jellyfin video player.
@@ -260,13 +282,16 @@ type SubtitleSizeOption = "small" | "medium" | "large";
 const SUBTITLE_STYLE_KEY = "jellyfin-player-subtitle-style";
 const SUBTITLE_SIZE_KEY = "jellyfin-player-subtitle-size";
 
-const SUBTITLE_STYLE_PRESETS: Record<SubtitleStyleOption, {
-  label: string;
-  background: string;
-  textShadow: string;
-  padding: string;
-  borderRadius: string;
-}> = {
+const SUBTITLE_STYLE_PRESETS: Record<
+  SubtitleStyleOption,
+  {
+    label: string;
+    background: string;
+    textShadow: string;
+    padding: string;
+    borderRadius: string;
+  }
+> = {
   default: {
     label: "Default",
     background: "rgba(0, 0, 0, 0.47)",
@@ -283,18 +308,23 @@ const SUBTITLE_STYLE_PRESETS: Record<SubtitleStyleOption, {
   },
   shadow: {
     label: "Shadow",
-    background: "rgba(0, 0, 0, 0.12)",
+    background: "transparent",
     textShadow: "0 2px 3px rgba(0, 0, 0, 0.85)",
-    padding: "0.2em 0.35em",
-    borderRadius: "0.25rem",
+    padding: "0",
+    borderRadius: "0",
   },
 };
 
-const SUBTITLE_SIZE_PRESETS: Record<SubtitleSizeOption, { label: string; fontSize: string }> = {
+const SUBTITLE_SIZE_PRESETS: Record<
+  SubtitleSizeOption,
+  { label: string; fontSize: string }
+> = {
   small: { label: "Small", fontSize: "18px" },
   medium: { label: "Medium", fontSize: "26px" },
   large: { label: "Large", fontSize: "34px" },
 };
+
+const BOTTOM_CONTROL_ICON_CLASS = "h-6 w-6";
 
 interface ItemResponse {
   Id?: string;
@@ -385,7 +415,11 @@ function selectHlsAudioTrack(
   if (match < 0 && selectedLabel) {
     match = tracks.findIndex((track) => {
       const name = normalizeTrackText(track.name);
-      return name === selectedLabel || name.includes(selectedLabel) || selectedLabel.includes(name);
+      return (
+        name === selectedLabel ||
+        name.includes(selectedLabel) ||
+        selectedLabel.includes(name)
+      );
     });
   }
 
@@ -397,7 +431,9 @@ function selectHlsAudioTrack(
   }
 
   if (match < 0) {
-    const streamOrder = audioStreams.findIndex((stream) => stream.Index === selected.Index);
+    const streamOrder = audioStreams.findIndex(
+      (stream) => stream.Index === selected.Index,
+    );
     if (streamOrder >= 0 && streamOrder < tracks.length) match = streamOrder;
   }
 
@@ -478,13 +514,26 @@ export function JellyfinPlayer({
     }
   }, [activeItemId, startPositionSeconds]);
 
-  const [playbackInfo, setPlaybackInfo] = useState<PlaybackInfoResponse | null>(null);
+  const [playbackInfo, setPlaybackInfo] = useState<PlaybackInfoResponse | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Series/episodes metadata. Populated when the current item is an Episode.
   const [itemMeta, setItemMeta] = useState<ItemResponse | null>(null);
+  const [previousEpisode, setPreviousEpisode] = useState<ItemResponse | null>(
+    null,
+  );
+  const [nextEpisode, setNextEpisode] = useState<ItemResponse | null>(null);
+  // Episode navigation should begin at the start instead of resuming a saved
+  // position from the episode being left.
+  const [startFromBeginningItemId, setStartFromBeginningItemId] = useState<
+    string | null
+  >(null);
   const [showEpisodes, setShowEpisodes] = useState(false);
+  const [episodesPanelMounted, setEpisodesPanelMounted] = useState(false);
+  const [episodesPanelVisible, setEpisodesPanelVisible] = useState(false);
   const [showXRay, setShowXRay] = useState(false);
   const episodesOverlayRef = useRef<HTMLDivElement | null>(null);
 
@@ -492,7 +541,10 @@ export function JellyfinPlayer({
     if (!showEpisodes) return;
 
     function handleOutsideClick(event: MouseEvent) {
-      if (episodesOverlayRef.current && !episodesOverlayRef.current.contains(event.target as Node)) {
+      if (
+        episodesOverlayRef.current &&
+        !episodesOverlayRef.current.contains(event.target as Node)
+      ) {
         setShowEpisodes(false);
       }
     }
@@ -503,13 +555,34 @@ export function JellyfinPlayer({
     };
   }, [showEpisodes]);
 
+  useEffect(() => {
+    if (showEpisodes) {
+      setEpisodesPanelMounted(true);
+      return;
+    }
+
+    setEpisodesPanelVisible(false);
+    const timer = setTimeout(() => setEpisodesPanelMounted(false), 300);
+    return () => clearTimeout(timer);
+  }, [showEpisodes]);
+
+  useEffect(() => {
+    if (!showEpisodes || !episodesPanelMounted) return;
+
+    // Wait until the off-screen panel has been committed before changing its
+    // transform, otherwise subsequent opens can skip the transition.
+    const frame = requestAnimationFrame(() => setEpisodesPanelVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [showEpisodes, episodesPanelMounted]);
+
   const baseUrl = useMemo(() => serverUrl.replace(/\/+$/, ""), [serverUrl]);
 
   // Derived on-screen title/subtitle. Props override auto-discovered metadata.
   const displayTitle = useMemo(() => {
     if (title) return title;
     if (!itemMeta) return undefined;
-    if (itemMeta.Type === "Episode" && itemMeta.SeriesName) return itemMeta.SeriesName;
+    if (itemMeta.Type === "Episode" && itemMeta.SeriesName)
+      return itemMeta.SeriesName;
     return itemMeta.Name;
   }, [title, itemMeta]);
 
@@ -527,7 +600,8 @@ export function JellyfinPlayer({
 
   const backdropUrl = useMemo(() => {
     if (!itemMeta?.Id || !baseUrl) return null;
-    const backdropTag = itemMeta.BackdropImageTags?.[0] ?? itemMeta.ParentBackdropImageTags?.[0];
+    const backdropTag =
+      itemMeta.BackdropImageTags?.[0] ?? itemMeta.ParentBackdropImageTags?.[0];
     if (backdropTag) {
       return `${baseUrl}/Items/${itemMeta.Id}/Images/Backdrop?fillHeight=1080&fillWidth=1920&tag=${encodeURIComponent(backdropTag)}`;
     }
@@ -540,21 +614,32 @@ export function JellyfinPlayer({
 
   const [audioIndex, setAudioIndex] = useState<number | null>(null);
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
-  const [activeSubtitleSrc, setActiveSubtitleSrc] = useState<string | null>(null);
-  const [subtitleStyle, setSubtitleStyle] = useState<SubtitleStyleOption>("default");
-  const [subtitleSize, setSubtitleSize] = useState<SubtitleSizeOption>("medium");
+  const [activeSubtitleSrc, setActiveSubtitleSrc] = useState<string | null>(
+    null,
+  );
+  const [subtitleStyle, setSubtitleStyle] =
+    useState<SubtitleStyleOption>("default");
+  const [subtitleSize, setSubtitleSize] =
+    useState<SubtitleSizeOption>("medium");
   const [bitrate, setBitrate] = useState<number>(maxStreamingBitrate);
-  const [appliedAudioIndex, setAppliedAudioIndex] = useState<number | null>(null);
+  const [appliedAudioIndex, setAppliedAudioIndex] = useState<number | null>(
+    null,
+  );
   // Resume position (seconds) discovered from the server's saved UserData for
   // this user+item. Used once, on the first source attach, so re-attaches
   // triggered by audio/quality switches keep the live currentTime instead.
-  const [resumeSeconds, setResumeSeconds] = useState<number>(startPositionSeconds);
+  const [resumeSeconds, setResumeSeconds] =
+    useState<number>(startPositionSeconds);
   const initialResumeApplied = useRef(false);
 
   useEffect(() => {
     try {
-      const savedStyle = localStorage.getItem(SUBTITLE_STYLE_KEY) as SubtitleStyleOption | null;
-      const savedSize = localStorage.getItem(SUBTITLE_SIZE_KEY) as SubtitleSizeOption | null;
+      const savedStyle = localStorage.getItem(
+        SUBTITLE_STYLE_KEY,
+      ) as SubtitleStyleOption | null;
+      const savedSize = localStorage.getItem(
+        SUBTITLE_SIZE_KEY,
+      ) as SubtitleSizeOption | null;
       if (savedStyle && SUBTITLE_STYLE_PRESETS[savedStyle]) {
         setSubtitleStyle(savedStyle);
       }
@@ -607,14 +692,17 @@ export function JellyfinPlayer({
       AutoOpenLiveStream: true,
     };
 
-    fetch(`${baseUrl}/Items/${activeItemId}/PlaybackInfo?userId=${encodeURIComponent(userId)}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
+    fetch(
+      `${baseUrl}/Items/${activeItemId}/PlaybackInfo?userId=${encodeURIComponent(userId)}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    })
+    )
       .then(async (res) => {
         if (!res.ok) throw new Error(`PlaybackInfo failed (${res.status})`);
         return (await res.json()) as PlaybackInfoResponse;
@@ -661,7 +749,12 @@ export function JellyfinPlayer({
           );
         }
         const savedTicks = userData?.PlaybackPositionTicks;
-        if (enableResume && savedTicks && savedTicks > 0) {
+        if (
+          enableResume &&
+          startFromBeginningItemId !== activeItemId &&
+          savedTicks &&
+          savedTicks > 0
+        ) {
           const seconds = savedTicks / 10_000_000;
           setResumeSeconds(Math.max(seconds, startPositionSeconds));
         }
@@ -676,11 +769,78 @@ export function JellyfinPlayer({
     return () => {
       cancelled = true;
     };
-    }, [authHeader, baseUrl, activeItemId, userId, maxStreamingBitrate, startPositionSeconds, enableResume]);
+  }, [
+    authHeader,
+    baseUrl,
+    activeItemId,
+    userId,
+    maxStreamingBitrate,
+    startPositionSeconds,
+    enableResume,
+    startFromBeginningItemId,
+  ]);
 
   const mediaSource = playbackInfo?.MediaSources?.[0];
 
   const seriesId = itemMeta?.Type === "Episode" ? itemMeta.SeriesId : undefined;
+
+  // Load siblings in the current season so the player can expose previous and
+  // next episode controls without changing the route or unmounting playback.
+  useEffect(() => {
+    if (
+      itemMeta?.Type !== "Episode" ||
+      !itemMeta.SeriesId ||
+      !itemMeta.SeasonId
+    ) {
+      setPreviousEpisode(null);
+      setNextEpisode(null);
+      return;
+    }
+
+    let cancelled = false;
+    const url = new URL(`/Shows/${itemMeta.SeriesId}/Episodes`, `${baseUrl}/`);
+    url.searchParams.set("SeasonId", itemMeta.SeasonId);
+    url.searchParams.set("UserId", userId);
+    url.searchParams.set("SortBy", "IndexNumber");
+    url.searchParams.set("SortOrder", "Ascending");
+
+    fetch(url, { headers: { Authorization: authHeader } })
+      .then(async (response) => {
+        if (!response.ok)
+          throw new Error(`Episode list failed (${response.status})`);
+        return (await response.json()) as { Items?: ItemResponse[] };
+      })
+      .then(({ Items = [] }) => {
+        if (cancelled) return;
+        const currentIndex = Items.findIndex(
+          (episode) => episode.Id === activeItemId,
+        );
+        setPreviousEpisode(currentIndex > 0 ? Items[currentIndex - 1] : null);
+        setNextEpisode(
+          currentIndex >= 0 && currentIndex < Items.length - 1
+            ? Items[currentIndex + 1]
+            : null,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreviousEpisode(null);
+          setNextEpisode(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeItemId,
+    authHeader,
+    baseUrl,
+    itemMeta?.SeasonId,
+    itemMeta?.SeriesId,
+    itemMeta?.Type,
+    userId,
+  ]);
 
   const audioStreams = useMemo(
     () => mediaSource?.MediaStreams.filter((s) => s.Type === "Audio") ?? [],
@@ -802,7 +962,9 @@ export function JellyfinPlayer({
       hls.loadSource(streamUrl);
       hls.attachMedia(video);
       const verifyAudio = () => {
-        const selectedAudio = audioStreams.find((stream) => stream.Index === audioIndex);
+        const selectedAudio = audioStreams.find(
+          (stream) => stream.Index === audioIndex,
+        );
         // When the server transcodes for the requested AudioStreamIndex,
         // the HLS manifest typically exposes a single audio rendition —
         // that's the verification that our requested track is what's
@@ -865,7 +1027,9 @@ export function JellyfinPlayer({
     let objectUrl: string | null = null;
     setActiveSubtitleSrc(null);
 
-    fetch(subtitleRequestUrl(selectedSubtitle), { headers: { Authorization: authHeader } })
+    fetch(subtitleRequestUrl(selectedSubtitle), {
+      headers: { Authorization: authHeader },
+    })
       .then(async (res) => {
         if (!res.ok) throw new Error(`Subtitle request failed (${res.status})`);
         return await res.text();
@@ -909,6 +1073,7 @@ export function JellyfinPlayer({
   const [showOverlay, setShowOverlay] = useState(true);
   const [buffering, setBuffering] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -980,10 +1145,16 @@ export function JellyfinPlayer({
   reportingRef.current.isPaused = !isPlaying;
 
   const sendReport = useCallback(
-    (path: "Playing" | "Playing/Progress" | "Playing/Stopped", extra?: Record<string, unknown>) => {
+    (
+      path: "Playing" | "Playing/Progress" | "Playing/Stopped",
+      extra?: Record<string, unknown>,
+    ) => {
       const video = videoRef.current;
       if (!playbackInfo || !mediaSource || !video) return;
-      const positionTicks = Math.max(0, Math.floor(video.currentTime * 10_000_000));
+      const positionTicks = Math.max(
+        0,
+        Math.floor(video.currentTime * 10_000_000),
+      );
       const body: Record<string, unknown> = {
         ItemId: activeItemId,
         MediaSourceId: mediaSource.Id,
@@ -991,7 +1162,9 @@ export function JellyfinPlayer({
         PositionTicks: positionTicks,
         AudioStreamIndex: reportingRef.current.audioIndex,
         SubtitleStreamIndex:
-          reportingRef.current.subtitleIndex == null ? -1 : reportingRef.current.subtitleIndex,
+          reportingRef.current.subtitleIndex == null
+            ? -1
+            : reportingRef.current.subtitleIndex,
         IsPaused: reportingRef.current.isPaused,
         IsMuted: video.muted,
         VolumeLevel: Math.round(video.volume * 100),
@@ -1002,7 +1175,10 @@ export function JellyfinPlayer({
       // Fire-and-forget; failures here must not break playback.
       void fetch(`${baseUrl}/Sessions/${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: authHeader },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+        },
         body: JSON.stringify(body),
         keepalive: path === "Playing/Stopped",
       }).catch(() => {});
@@ -1033,8 +1209,10 @@ export function JellyfinPlayer({
       ensureStart();
       sendReport("Playing/Progress", { EventName: "unpause" });
     };
-    const onPause = () => sendReport("Playing/Progress", { EventName: "pause" });
-    const onSeeked = () => sendReport("Playing/Progress", { EventName: "timeupdate" });
+    const onPause = () =>
+      sendReport("Playing/Progress", { EventName: "pause" });
+    const onSeeked = () =>
+      sendReport("Playing/Progress", { EventName: "timeupdate" });
 
     video.addEventListener("play", onPlay);
     video.addEventListener("pause", onPause);
@@ -1087,6 +1265,12 @@ export function JellyfinPlayer({
     };
   }, [armHide, isPlaying]);
 
+  useEffect(() => {
+    return () => {
+      if (videoTapTimer.current) clearTimeout(videoTapTimer.current);
+    };
+  }, []);
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -1096,7 +1280,10 @@ export function JellyfinPlayer({
   const seekBy = (delta: number) => {
     const v = videoRef.current;
     if (!v) return;
-    v.currentTime = Math.max(0, Math.min((v.duration || 0), v.currentTime + delta));
+    v.currentTime = Math.max(
+      0,
+      Math.min(v.duration || 0, v.currentTime + delta),
+    );
   };
   const seekTo = (t: number) => {
     const v = videoRef.current;
@@ -1120,16 +1307,37 @@ export function JellyfinPlayer({
     if (document.fullscreenElement) void document.exitFullscreen();
     else void el.requestFullscreen().catch(() => {});
   };
+  const handleVideoTap = () => {
+    if (videoTapTimer.current) {
+      clearTimeout(videoTapTimer.current);
+      videoTapTimer.current = null;
+      toggleFullscreen();
+      return;
+    }
+
+    videoTapTimer.current = setTimeout(() => {
+      videoTapTimer.current = null;
+    }, 250);
+  };
   const togglePip = async () => {
     const v = videoRef.current;
     if (!v) return;
     try {
-      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      if (document.pictureInPictureElement)
+        await document.exitPictureInPicture();
       else await v.requestPictureInPicture();
     } catch {
       /* ignore */
     }
   };
+  const playEpisode = (episode: ItemResponse | null) => {
+    if (!episode?.Id) return;
+    setStartFromBeginningItemId(episode.Id);
+    setShowEpisodes(false);
+    setActiveItemId(episode.Id);
+  };
+  const playPreviousEpisode = () => playEpisode(previousEpisode);
+  const playNextEpisode = () => playEpisode(nextEpisode);
 
   const fmtTime = (t: number) => {
     if (!isFinite(t)) return "0:00";
@@ -1141,7 +1349,6 @@ export function JellyfinPlayer({
     return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
   };
 
-
   const overlayVisible = showOverlay || !isPlaying;
 
   return (
@@ -1151,7 +1358,8 @@ export function JellyfinPlayer({
         className="group relative w-full h-full overflow-hidden rounded-lg bg-black select-none"
         onMouseMove={armHide}
         onMouseLeave={() => {
-          if (videoRef.current && !videoRef.current.paused) setShowOverlay(false);
+          if (videoRef.current && !videoRef.current.paused)
+            setShowOverlay(false);
         }}
         onTouchStart={armHide}
         style={{
@@ -1162,7 +1370,11 @@ export function JellyfinPlayer({
       >
         {backdropUrl && loading && (
           <div className="absolute inset-0 z-0">
-            <img src={backdropUrl} alt="" className="h-full w-full object-cover" />
+            <img
+              src={backdropUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
             <div className="absolute inset-0 bg-black/40" />
           </div>
         )}
@@ -1171,7 +1383,8 @@ export function JellyfinPlayer({
           ref={videoRef}
           playsInline
           crossOrigin="anonymous"
-          onClick={togglePlay}
+          onClick={handleVideoTap}
+          onEnded={playNextEpisode}
           className="relative z-0 w-full h-full bg-black object-contain"
           style={{
             minHeight: "100px",
@@ -1207,7 +1420,7 @@ export function JellyfinPlayer({
               {showBackButton && onBack && (
                 <button
                   onClick={onBack}
-                  className="rounded-full p-1.5 text-white/90 hover:bg-white/10"
+                  className="rounded-full p-1.5 text-white/90 "
                   aria-label="Back"
                 >
                   <I.back className="h-6 w-6" strokeWidth={sw} fill={fill} />
@@ -1216,17 +1429,21 @@ export function JellyfinPlayer({
             </div>
             <div className="flex-1 text-center px-3">
               {enableTitle && displayTitle && (
-                <div className="text-lg font-semibold drop-shadow">{displayTitle}</div>
+                <div className="text-lg font-semibold drop-shadow">
+                  {displayTitle}
+                </div>
               )}
               {enableTitle && displaySubtitle && (
-                <div className="text-sm text-white/80 drop-shadow">{displaySubtitle}</div>
+                <div className="text-sm text-white/80 drop-shadow">
+                  {displaySubtitle}
+                </div>
               )}
             </div>
             <div className="flex w-10 items-start justify-end z-10">
               {showCloseButton && onClose && (
                 <button
                   onClick={onClose}
-                  className="rounded-full p-1.5 text-white/90 hover:bg-white/10"
+                  className="rounded-full p-1.5 text-white/90 "
                   aria-label="Close"
                 >
                   <I.close className="h-6 w-6" strokeWidth={sw} fill={fill} />
@@ -1236,120 +1453,201 @@ export function JellyfinPlayer({
           </div>
 
           {/* Center controls */}
-          {enableCenterControls && (
-          <div className="pointer-events-auto absolute inset-0 flex items-center justify-center gap-16">
-            {enableSkipButtons && (
-            <button
-              onClick={() => seekBy(-10)}
-              aria-label="Back 10 seconds"
-              className="rounded-full p-3 text-white hover:bg-white/10"
-            >
-              <I.skipBack className="h-10 w-10" strokeWidth={sw} fill={fill} />
-            </button>
-            )}
-            <button
-              onClick={togglePlay}
-              aria-label={isPlaying ? "Pause" : "Play"}
-              className="rounded-full p-3 text-white hover:bg-white/10"
-            >
-              {isPlaying ? (
-                <I.pause className="h-14 w-14" strokeWidth={sw} fill={fill} />
-              ) : (
-                <I.play className="h-14 w-14" strokeWidth={sw} fill={fill} />
+          {enableCenterControls && !buffering && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-16">
+              {enableSkipButtons && (
+                <button
+                  onClick={() => seekBy(-10)}
+                  aria-label="Back 10 seconds"
+                  className="pointer-events-auto rounded-full p-3 text-white"
+                >
+                  <I.skipBack
+                    className="h-10 w-10"
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
+                </button>
               )}
-            </button>
-            {enableSkipButtons && (
-            <button
-              onClick={() => seekBy(10)}
-              aria-label="Forward 10 seconds"
-              className="rounded-full p-3 text-white hover:bg-white/10"
-            >
-              <I.skipForward className="h-10 w-10" strokeWidth={sw} fill={fill} />
-            </button>
-            )}
-          </div>
+              <button
+                onClick={togglePlay}
+                aria-label={isPlaying ? "Pause" : "Play"}
+                className="pointer-events-auto rounded-full p-3 text-white"
+              >
+                {isPlaying ? (
+                  <I.pause
+                    className="h-14 w-14"
+                    strokeWidth={sw}
+                    fill="white"
+                    color="white"
+                  />
+                ) : (
+                  <I.play
+                    className="h-14 w-14"
+                    strokeWidth={sw}
+                    fill="white"
+                    color="white"
+                  />
+                )}
+              </button>
+              {enableSkipButtons && (
+                <button
+                  onClick={() => seekBy(10)}
+                  aria-label="Forward 10 seconds"
+                  className="pointer-events-auto rounded-full p-3 text-white "
+                >
+                  <I.skipForward
+                    className="h-10 w-10"
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
+                </button>
+              )}
+            </div>
           )}
 
           {/* Buffering indicator */}
           {enableBufferingIndicator && buffering && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <I.loader className="h-10 w-10 animate-spin text-white drop-shadow" strokeWidth={sw} fill={fill} />
+              <I.loader
+                className="h-10 w-10 animate-spin text-white drop-shadow"
+                strokeWidth={sw}
+                fill={fill}
+              />
             </div>
           )}
 
           {/* Bottom controls */}
-          <div className="pointer-events-auto absolute inset-x-0 bottom-0 px-3 pb-2 pt-1 text-white"
+          <div
+            className="pointer-events-auto absolute inset-x-0 bottom-0 px-3 pb-2 pt-1 text-white"
             style={{
               maxHeight: "35%",
             }}
           >
             {/* Progress */}
             {enableProgressBar && (
-            <div className="flex items-center gap-2">
-              <span className="w-10 text-[11px] tabular-nums">{fmtTime(currentTime)}</span>
-              <Slider.Root
-                value={[Math.min(currentTime, duration || 0)]}
-                max={duration || 0}
-                step={0.1}
-                onValueChange={(v) => seekTo(v[0])}
-                className="relative flex h-5 flex-1 touch-none items-center cursor-pointer"
-                aria-label="Seek"
-              >
-                <Slider.Track className="relative h-1 w-full grow rounded-full bg-white/25 cursor-pointer">
-                  <Slider.Range className="absolute h-full rounded-full bg-white" />
-                </Slider.Track>
-                <Slider.Thumb className="block h-3.5 w-3.5 rounded-full bg-white shadow focus:outline-none cursor-pointer" />
-              </Slider.Root>
-              <span className="w-12 text-right text-xs tabular-nums">
-                {fmtTime(duration)}
-              </span>
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="w-10 text-[11px] tabular-nums">
+                  {fmtTime(currentTime)}
+                </span>
+                <Slider.Root
+                  value={[Math.min(currentTime, duration || 0)]}
+                  max={duration || 0}
+                  step={0.1}
+                  onValueChange={(v) => seekTo(v[0])}
+                  className="relative flex h-5 flex-1 touch-none items-center cursor-pointer"
+                  aria-label="Seek"
+                >
+                  <Slider.Track className="relative h-1 w-full grow rounded-full bg-white/25 cursor-pointer">
+                    <Slider.Range className="absolute h-full rounded-full bg-white" />
+                  </Slider.Track>
+                  <Slider.Thumb className="block h-3.5 w-3.5 rounded-full bg-white shadow focus:outline-none cursor-pointer" />
+                </Slider.Root>
+                <span className="w-12 text-right text-xs tabular-nums">
+                  {fmtTime(duration)}
+                </span>
+              </div>
             )}
 
             {/* Buttons row */}
             <div className="mt-2 flex items-center gap-1">
-              {enableSkipButtons && (
-                <IconBtn onClick={() => seekBy(-10)} label="Back 10 seconds">
-                  <I.skipBack className="h-5 w-5" strokeWidth={sw} fill={fill} />
+              {itemMeta?.Type === "Episode" && (
+                <IconBtn
+                  onClick={playPreviousEpisode}
+                  label="Previous episode"
+                  disabled={!previousEpisode}
+                >
+                  <I.previous
+                    className={BOTTOM_CONTROL_ICON_CLASS}
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
                 </IconBtn>
               )}
-              <IconBtn onClick={togglePlay} label={isPlaying ? "Pause" : "Play"}>
+              {enableSkipButtons && (
+                <IconBtn onClick={() => seekBy(-10)} label="Back 10 seconds">
+                  <I.skipBack
+                    className={BOTTOM_CONTROL_ICON_CLASS}
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
+                </IconBtn>
+              )}
+              <IconBtn
+                onClick={togglePlay}
+                label={isPlaying ? "Pause" : "Play"}
+              >
                 {isPlaying ? (
-                  <I.pause className="h-6 w-6" strokeWidth={sw} fill={fill} />
+                  <I.pause
+                    className={BOTTOM_CONTROL_ICON_CLASS}
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
                 ) : (
-                  <I.play className="h-6 w-6" strokeWidth={sw} fill={fill} />
+                  <I.play
+                    className={BOTTOM_CONTROL_ICON_CLASS}
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
                 )}
               </IconBtn>
               {enableSkipButtons && (
                 <IconBtn onClick={() => seekBy(10)} label="Forward 10 seconds">
-                  <I.skipForward className="h-5 w-5" strokeWidth={sw} fill={fill} />
+                  <I.skipForward
+                    className={BOTTOM_CONTROL_ICON_CLASS}
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
+                </IconBtn>
+              )}
+              {itemMeta?.Type === "Episode" && (
+                <IconBtn
+                  onClick={playNextEpisode}
+                  label="Next episode"
+                  disabled={!nextEpisode}
+                >
+                  <I.next
+                    className={BOTTOM_CONTROL_ICON_CLASS}
+                    strokeWidth={sw}
+                    fill={fill}
+                  />
                 </IconBtn>
               )}
 
               {/* Volume */}
               {enableVolumeControl && (
-              <div className="ml-2 flex items-center gap-2">
-                <IconBtn onClick={toggleMute} label={muted ? "Unmute" : "Mute"}>
-                  {muted || volume === 0 ? (
-                    <I.volumeOff className="h-5 w-5" strokeWidth={sw} fill={fill} />
-                  ) : (
-                    <I.volumeOn className="h-5 w-5" strokeWidth={sw} fill={fill} />
-                  )}
-                </IconBtn>
-                <Slider.Root
-                  value={[muted ? 0 : volume]}
-                  max={1}
-                  step={0.01}
-                  onValueChange={(v) => setVol(v[0])}
-                  className="relative flex h-5 w-24 touch-none items-center"
-                  aria-label="Volume"
-                >
-                  <Slider.Track className="relative h-1 w-full grow rounded-full bg-white/25">
-                    <Slider.Range className="absolute h-full rounded-full bg-white" />
-                  </Slider.Track>
-                  <Slider.Thumb className="block h-3 w-3 rounded-full bg-white shadow focus:outline-none" />
-                </Slider.Root>
-              </div>
+                <div className="ml-2 flex items-center gap-2">
+                  <IconBtn
+                    onClick={toggleMute}
+                    label={muted ? "Unmute" : "Mute"}
+                  >
+                    {muted || volume === 0 ? (
+                      <I.volumeOff
+                        className={BOTTOM_CONTROL_ICON_CLASS}
+                        strokeWidth={sw}
+                        fill={fill}
+                      />
+                    ) : (
+                      <I.volumeOn
+                        className={BOTTOM_CONTROL_ICON_CLASS}
+                        strokeWidth={sw}
+                        fill={fill}
+                      />
+                    )}
+                  </IconBtn>
+                  <Slider.Root
+                    value={[muted ? 0 : volume]}
+                    max={1}
+                    step={0.01}
+                    onValueChange={(v) => setVol(v[0])}
+                    className="relative flex h-5 w-24 touch-none items-center"
+                    aria-label="Volume"
+                  >
+                    <Slider.Track className="relative h-1 w-full grow rounded-full bg-white/25">
+                      <Slider.Range className="absolute h-full rounded-full bg-white" />
+                    </Slider.Track>
+                    <Slider.Thumb className="block h-3 w-3 rounded-full bg-white shadow focus:outline-none" />
+                  </Slider.Root>
+                </div>
               )}
 
               <div className="ml-auto flex items-center gap-1">
@@ -1357,28 +1655,33 @@ export function JellyfinPlayer({
                 {(enableAudioTracks || enableSubtitles) &&
                   ((enableAudioTracks && audioStreams.length > 0) ||
                     (enableSubtitles && subtitleStreams.length > 0)) && (
-                  <TracksMenu
-                    container={containerRef.current}
-                    icons={I}
-                    strokeWidth={sw}
-                    fill={fill}
-                    audioStreams={enableAudioTracks ? audioStreams : []}
-                    subtitleStreams={enableSubtitles ? subtitleStreams : []}
-                    audioIndex={audioIndex}
-                    appliedAudioIndex={appliedAudioIndex}
-                    subtitleIndex={subtitleIndex}
-                    onSelectAudio={(i) => setAudioIndex(i)}
-                    onSelectSubtitle={(i) => setSubtitleIndex(i)}
-                    subtitleStyle={subtitleStyle}
-                    subtitleSize={subtitleSize}
-                    onSelectSubtitleStyle={setSubtitleStyle}
-                    onSelectSubtitleSize={setSubtitleSize}
-                  />
-                )}
+                    <TracksMenu
+                      container={containerRef.current}
+                      icons={I}
+                      strokeWidth={sw}
+                      fill={fill}
+                      iconClassName={BOTTOM_CONTROL_ICON_CLASS}
+                      audioStreams={enableAudioTracks ? audioStreams : []}
+                      subtitleStreams={enableSubtitles ? subtitleStreams : []}
+                      audioIndex={audioIndex}
+                      appliedAudioIndex={appliedAudioIndex}
+                      subtitleIndex={subtitleIndex}
+                      onSelectAudio={(i) => setAudioIndex(i)}
+                      onSelectSubtitle={(i) => setSubtitleIndex(i)}
+                      subtitleStyle={subtitleStyle}
+                      subtitleSize={subtitleSize}
+                      onSelectSubtitleStyle={setSubtitleStyle}
+                      onSelectSubtitleSize={setSubtitleSize}
+                    />
+                  )}
 
                 {enablePictureInPicture && (
                   <IconBtn onClick={togglePip} label="Picture in picture">
-                    <I.pip className="h-5 w-5" strokeWidth={sw} fill={fill} />
+                    <I.pip
+                      className={BOTTOM_CONTROL_ICON_CLASS}
+                      strokeWidth={sw}
+                      fill={fill}
+                    />
                   </IconBtn>
                 )}
 
@@ -1387,18 +1690,28 @@ export function JellyfinPlayer({
                     onClick={() => setShowEpisodes((v) => !v)}
                     label="Episodes"
                   >
-                    <I.episodes className="h-5 w-5" strokeWidth={sw} fill={fill} />
+                    <I.episodes
+                      className={BOTTOM_CONTROL_ICON_CLASS}
+                      strokeWidth={sw}
+                      fill={fill}
+                    />
                   </IconBtn>
                 )}
 
-                {enableXRay && itemMeta && (itemMeta.People?.length || itemMeta.Overview) && (
-                  <IconBtn
-                    onClick={() => setShowXRay((v) => !v)}
-                    label="X-Ray"
-                  >
-                    <I.xray className="h-5 w-5" strokeWidth={sw} fill={fill} />
-                  </IconBtn>
-                )}
+                {enableXRay &&
+                  itemMeta &&
+                  (itemMeta.People?.length || itemMeta.Overview) && (
+                    <IconBtn
+                      onClick={() => setShowXRay((v) => !v)}
+                      label="X-Ray"
+                    >
+                      <I.xray
+                        className={BOTTOM_CONTROL_ICON_CLASS}
+                        strokeWidth={sw}
+                        fill={fill}
+                      />
+                    </IconBtn>
+                  )}
 
                 {/* Quality (gear) */}
                 {enableQualitySelector && (
@@ -1406,7 +1719,7 @@ export function JellyfinPlayer({
                     container={containerRef.current}
                     icons={I}
                     strokeWidth={sw}
-                    fill={fill}
+                    iconClassName={BOTTOM_CONTROL_ICON_CLASS}
                     value={bitrate}
                     maxBitrate={maxStreamingBitrate}
                     onSelect={setBitrate}
@@ -1419,9 +1732,17 @@ export function JellyfinPlayer({
                     label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
                   >
                     {isFullscreen ? (
-                      <I.minimize className="h-5 w-5" strokeWidth={sw} fill={fill} />
+                      <I.minimize
+                        className={BOTTOM_CONTROL_ICON_CLASS}
+                        strokeWidth={sw}
+                        fill={fill}
+                      />
                     ) : (
-                      <I.maximize className="h-5 w-5" strokeWidth={sw} fill={fill} />
+                      <I.maximize
+                        className={BOTTOM_CONTROL_ICON_CLASS}
+                        strokeWidth={sw}
+                        fill={fill}
+                      />
                     )}
                   </IconBtn>
                 )}
@@ -1441,10 +1762,14 @@ export function JellyfinPlayer({
           </div>
         )}
 
-        {enableEpisodes && seriesId && showEpisodes && (
+        {enableEpisodes && seriesId && episodesPanelMounted && (
           <div
             ref={episodesOverlayRef}
-            className="fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] bg-[#171717]/95 text-white shadow-2xl backdrop-blur-md p-2"
+            className={`fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] bg-[#171717]/95 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
+              episodesPanelVisible
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none translate-y-full opacity-0"
+            }`}
           >
             <EpisodesList
               seriesId={seriesId}
@@ -1475,16 +1800,19 @@ function IconBtn({
   onClick,
   label,
   children,
+  disabled = false,
 }: {
   onClick: () => void;
   label: string;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       aria-label={label}
-      className="rounded-md p-2 text-white hover:bg-white/10"
+      disabled={disabled}
+      className="rounded-md p-2 text-white  disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
     >
       {children}
     </button>
@@ -1496,6 +1824,7 @@ function TracksMenu({
   icons,
   strokeWidth,
   fill,
+  iconClassName,
   audioStreams,
   subtitleStreams,
   audioIndex,
@@ -1512,6 +1841,7 @@ function TracksMenu({
   icons: IconSet;
   strokeWidth: number;
   fill: string;
+  iconClassName: string;
   audioStreams: MediaStream[];
   subtitleStreams: MediaStream[];
   audioIndex: number | null;
@@ -1533,9 +1863,13 @@ function TracksMenu({
       <Popover.Trigger asChild>
         <button
           aria-label="Audio and subtitles"
-          className="rounded-md p-2 text-white hover:bg-white/10"
+          className="rounded-md p-2 text-white "
         >
-          <icons.subtitles className="h-5 w-5" strokeWidth={strokeWidth} fill={fill} />
+          <icons.subtitles
+            className={iconClassName}
+            strokeWidth={strokeWidth}
+            fill={fill}
+          />
         </button>
       </Popover.Trigger>
       <Popover.Portal container={container ?? undefined}>
@@ -1553,7 +1887,9 @@ function TracksMenu({
               <div className="h-px bg-white/10" />
               <div className="flex-1 overflow-auto p-1.5">
                 {audioStreams.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-white/50">No audio tracks</div>
+                  <div className="px-3 py-2 text-sm text-white/50">
+                    No audio tracks
+                  </div>
                 )}
                 {audioStreams.map((s) => {
                   const active = s.Index === audioIndex;
@@ -1566,11 +1902,17 @@ function TracksMenu({
                       className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 text-left text-sm transition-colors ${
                         active
                           ? "bg-[hsl(0,73%,66%)] font-semibold text-white"
-                          : "text-white/90 hover:bg-white/10"
+                          : "text-white/90 "
                       }`}
                     >
                       <span className="truncate">{streamLabel(s)}</span>
-                      {applied && <icons.check className="h-3.5 w-3.5 shrink-0" strokeWidth={strokeWidth} fill={fill} />}
+                      {applied && (
+                        <icons.check
+                          className="h-3.5 w-3.5 shrink-0"
+                          strokeWidth={strokeWidth}
+                          fill={fill}
+                        />
+                      )}
                       {pending && (
                         <span className="shrink-0 text-[10px] uppercase opacity-80">
                           loading…
@@ -1594,24 +1936,26 @@ function TracksMenu({
                       Style
                     </div>
                     <div className="grid gap-2 sm:grid-cols-3">
-                      {Object.entries(SUBTITLE_STYLE_PRESETS).map(([key, preset]) => {
-                        const option = key as SubtitleStyleOption;
-                        const active = option === subtitleStyle;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => onSelectSubtitleStyle(option)}
-                            className={`w-full rounded-md border px-2 py-1 text-[11px] transition ${
-                              active
-                                ? "border-white bg-white text-black"
-                                : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
-                            }`}
-                          >
-                            {preset.label}
-                          </button>
-                        );
-                      })}
+                      {Object.entries(SUBTITLE_STYLE_PRESETS).map(
+                        ([key, preset]) => {
+                          const option = key as SubtitleStyleOption;
+                          const active = option === subtitleStyle;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => onSelectSubtitleStyle(option)}
+                              className={`w-full rounded-md border px-2 py-1 text-[11px] transition ${
+                                active
+                                  ? "border-white bg-white text-black"
+                                  : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 "
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        },
+                      )}
                     </div>
                   </div>
                   <div>
@@ -1619,24 +1963,26 @@ function TracksMenu({
                       Size
                     </div>
                     <div className="grid gap-2 sm:grid-cols-3">
-                      {Object.entries(SUBTITLE_SIZE_PRESETS).map(([key, preset]) => {
-                        const option = key as SubtitleSizeOption;
-                        const active = option === subtitleSize;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => onSelectSubtitleSize(option)}
-                            className={`w-full rounded-md border px-2 py-1 text-[11px] transition ${
-                              active
-                                ? "border-white bg-white text-black"
-                                : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
-                            }`}
-                          >
-                            {preset.label}
-                          </button>
-                        );
-                      })}
+                      {Object.entries(SUBTITLE_SIZE_PRESETS).map(
+                        ([key, preset]) => {
+                          const option = key as SubtitleSizeOption;
+                          const active = option === subtitleSize;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => onSelectSubtitleSize(option)}
+                              className={`w-full rounded-md border px-2 py-1 text-[11px] transition ${
+                                active
+                                  ? "border-white bg-white text-black"
+                                  : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 "
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        },
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1648,7 +1994,7 @@ function TracksMenu({
                   className={`block w-full rounded-md px-3 py-1.5 text-left text-sm ${
                     subtitleIndex == null
                       ? "font-semibold text-white"
-                      : "text-white/90 hover:bg-white/10"
+                      : "text-white/90 "
                   }`}
                 >
                   Off
@@ -1660,9 +2006,7 @@ function TracksMenu({
                       key={s.Index}
                       onClick={() => onSelectSubtitle(s.Index)}
                       className={`block w-full truncate rounded-md px-3 py-1.5 text-left text-sm ${
-                        active
-                          ? "font-semibold text-white"
-                          : "text-white/90 hover:bg-white/10"
+                        active ? "font-semibold text-white" : "text-white/90 "
                       }`}
                     >
                       {streamLabel(s)}
@@ -1694,6 +2038,7 @@ function QualityMenu({
   container,
   icons,
   strokeWidth,
+  iconClassName,
   value,
   maxBitrate,
   onSelect,
@@ -1701,6 +2046,7 @@ function QualityMenu({
   container: HTMLElement | null;
   icons: IconSet;
   strokeWidth: number;
+  iconClassName: string;
   value: number;
   maxBitrate: number;
   onSelect: (b: number) => void;
@@ -1711,9 +2057,9 @@ function QualityMenu({
       <Popover.Trigger asChild>
         <button
           aria-label="Quality settings"
-          className="rounded-md p-2 text-white hover:bg-white/10"
+          className="rounded-md p-2 text-white "
         >
-          <icons.settings className="h-5 w-5" strokeWidth={strokeWidth} />
+          <icons.settings className={iconClassName} strokeWidth={strokeWidth} />
         </button>
       </Popover.Trigger>
       <Popover.Portal container={container ?? undefined}>
@@ -1734,13 +2080,16 @@ function QualityMenu({
                   key={p.bitrate}
                   onClick={() => onSelect(p.bitrate)}
                   className={`flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-sm ${
-                    active
-                      ? "font-semibold text-white"
-                      : "text-white/90 hover:bg-white/10"
+                    active ? "font-semibold text-white" : "text-white/90 "
                   }`}
                 >
                   <span>{p.label}</span>
-                  {active && <icons.check className="h-4 w-4" strokeWidth={strokeWidth} />}
+                  {active && (
+                    <icons.check
+                      className="h-4 w-4"
+                      strokeWidth={strokeWidth}
+                    />
+                  )}
                 </button>
               );
             })}
@@ -1770,8 +2119,12 @@ function XRayPanel({
 }) {
   const [tab, setTab] = useState<"cast" | "details">("cast");
   const people = item?.People ?? [];
-  const cast = people.filter((p) => p.Type === "Actor" || p.Type === "GuestStar");
-  const crew = people.filter((p) => p.Type !== "Actor" && p.Type !== "GuestStar");
+  const cast = people.filter(
+    (p) => p.Type === "Actor" || p.Type === "GuestStar",
+  );
+  const crew = people.filter(
+    (p) => p.Type !== "Actor" && p.Type !== "GuestStar",
+  );
 
   const personImage = (p: Person) =>
     p.PrimaryImageTag
@@ -1787,7 +2140,9 @@ function XRayPanel({
       <div className="pointer-events-auto flex h-full flex-col bg-black/85 text-white backdrop-blur-md">
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div className="flex items-baseline gap-2">
-            <span className="text-xs font-bold tracking-[0.2em] text-amber-300">X-RAY</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-amber-300">
+              X-RAY
+            </span>
             <span className="truncate text-sm font-medium text-white/80">
               {item?.Name ?? ""}
             </span>
@@ -1795,7 +2150,7 @@ function XRayPanel({
           <button
             onClick={onClose}
             aria-label="Close X-Ray"
-            className="rounded-full p-1.5 text-white/80 hover:bg-white/10"
+            className="rounded-full p-1.5 text-white/80 "
           >
             <icons.close className="h-5 w-5" strokeWidth={strokeWidth} />
           </button>
@@ -1826,7 +2181,9 @@ function XRayPanel({
           ) : tab === "cast" ? (
             <div className="space-y-5">
               {cast.length === 0 && crew.length === 0 && (
-                <div className="text-sm text-white/60">No cast information available.</div>
+                <div className="text-sm text-white/60">
+                  No cast information available.
+                </div>
               )}
               {cast.length > 0 && (
                 <section>
@@ -1853,9 +2210,13 @@ function XRayPanel({
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium">{p.Name}</div>
+                            <div className="truncate text-sm font-medium">
+                              {p.Name}
+                            </div>
                             {p.Role && (
-                              <div className="truncate text-xs text-white/60">as {p.Role}</div>
+                              <div className="truncate text-xs text-white/60">
+                                as {p.Role}
+                              </div>
                             )}
                           </div>
                         </li>
@@ -1871,9 +2232,14 @@ function XRayPanel({
                   </h3>
                   <ul className="divide-y divide-white/5">
                     {crew.map((p) => (
-                      <li key={`${p.Id}-${p.Type}`} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <li
+                        key={`${p.Id}-${p.Type}`}
+                        className="flex items-center justify-between gap-3 py-2 text-sm"
+                      >
                         <span className="truncate font-medium">{p.Name}</span>
-                        <span className="shrink-0 text-xs text-white/60">{p.Type}</span>
+                        <span className="shrink-0 text-xs text-white/60">
+                          {p.Type}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -1887,7 +2253,9 @@ function XRayPanel({
                   <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-white/60">
                     Overview
                   </h3>
-                  <p className="leading-relaxed text-white/85">{item.Overview}</p>
+                  <p className="leading-relaxed text-white/85">
+                    {item.Overview}
+                  </p>
                 </section>
               )}
               <div className="grid grid-cols-2 gap-3 text-xs">
@@ -1898,7 +2266,10 @@ function XRayPanel({
                   <Meta label="Rated" value={item.OfficialRating} />
                 )}
                 {item.CommunityRating != null && (
-                  <Meta label="Rating" value={item.CommunityRating.toFixed(1)} />
+                  <Meta
+                    label="Rating"
+                    value={item.CommunityRating.toFixed(1)}
+                  />
                 )}
                 {item.RunTimeTicks && (
                   <Meta
@@ -1930,7 +2301,9 @@ function XRayPanel({
                     Studios
                   </h3>
                   <div className="text-xs text-white/80">
-                    {item.Studios.map((s) => s.Name).filter(Boolean).join(", ")}
+                    {item.Studios.map((s) => s.Name)
+                      .filter(Boolean)
+                      .join(", ")}
                   </div>
                 </section>
               )}
@@ -1945,7 +2318,9 @@ function XRayPanel({
 function Meta({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-white/5 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wider text-white/50">{label}</div>
+      <div className="text-[10px] uppercase tracking-wider text-white/50">
+        {label}
+      </div>
       <div className="mt-0.5 text-sm font-medium">{value}</div>
     </div>
   );
