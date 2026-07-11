@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import JellyfinPlayer from "../components/ui/JellyfinPlayer/jellyfin-player";
@@ -50,7 +50,6 @@ const MediaPlayerPage: React.FC = () => {
         deviceId={deviceId}
         showCloseButton={false}
         onBack={handleBack}
-        iconTheme="filled"
       />
     </div>
   );

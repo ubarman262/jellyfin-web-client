@@ -3,42 +3,24 @@ import * as Slider from "@radix-ui/react-slider";
 import Hls from "hls.js";
 import {
   ArrowLeft,
-  Captions,
   Check,
-  CheckCircle2,
-  ChevronDown,
-  CircleX,
-  Cog,
   ListVideo,
   Loader2,
-  LoaderCircle,
   Maximize,
-  Maximize2,
-  MessageSquareText,
   Minimize,
-  Minimize2,
   Pause,
-  PauseCircle,
-  PictureInPicture,
   PictureInPicture2,
   Play,
-  PlayCircle,
   RotateCcw,
   RotateCw,
-  Search,
-  Settings as SettingsIcon,
+  Settings,
   SkipBack,
   SkipForward,
-  Sliders,
   Subtitles,
-  Tv,
   Users,
-  UsersRound,
   Volume2,
-  VolumeOff,
   VolumeX,
   X,
-  type LucideIcon,
 } from "lucide-react";
 import {
   useCallback,
@@ -49,135 +31,6 @@ import {
   type CSSProperties,
 } from "react";
 import EpisodesList from "../EpisodesList";
-
-export type IconKey =
-  | "play"
-  | "pause"
-  | "skipBack"
-  | "skipForward"
-  | "next"
-  | "previous"
-  | "volumeOn"
-  | "volumeOff"
-  | "settings"
-  | "subtitles"
-  | "pip"
-  | "maximize"
-  | "minimize"
-  | "close"
-  | "check"
-  | "search"
-  | "episodes"
-  | "chevronDown"
-  | "loader"
-  | "back"
-  | "xray";
-
-export type IconSet = Record<IconKey, LucideIcon>;
-
-const BASE_ICONS: IconSet = {
-  play: Play,
-  pause: Pause,
-  skipBack: RotateCcw,
-  skipForward: RotateCw,
-  next: SkipForward,
-  previous: SkipBack,
-  volumeOn: Volume2,
-  volumeOff: VolumeX,
-  settings: SettingsIcon,
-  subtitles: Subtitles,
-  pip: PictureInPicture2,
-  maximize: Maximize,
-  minimize: Minimize,
-  close: X,
-  check: Check,
-  search: Search,
-  episodes: ListVideo,
-  chevronDown: ChevronDown,
-  loader: Loader2,
-  back: ArrowLeft,
-  xray: Users,
-};
-
-export type IconThemeName =
-  | "default"
-  | "minimal"
-  | "bold"
-  | "classic"
-  | "filled"
-  | "rounded";
-
-interface IconThemeDef {
-  icons: IconSet;
-  strokeWidth: number;
-  fill?: "none" | "white" | "black";
-  color?: "currentColor" | "white" | "black";
-}
-
-const ICON_THEMES: Record<IconThemeName, IconThemeDef> = {
-  default: { icons: BASE_ICONS, strokeWidth: 2 },
-  minimal: { icons: BASE_ICONS, strokeWidth: 1.25 },
-  bold: { icons: BASE_ICONS, strokeWidth: 2.75 },
-  classic: {
-    icons: {
-      ...BASE_ICONS,
-      skipBack: SkipBack,
-      skipForward: SkipForward,
-      settings: Sliders,
-      subtitles: Captions,
-      pip: PictureInPicture,
-      maximize: Maximize2,
-      minimize: Minimize2,
-      episodes: Tv,
-      loader: LoaderCircle,
-      xray: UsersRound,
-    },
-    strokeWidth: 2,
-  },
-  rounded: {
-    icons: {
-      ...BASE_ICONS,
-      play: PlayCircle,
-      pause: PauseCircle,
-      volumeOff: VolumeOff,
-      settings: Cog,
-      subtitles: MessageSquareText,
-      close: CircleX,
-      check: CheckCircle2,
-      loader: LoaderCircle,
-    },
-    strokeWidth: 2,
-  },
-  filled: {
-    icons: {
-      ...BASE_ICONS,
-    },
-    strokeWidth: 2,
-  },
-};
-
-export const ICON_THEME_NAMES = Object.keys(ICON_THEMES) as IconThemeName[];
-
-export type IconThemeInput =
-  | IconThemeName
-  | Partial<IconSet>
-  | { base?: IconThemeName; overrides: Partial<IconSet> };
-
-function resolveIconTheme(theme: IconThemeInput | undefined): IconThemeDef {
-  if (!theme) return ICON_THEMES.default;
-  if (typeof theme === "string")
-    return ICON_THEMES[theme] ?? ICON_THEMES.default;
-  if ("overrides" in theme) {
-    const base = theme.base
-      ? (ICON_THEMES[theme.base] ?? ICON_THEMES.default)
-      : ICON_THEMES.default;
-    return {
-      icons: { ...base.icons, ...theme.overrides },
-      strokeWidth: base.strokeWidth,
-    };
-  }
-  return { icons: { ...BASE_ICONS, ...theme }, strokeWidth: 2 };
-}
 
 /**
  * Reusable Jellyfin video player.
@@ -239,8 +92,6 @@ export interface JellyfinPlayerProps {
   enableResume?: boolean;
   /** X-Ray panel (cast & crew / scene info, Prime Video style). */
   enableXRay?: boolean;
-  /** Visual icon theme. Pass a preset name, a partial icon map, or `{ base, overrides }` to override specific icons by name. */
-  iconTheme?: IconThemeInput;
 }
 
 interface MediaStream {
@@ -474,17 +325,10 @@ export function JellyfinPlayer({
   enableAutoHideControls = true,
   enableResume = true,
   enableXRay = true,
-  iconTheme = "default",
 }: JellyfinPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const stableDeviceId = useMemo(() => deviceId ?? randomId(), [deviceId]);
-
-  const themeDef = useMemo(() => resolveIconTheme(iconTheme), [iconTheme]);
-  const I = themeDef.icons;
-  const sw = themeDef.strokeWidth;
-  const fill = themeDef.fill ?? "none";
-
   // Internal "currently playing" item id — initialized from the prop, but the
   // user can switch to a sibling episode via the episodes panel without the
   // parent having to re-mount.
@@ -974,17 +818,6 @@ export function JellyfinPlayer({
           selectHlsAudioTrack(hls, selectedAudio, audioStreams);
         }
         setAppliedAudioIndex(audioIndex);
-        // eslint-disable-next-line no-console
-        console.info("[JellyfinPlayer] audio applied", {
-          requested: audioIndex,
-          requestedLabel: selectedAudio ? streamLabel(selectedAudio) : null,
-          hlsAudioTracks: hls.audioTracks.map((t) => ({
-            id: t.id,
-            name: t.name,
-            lang: t.lang,
-          })),
-          activeHlsAudioTrack: hls.audioTrack,
-        });
       };
       hls.once(Hls.Events.MANIFEST_PARSED, () => {
         verifyAudio();
@@ -1423,7 +1256,7 @@ export function JellyfinPlayer({
                   className="rounded-full p-1.5 text-white/90 "
                   aria-label="Back"
                 >
-                  <I.back className="h-6 w-6" strokeWidth={sw} fill={fill} />
+                  <ArrowLeft className="h-6 w-6" />
                 </button>
               )}
             </div>
@@ -1446,14 +1279,14 @@ export function JellyfinPlayer({
                   className="rounded-full p-1.5 text-white/90 "
                   aria-label="Close"
                 >
-                  <I.close className="h-6 w-6" strokeWidth={sw} fill={fill} />
+                  <X className="h-6 w-6" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Center controls */}
-          {enableCenterControls && !buffering && (
+          {enableCenterControls && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-16">
               {enableSkipButtons && (
                 <button
@@ -1461,45 +1294,32 @@ export function JellyfinPlayer({
                   aria-label="Back 10 seconds"
                   className="pointer-events-auto rounded-full p-3 text-white"
                 >
-                  <I.skipBack
-                    className="h-10 w-10"
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <RotateCcw className="h-10 w-10" />
                 </button>
               )}
-              <button
-                onClick={togglePlay}
-                aria-label={isPlaying ? "Pause" : "Play"}
-                className="pointer-events-auto rounded-full p-3 text-white"
-              >
-                {isPlaying ? (
-                  <I.pause
-                    className="h-14 w-14"
-                    strokeWidth={sw}
-                    fill="white"
-                    color="white"
-                  />
-                ) : (
-                  <I.play
-                    className="h-14 w-14"
-                    strokeWidth={sw}
-                    fill="white"
-                    color="white"
-                  />
-                )}
-              </button>
+              {!buffering ? (
+                <button
+                  onClick={togglePlay}
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                  className="pointer-events-auto rounded-full p-3 text-white"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-12 w-12" fill="white" color="white" />
+                  ) : (
+                    <Play className="h-12 w-12" fill="white" color="white" />
+                  )}
+                </button>
+              ) : (
+                <div className="p-9"></div>
+              )}
+
               {enableSkipButtons && (
                 <button
                   onClick={() => seekBy(10)}
                   aria-label="Forward 10 seconds"
                   className="pointer-events-auto rounded-full p-3 text-white "
                 >
-                  <I.skipForward
-                    className="h-10 w-10"
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <RotateCw className="h-10 w-10" />
                 </button>
               )}
             </div>
@@ -1508,11 +1328,7 @@ export function JellyfinPlayer({
           {/* Buffering indicator */}
           {enableBufferingIndicator && buffering && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <I.loader
-                className="h-10 w-10 animate-spin text-white drop-shadow"
-                strokeWidth={sw}
-                fill={fill}
-              />
+              <Loader2 className="h-12 w-12 animate-spin text-white drop-shadow" />
             </div>
           )}
 
@@ -1556,20 +1372,12 @@ export function JellyfinPlayer({
                   label="Previous episode"
                   disabled={!previousEpisode}
                 >
-                  <I.previous
-                    className={BOTTOM_CONTROL_ICON_CLASS}
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <SkipBack className={BOTTOM_CONTROL_ICON_CLASS} />
                 </IconBtn>
               )}
               {enableSkipButtons && (
                 <IconBtn onClick={() => seekBy(-10)} label="Back 10 seconds">
-                  <I.skipBack
-                    className={BOTTOM_CONTROL_ICON_CLASS}
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <RotateCcw className={BOTTOM_CONTROL_ICON_CLASS} />
                 </IconBtn>
               )}
               <IconBtn
@@ -1577,26 +1385,14 @@ export function JellyfinPlayer({
                 label={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? (
-                  <I.pause
-                    className={BOTTOM_CONTROL_ICON_CLASS}
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <Pause className={BOTTOM_CONTROL_ICON_CLASS} />
                 ) : (
-                  <I.play
-                    className={BOTTOM_CONTROL_ICON_CLASS}
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <Play className={BOTTOM_CONTROL_ICON_CLASS} />
                 )}
               </IconBtn>
               {enableSkipButtons && (
                 <IconBtn onClick={() => seekBy(10)} label="Forward 10 seconds">
-                  <I.skipForward
-                    className={BOTTOM_CONTROL_ICON_CLASS}
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <RotateCw className={BOTTOM_CONTROL_ICON_CLASS} />
                 </IconBtn>
               )}
               {itemMeta?.Type === "Episode" && (
@@ -1605,11 +1401,7 @@ export function JellyfinPlayer({
                   label="Next episode"
                   disabled={!nextEpisode}
                 >
-                  <I.next
-                    className={BOTTOM_CONTROL_ICON_CLASS}
-                    strokeWidth={sw}
-                    fill={fill}
-                  />
+                  <SkipForward className={BOTTOM_CONTROL_ICON_CLASS} />
                 </IconBtn>
               )}
 
@@ -1621,17 +1413,9 @@ export function JellyfinPlayer({
                     label={muted ? "Unmute" : "Mute"}
                   >
                     {muted || volume === 0 ? (
-                      <I.volumeOff
-                        className={BOTTOM_CONTROL_ICON_CLASS}
-                        strokeWidth={sw}
-                        fill={fill}
-                      />
+                      <VolumeX className={BOTTOM_CONTROL_ICON_CLASS} />
                     ) : (
-                      <I.volumeOn
-                        className={BOTTOM_CONTROL_ICON_CLASS}
-                        strokeWidth={sw}
-                        fill={fill}
-                      />
+                      <Volume2 className={BOTTOM_CONTROL_ICON_CLASS} />
                     )}
                   </IconBtn>
                   <Slider.Root
@@ -1657,9 +1441,6 @@ export function JellyfinPlayer({
                     (enableSubtitles && subtitleStreams.length > 0)) && (
                     <TracksMenu
                       container={containerRef.current}
-                      icons={I}
-                      strokeWidth={sw}
-                      fill={fill}
                       iconClassName={BOTTOM_CONTROL_ICON_CLASS}
                       audioStreams={enableAudioTracks ? audioStreams : []}
                       subtitleStreams={enableSubtitles ? subtitleStreams : []}
@@ -1677,11 +1458,7 @@ export function JellyfinPlayer({
 
                 {enablePictureInPicture && (
                   <IconBtn onClick={togglePip} label="Picture in picture">
-                    <I.pip
-                      className={BOTTOM_CONTROL_ICON_CLASS}
-                      strokeWidth={sw}
-                      fill={fill}
-                    />
+                    <PictureInPicture2 className={BOTTOM_CONTROL_ICON_CLASS} />
                   </IconBtn>
                 )}
 
@@ -1690,11 +1467,7 @@ export function JellyfinPlayer({
                     onClick={() => setShowEpisodes((v) => !v)}
                     label="Episodes"
                   >
-                    <I.episodes
-                      className={BOTTOM_CONTROL_ICON_CLASS}
-                      strokeWidth={sw}
-                      fill={fill}
-                    />
+                    <ListVideo className={BOTTOM_CONTROL_ICON_CLASS} />
                   </IconBtn>
                 )}
 
@@ -1705,11 +1478,7 @@ export function JellyfinPlayer({
                       onClick={() => setShowXRay((v) => !v)}
                       label="X-Ray"
                     >
-                      <I.xray
-                        className={BOTTOM_CONTROL_ICON_CLASS}
-                        strokeWidth={sw}
-                        fill={fill}
-                      />
+                      <Users className={BOTTOM_CONTROL_ICON_CLASS} />
                     </IconBtn>
                   )}
 
@@ -1717,8 +1486,6 @@ export function JellyfinPlayer({
                 {enableQualitySelector && (
                   <QualityMenu
                     container={containerRef.current}
-                    icons={I}
-                    strokeWidth={sw}
                     iconClassName={BOTTOM_CONTROL_ICON_CLASS}
                     value={bitrate}
                     maxBitrate={maxStreamingBitrate}
@@ -1732,17 +1499,9 @@ export function JellyfinPlayer({
                     label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
                   >
                     {isFullscreen ? (
-                      <I.minimize
-                        className={BOTTOM_CONTROL_ICON_CLASS}
-                        strokeWidth={sw}
-                        fill={fill}
-                      />
+                      <Minimize className={BOTTOM_CONTROL_ICON_CLASS} />
                     ) : (
-                      <I.maximize
-                        className={BOTTOM_CONTROL_ICON_CLASS}
-                        strokeWidth={sw}
-                        fill={fill}
-                      />
+                      <Maximize className={BOTTOM_CONTROL_ICON_CLASS} />
                     )}
                   </IconBtn>
                 )}
@@ -1765,7 +1524,7 @@ export function JellyfinPlayer({
         {enableEpisodes && seriesId && episodesPanelMounted && (
           <div
             ref={episodesOverlayRef}
-            className={`fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] bg-[#171717]/95 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
+            className={`fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] rounded-xl bg-[#171717]/95 border border-white/10 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
               episodesPanelVisible
                 ? "translate-y-0 opacity-100"
                 : "pointer-events-none translate-y-full opacity-0"
@@ -1787,8 +1546,6 @@ export function JellyfinPlayer({
             baseUrl={baseUrl}
             accessToken={accessToken}
             item={itemMeta}
-            icons={I}
-            strokeWidth={sw}
           />
         )}
       </div>
@@ -1821,9 +1578,6 @@ function IconBtn({
 
 function TracksMenu({
   container,
-  icons,
-  strokeWidth,
-  fill,
   iconClassName,
   audioStreams,
   subtitleStreams,
@@ -1838,9 +1592,6 @@ function TracksMenu({
   onSelectSubtitleSize,
 }: {
   container: HTMLElement | null;
-  icons: IconSet;
-  strokeWidth: number;
-  fill: string;
   iconClassName: string;
   audioStreams: MediaStream[];
   subtitleStreams: MediaStream[];
@@ -1854,7 +1605,7 @@ function TracksMenu({
   onSelectSubtitleStyle: (value: SubtitleStyleOption) => void;
   onSelectSubtitleSize: (value: SubtitleSizeOption) => void;
 }) {
-  const [query, setQuery] = useState("");
+  const [query] = useState("");
   const filteredSubs = subtitleStreams.filter((s) =>
     streamLabel(s).toLowerCase().includes(query.toLowerCase()),
   );
@@ -1865,11 +1616,7 @@ function TracksMenu({
           aria-label="Audio and subtitles"
           className="rounded-md p-2 text-white "
         >
-          <icons.subtitles
-            className={iconClassName}
-            strokeWidth={strokeWidth}
-            fill={fill}
-          />
+          <Subtitles className={iconClassName} />
         </button>
       </Popover.Trigger>
       <Popover.Portal container={container ?? undefined}>
@@ -1906,13 +1653,7 @@ function TracksMenu({
                       }`}
                     >
                       <span className="truncate">{streamLabel(s)}</span>
-                      {applied && (
-                        <icons.check
-                          className="h-3.5 w-3.5 shrink-0"
-                          strokeWidth={strokeWidth}
-                          fill={fill}
-                        />
-                      )}
+                      {applied && <Check className="h-3.5 w-3.5 shrink-0" />}
                       {pending && (
                         <span className="shrink-0 text-[10px] uppercase opacity-80">
                           loading…
@@ -2036,16 +1777,12 @@ const QUALITY_PRESETS: { label: string; bitrate: number }[] = [
 
 function QualityMenu({
   container,
-  icons,
-  strokeWidth,
   iconClassName,
   value,
   maxBitrate,
   onSelect,
 }: {
   container: HTMLElement | null;
-  icons: IconSet;
-  strokeWidth: number;
   iconClassName: string;
   value: number;
   maxBitrate: number;
@@ -2059,7 +1796,7 @@ function QualityMenu({
           aria-label="Quality settings"
           className="rounded-md p-2 text-white "
         >
-          <icons.settings className={iconClassName} strokeWidth={strokeWidth} />
+          <Settings className={iconClassName} />
         </button>
       </Popover.Trigger>
       <Popover.Portal container={container ?? undefined}>
@@ -2084,12 +1821,7 @@ function QualityMenu({
                   }`}
                 >
                   <span>{p.label}</span>
-                  {active && (
-                    <icons.check
-                      className="h-4 w-4"
-                      strokeWidth={strokeWidth}
-                    />
-                  )}
+                  {active && <Check className="h-4 w-4" />}
                 </button>
               );
             })}
@@ -2106,16 +1838,12 @@ function XRayPanel({
   baseUrl,
   accessToken,
   item,
-  icons,
-  strokeWidth,
 }: {
   open: boolean;
   onClose: () => void;
   baseUrl: string;
   accessToken: string;
   item: ItemResponse | null;
-  icons: IconSet;
-  strokeWidth: number;
 }) {
   const [tab, setTab] = useState<"cast" | "details">("cast");
   const people = item?.People ?? [];
@@ -2152,7 +1880,7 @@ function XRayPanel({
             aria-label="Close X-Ray"
             className="rounded-full p-1.5 text-white/80 "
           >
-            <icons.close className="h-5 w-5" strokeWidth={strokeWidth} />
+            <X className="h-5 w-5" />
           </button>
         </div>
 

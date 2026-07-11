@@ -55,10 +55,12 @@ export default function EpisodesList({
   const { api } = useAuth();
   const navigate = useNavigate();
 
-  const [seasons, setSeasons] = useState<Season[]>(() => seasonCache.get(seriesId) ?? []);
+  const [seasons, setSeasons] = useState<Season[]>(
+    () => seasonCache.get(seriesId) ?? [],
+  );
   const [seasonsLoading, setSeasonsLoading] = useState(false);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(
-    initialSeasonId ?? null
+    initialSeasonId ?? null,
   );
   const [episodes, setEpisodes] = useState<Episode[]>(() => {
     if (!seriesId || !initialSeasonId) return [];
@@ -134,12 +136,12 @@ export default function EpisodesList({
   function selectSeasonBasedOnNextUp(
     items: Season[],
     nextUp: MediaItem[],
-    setSelectedSeasonId: (id: string | null) => void
+    setSelectedSeasonId: (id: string | null) => void,
   ) {
     if (nextUp && nextUp.length > 0 && nextUp[0].ParentIndexNumber) {
       // Find the season with IndexNumber matching next up episode's ParentIndexNumber
       const season = items.find(
-        (s) => s.IndexNumber === nextUp[0].ParentIndexNumber
+        (s) => s.IndexNumber === nextUp[0].ParentIndexNumber,
       );
       if (season) {
         setSelectedSeasonId(season.Id);
@@ -178,7 +180,10 @@ export default function EpisodesList({
   };
 
   // Helper function to handle watched state updates
-  const handleWatchedUpdate = (episodeId: string, newWatched: boolean | ((prev: boolean) => boolean)) => {
+  const handleWatchedUpdate = (
+    episodeId: string,
+    newWatched: boolean | ((prev: boolean) => boolean),
+  ) => {
     setWatchedMap((prev) => ({
       ...prev,
       [episodeId]:
@@ -228,7 +233,11 @@ export default function EpisodesList({
         }
         // Check if user is watching the series (has a next up episode)
         return api.getSeriesNextUp(seriesId, 1).then((nextUp: MediaItem[]) => {
-          selectSeasonBasedOnNextUp(normalizedItems, nextUp, setSelectedSeasonId);
+          selectSeasonBasedOnNextUp(
+            normalizedItems,
+            nextUp,
+            setSelectedSeasonId,
+          );
         });
       })
       .catch(() => {
@@ -330,11 +339,11 @@ export default function EpisodesList({
             let runtime = "";
             if (ep.RunTimeTicks) {
               const totalMinutes = Math.floor(
-                ep.RunTimeTicks / (10000 * 1000 * 60)
+                ep.RunTimeTicks / (10000 * 1000 * 60),
               );
               runtime = `${totalMinutes}m`;
             }
-            const watched = watchedMap[ep.Id] ?? !!ep.UserData?.Played;
+            // const watched = watchedMap[ep.Id] ?? !!ep.UserData?.Played;
             const downloadLoading = downloadLoadingMap[ep.Id] || false;
             const isPlaying = playingNowId === ep.Id;
 
@@ -363,17 +372,19 @@ export default function EpisodesList({
                     }}
                   >
                     <img
-                      src={
-                        (() => {
-                          const hasPrimaryImage = !!ep.ImageTags?.Primary;
-                          if (hasPrimaryImage) {
-                            return api ? api.getImageUrl(ep.Id, "Primary", 400) : "";
-                          } else if (seriesId) {
-                            return api ? api.getImageUrl(seriesId, "Primary", 400) : "";
-                          } 
-                          return "";
-                        })()
-                      }
+                      src={(() => {
+                        const hasPrimaryImage = !!ep.ImageTags?.Primary;
+                        if (hasPrimaryImage) {
+                          return api
+                            ? api.getImageUrl(ep.Id, "Primary", 400)
+                            : "";
+                        } else if (seriesId) {
+                          return api
+                            ? api.getImageUrl(seriesId, "Primary", 400)
+                            : "";
+                        }
+                        return "";
+                      })()}
                       alt={ep.Name}
                       className="w-full h-full object-cover"
                       style={{ pointerEvents: "none" }}
@@ -406,14 +417,36 @@ export default function EpisodesList({
                     <span className="text-sm font-semibold text-white truncate">
                       {idx + 1}. {ep.Name}
                     </span>
-                    <MarkWatchedButton
+                    {/* <MarkWatchedButton
                       className="relative bg-white/10 rounded-full p-1 border-0 flex items-center justify-center cursor-pointer flex-shrink-0"
                       style={{ width: 24, height: 24 }}
                       iconSize={12}
                       item={ep as MediaItem}
                       isWatched={watched}
                       setIsWatched={(newWatched) => handleWatchedUpdate(ep.Id, newWatched)}
-                    />
+                    /> */}
+                    <button
+                      type="button"
+                      className="relative bg-white/10 rounded-full p-2 mt-2 border-1 border-white flex items-center justify-center cursor-pointer self-end"
+                      title="Download"
+                      aria-label="Download"
+                      style={{
+                        lineHeight: 0,
+                        width: 28,
+                        height: 28,
+                        transition: "background 0.2s",
+                        opacity: downloadLoading ? 0.7 : 1,
+                        pointerEvents: downloadLoading ? "none" : "auto",
+                      }}
+                      onClick={() => handleDownload(ep.Id)}
+                      tabIndex={0}
+                    >
+                      {downloadLoading ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Download size={12} />
+                      )}
+                    </button>
                   </div>
                   {runtime && (
                     <span className="text-xs text-gray-400 font-medium">
@@ -427,7 +460,7 @@ export default function EpisodesList({
                     </div>
                   )}
                   {/* Download button */}
-                  <button
+                  {/* <button
                     type="button"
                     className="relative bg-white/10 rounded-full p-2 mt-2 border-1 border-white flex items-center justify-center cursor-pointer self-end"
                     title="Download"
@@ -448,7 +481,7 @@ export default function EpisodesList({
                     ) : (
                       <Download size={12} />
                     )}
-                  </button>
+                  </button> */}
                 </div>
               </div>
             );
@@ -463,7 +496,7 @@ export default function EpisodesList({
             let runtime = "";
             if (ep.RunTimeTicks) {
               const totalMinutes = Math.floor(
-                ep.RunTimeTicks / (10000 * 1000 * 60)
+                ep.RunTimeTicks / (10000 * 1000 * 60),
               );
               runtime = `${totalMinutes}m`;
             }
@@ -495,17 +528,19 @@ export default function EpisodesList({
                     }}
                   >
                     <img
-                      src={
-                        (() => {
-                          const hasPrimaryImage = !!ep.ImageTags?.Primary;
-                          if (hasPrimaryImage) {
-                            return api ? api.getImageUrl(ep.Id, "Primary", 400) : "";
-                          } else if (seriesId) {
-                            return api ? api.getImageUrl(seriesId, "Primary", 400) : "";
-                          } 
-                          return "";
-                        })()
-                      }
+                      src={(() => {
+                        const hasPrimaryImage = !!ep.ImageTags?.Primary;
+                        if (hasPrimaryImage) {
+                          return api
+                            ? api.getImageUrl(ep.Id, "Primary", 400)
+                            : "";
+                        } else if (seriesId) {
+                          return api
+                            ? api.getImageUrl(seriesId, "Primary", 400)
+                            : "";
+                        }
+                        return "";
+                      })()}
                       alt={ep.Name}
                       className="w-full h-full object-cover"
                       style={{ pointerEvents: "none" }}
@@ -552,7 +587,9 @@ export default function EpisodesList({
                         iconSize={16}
                         item={ep as MediaItem}
                         isWatched={watched}
-                        setIsWatched={(newWatched) => handleWatchedUpdate(ep.Id, newWatched)}
+                        setIsWatched={(newWatched) =>
+                          handleWatchedUpdate(ep.Id, newWatched)
+                        }
                       />
                       {/* Download button for episode */}
                       <button
@@ -594,7 +631,9 @@ export default function EpisodesList({
                     iconSize={16}
                     item={ep as MediaItem}
                     isWatched={watched}
-                    setIsWatched={(newWatched) => handleWatchedUpdate(ep.Id, newWatched)}
+                    setIsWatched={(newWatched) =>
+                      handleWatchedUpdate(ep.Id, newWatched)
+                    }
                   />
                   {/* Download button for episode */}
                   <button
@@ -633,7 +672,7 @@ export default function EpisodesList({
   }
 
   return (
-    <div className="mt-8">
+    <div className={variant === "horizontal" ? "mt-6" : "mt-8"}>
       <div className="flex items-center gap-4 mb-4">
         {seasonsLoading ? (
           <span className="flex-none w-[140px] h-[38px] bg-gray-800 animate-pulse rounded-md"></span>

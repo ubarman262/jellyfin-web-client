@@ -161,8 +161,10 @@ const YouTubeWithProgressiveFallback = ({
         <YouTube
           style={{
             position: "absolute",
-            pointerEvents: "auto",
+            pointerEvents: "none",
             transform: "scale(1.35)",
+            opacity: trailerStarted ? 1 : 0,
+            transition: "opacity 0.7s ease-in-out",
           }}
           videoId={youtubeId}
           opts={{
@@ -194,7 +196,10 @@ const YouTubeWithProgressiveFallback = ({
             }
           }}
           onPlay={() => {
-            setTrailerStarted(true);
+            // Delay showing the video to ensure any native YouTube UI flashes (like the center pause/play button) have disappeared
+            setTimeout(() => {
+              setTrailerStarted(true);
+            }, 600);
             setTrailerEnded(false);
           }}
           onEnd={() => {

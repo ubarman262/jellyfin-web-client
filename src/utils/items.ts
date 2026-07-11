@@ -29,36 +29,25 @@ const getYouTubeId = (url: string | null): string | null => {
   }
 };
 
-// Helper to check if a YouTube video is a Short using Supabase HTTP function
+// Helper to check if a YouTube video is a Short using oEmbed
 const isYouTubeShort = (() => {
-  const recentCalls: Record<string, number> = {};
+  const cache: Record<string, boolean> = {};
   return async (url: string): Promise<boolean> => {
     const id = getYouTubeId(url);
     if (!id) return false;
-    const now = Date.now();
-    if (recentCalls[id] && now - recentCalls[id] < 3000) {
-      // Called within last 3 seconds, skip request and assume not a Short
-      return false;
-    }
-    recentCalls[id] = now;
-    const endpoint = `https://aanbbnsqutrtyannezaj.supabase.co/functions/v1/short/${id}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000); // 3 seconds timeout
+    
+    if (id in cache) return cache[id];
+    
     try {
-      const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhbmJibnNxdXRydHlhbm5lemFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxODk0MzEsImV4cCI6MjA3Mjc2NTQzMX0._vQqNoOxpFq9ZptdzoqXGVu29oUcS6LrDhcva_9XtUA",
-          "Content-Type": "application/json"
-        },
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      if (!response.ok) return true; // Assume not a Short if error
-      const data = await response.json();
-      return !!data;
+      const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/shorts/${id}&format=json`);
+      if (response.ok) {
+        const data = await response.json();
+        const isShort = data.height > data.width;
+        cache[id] = isShort;
+        return isShort;
+      }
+      return false;
     } catch {
-      clearTimeout(timeout);
       return false;
     }
   };
