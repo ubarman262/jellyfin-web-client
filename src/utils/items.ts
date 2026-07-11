@@ -76,9 +76,13 @@ const fetchTrailerUrl = async (item: MediaItem, api: JellyfinApi | null) => {
     }));
     const validUrls = checks.filter(Boolean) as string[];
     if (validUrls.length === 0) return null;
-    // Pick a random valid URL
-    const randomIdx = Math.floor(Math.random() * validUrls.length);
-    return validUrls[randomIdx];
+    
+    // Shuffle the valid URLs so it's not always the exact same order
+    for (let i = validUrls.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [validUrls[i], validUrls[j]] = [validUrls[j], validUrls[i]];
+    }
+    return validUrls;
   };
 
   if (Array.isArray(item.RemoteTrailers) && item.RemoteTrailers.length > 0) {

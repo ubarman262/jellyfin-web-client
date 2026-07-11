@@ -45,6 +45,17 @@ const MediaDetailsDrawer = () => {
   const [activeItemId, setActiveItemId] = useRecoilState(activeItem);
   const [open, isOpen] = useRecoilState(isDrawerOpen);
   const { item } = useMediaItem(activeItemId);
+  const [isFullyOpen, setIsFullyOpen] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      // Delay mounting heavy components until drawer animation completes
+      const timer = setTimeout(() => setIsFullyOpen(true), 350);
+      return () => clearTimeout(timer);
+    } else {
+      setIsFullyOpen(false);
+    }
+  }, [open]);
 
   // --- Fix: Sync activeItem atom with URL on mount ---
   useEffect(() => {
@@ -388,6 +399,7 @@ const MediaDetailsDrawer = () => {
                     item={item}
                     buttonSize={24}
                     aspectRatio="16/9"
+                    isFullyOpen={isFullyOpen}
                   />
                   {/* Item Logo or Name above play button */}
                   {itemLogo ? (
@@ -735,84 +747,137 @@ const MediaDetailsDrawer = () => {
                     {/* Right column: CastList */}
                     {item.People && item.People.length > 0 && (
                       <div className="md:w-1/3 w-full mb-4 md:mb-0">
-                        <CastList key={activeItemId} people={item.People} />
+                        {isFullyOpen ? (
+                          <CastList key={activeItemId} people={item.People} />
+                        ) : (
+                          <div className="mt-1 animate-pulse">
+                            <div className="text-lg font-semibold mb-2 h-7 bg-white/5 rounded w-16"></div>
+                            <div className="flex flex-wrap gap-4">
+                              {[...Array(8)].map((_, i) => (
+                                <div key={i} className="flex flex-col items-center w-20">
+                                  <div className="w-16 h-16 rounded-full bg-white/5 mb-1"></div>
+                                  <div className="h-3 bg-white/5 rounded w-full mt-1 mb-1"></div>
+                                  <div className="h-3 bg-white/5 rounded w-3/4"></div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
 
                   {/* Episodes list below both columns */}
                   {!isMovie && (
-                    <>
-                      {isSeries && (
-                        <div className="mt-8">
-                          <EpisodesList seriesId={item.Id} />
+                    <div className="mt-8">
+                      {isFullyOpen ? (
+                        <>
+                          {isSeries && <EpisodesList seriesId={item.Id} />}
+                          {isEpisode && item.SeasonId && (
+                            <EpisodesList
+                              seriesId={item.SeriesId ?? item.SeasonId}
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="animate-pulse">
+                          {/* Season dropdown skeleton */}
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className="w-[140px] h-[38px] bg-white/5 rounded-md"></div>
+                          </div>
+                          {/* Episodes list skeleton */}
+                          <div className="flex flex-col gap-2">
+                            {[...Array(4)].map((_, i) => (
+                              <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center px-2 py-4 sm:px-4 sm:py-3 border-b border-white/5">
+                                <div className="w-full sm:w-40 h-24 sm:h-20 rounded bg-white/5 flex-shrink-0"></div>
+                                <div className="flex-1 w-full flex flex-col gap-2">
+                                  <div className="h-5 bg-white/5 rounded w-1/3"></div>
+                                  <div className="h-3 bg-white/5 rounded w-full"></div>
+                                  <div className="h-3 bg-white/5 rounded w-5/6"></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
-                      {isEpisode && item.SeasonId && (
-                        <div className="mt-8">
-                          <EpisodesList
-                            seriesId={item.SeriesId ?? item.SeasonId}
-                          />
-                        </div>
-                      )}
-                    </>
+                    </div>
                   )}
 
                   {/* Tabs Section */}
                   {(isMovie || isSeries) && (
                     <div className="mt-10">
-                      {/* Tabs */}
-                      <div className="flex border-b border-neutral-700 mb-4">
-                        {hasBoxSet && (
-                          <button
-                            className={`px-4 py-2 font-semibold ${
-                              movieTab === "collection"
-                                ? "border-b-2 border-red-600 text-white"
-                                : "text-gray-400"
-                            }`}
-                            onClick={() => {
-                              setUserSelectedTab(true);
-                              setMovieTab("collection");
-                            }}
-                          >
-                            {collectionTitle}
-                          </button>
-                        )}
-                        <button
-                          className={`px-4 py-2 font-semibold ${
-                            movieTab === "more"
-                              ? "border-b-2 border-red-600 text-white"
-                              : "text-gray-400"
-                          }`}
-                          onClick={() => {
-                            setUserSelectedTab(true);
-                            setMovieTab("more");
-                          }}
-                        >
-                          More Like This
-                        </button>
-                      </div>
-                      {/* Tab Content */}
-                      <div>
-                        <CollectionSection
-                          item={item}
-                          isMovie={isMovie}
-                          isActive={movieTab === "collection"}
-                          onCollectionStateChange={({
-                            hasBoxSet: nextHasBoxSet,
-                            title,
-                          }) => {
-                            setHasBoxSet(nextHasBoxSet);
-                            setCollectionTitle(title);
-                          }}
-                          onSelectItem={handleSelectItem} // <-- pass handler
-                        />
-                        <MoreLikeThisSection
-                          item={item}
-                          isActive={movieTab === "more"}
-                          onSelectItem={handleSelectItem} // <-- pass handler
-                        />
-                      </div>
+                      {isFullyOpen ? (
+                        <>
+                          {/* Tabs */}
+                          <div className="flex border-b border-neutral-700 mb-4">
+                            {hasBoxSet && (
+                              <button
+                                className={`px-4 py-2 font-semibold ${
+                                  movieTab === "collection"
+                                    ? "border-b-2 border-red-600 text-white"
+                                    : "text-gray-400"
+                                }`}
+                                onClick={() => {
+                                  setUserSelectedTab(true);
+                                  setMovieTab("collection");
+                                }}
+                              >
+                                {collectionTitle}
+                              </button>
+                            )}
+                            <button
+                              className={`px-4 py-2 font-semibold ${
+                                movieTab === "more"
+                                  ? "border-b-2 border-red-600 text-white"
+                                  : "text-gray-400"
+                              }`}
+                              onClick={() => {
+                                setUserSelectedTab(true);
+                                setMovieTab("more");
+                              }}
+                            >
+                              More Like This
+                            </button>
+                          </div>
+                          {/* Tab Content */}
+                          <div>
+                            <CollectionSection
+                              item={item}
+                              isMovie={isMovie}
+                              isActive={movieTab === "collection"}
+                              onCollectionStateChange={({
+                                hasBoxSet: nextHasBoxSet,
+                                title,
+                              }) => {
+                                setHasBoxSet(nextHasBoxSet);
+                                setCollectionTitle(title);
+                              }}
+                              onSelectItem={handleSelectItem} // <-- pass handler
+                            />
+                            <MoreLikeThisSection
+                              item={item}
+                              isActive={movieTab === "more"}
+                              onSelectItem={handleSelectItem} // <-- pass handler
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="animate-pulse">
+                          <div className="flex gap-4 border-b border-neutral-700 mb-4">
+                            <div className="h-10 bg-white/5 rounded-t w-24"></div>
+                            <div className="h-10 bg-white/5 rounded-t w-32"></div>
+                          </div>
+                          <div className="flex gap-4 overflow-hidden">
+                            {[...Array(5)].map((_, i) => (
+                              <div key={i} className="w-[140px] md:w-[160px] lg:w-[200px] flex-shrink-0 flex flex-col gap-2">
+                                <div className="aspect-[2/3] w-full bg-white/5 rounded-lg"></div>
+                                <div className="h-4 bg-white/5 rounded w-3/4 mt-2"></div>
+                                <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

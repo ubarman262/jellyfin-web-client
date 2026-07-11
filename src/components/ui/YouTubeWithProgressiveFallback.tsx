@@ -22,23 +22,26 @@ interface ButtonPositionProps {
 }
 
 interface YouTubeWithProgressiveFallbackProps {
-  item: MediaItem;
-  aspectRatio?: string;
+  item: MediaItem | null;
   buttonSize?: number;
+  aspectRatio?: "16/9" | "21/9" | "4/3";
   buttonPosition?: ButtonPositionProps;
-  playerRef?: React.Ref<{ play: () => void; pause: () => void }>; // Add this line
+  isFullyOpen?: boolean;
+  playerRef?: React.Ref<{ play: () => void; pause: () => void }>;
 }
 
 const YouTubeWithProgressiveFallback = ({
   item,
+  buttonSize = 24,
   aspectRatio = "16/9",
-  buttonSize = 14,
   buttonPosition,
-  playerRef, // Add this line
+  isFullyOpen = true,
+  playerRef,
 }: YouTubeWithProgressiveFallbackProps) => {
   const { api } = useAuth();
   const [isMuted, setIsMuted] = useState(true);
-  const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
+  const [trailerUrls, setTrailerUrls] = useState<string[]>([]);
+  const [currentTrailerIndex, setCurrentTrailerIndex] = useState(0);
   const [player, setPlayer] = useState<YouTubePlayer>(null);
   const [backdropUrl, setBackdropUrl] = useState("");
   const [backdropLoaded, setBackdropLoaded] = useState(false);
@@ -103,19 +106,21 @@ const YouTubeWithProgressiveFallback = ({
 
   useEffect(() => {
     const fetchAndSetTrailer = async () => {
-      setTrailerUrl(null);
+      setTrailerUrls([]);
+      setCurrentTrailerIndex(0);
       setTrailerStarted(false);
       setTrailerEnded(false);
       setBackdropLoaded(false);
 
       if (!item) return;
 
-      const url = await fetchTrailerUrl(item, api);
-      setTrailerUrl(url);
+      const urls = await fetchTrailerUrl(item, api);
+
+      setTrailerUrls(urls || []);
     };
 
     const fetchBackdropUrl = async () => {
-      if (!api) return;
+      if (!api || !item) return;
       const backdrop = getBackdropUrl(api, item);
       setBackdropUrl(backdrop);
     };
@@ -126,6 +131,7 @@ const YouTubeWithProgressiveFallback = ({
 
   if (!item || !api) return null;
 
+  const trailerUrl = trailerUrls[currentTrailerIndex] || null;
   const youtubeId = getYouTubeId(trailerUrl);
 
   const handleBackdropLoad = () => {
@@ -157,7 +163,7 @@ const YouTubeWithProgressiveFallback = ({
           <ProgressiveImage src={backdropUrl} onLoad={handleBackdropLoad} />
         </div>
       )}
-      {youtubeId && !trailerEnded && backdropLoaded && (
+      {youtubeId && !trailerEnded && backdropLoaded && isFullyOpen && (
         <YouTube
           style={{
             position: "absolute",
@@ -195,7 +201,14 @@ const YouTubeWithProgressiveFallback = ({
               console.error("Error setting playback quality:", err);
             }
           }}
-          onPlay={() => {
+          onPlay={(e: YouTubeEvent) => {
+            const duration = e.target.getDuration();
+            if (duration && duration < 5 && currentTrailerIndex < trailerUrls.length - 1) {
+              // Video is too short (likely an error or short bumper), load next video
+              setCurrentTrailerIndex(prev => prev + 1);
+              return;
+            }
+
             // Delay showing the video to ensure any native YouTube UI flashes (like the center pause/play button) have disappeared
             setTimeout(() => {
               setTrailerStarted(true);
