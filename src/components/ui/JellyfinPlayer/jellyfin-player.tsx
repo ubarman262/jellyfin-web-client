@@ -1503,7 +1503,7 @@ export function JellyfinPlayer({
         {enableEpisodes && seriesId && episodesPanelMounted && (
           <div
             ref={episodesOverlayRef}
-            className={`fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] rounded-t-xl bg-gradient-to-b from-[#171717]/95 to-transparent border-x border-t border-white/10 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
+            className={`fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] rounded-t-xl bg-[#171717]/75 border-x border-t border-white/10 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
               episodesPanelVisible
                 ? "translate-y-0 opacity-100"
                 : "pointer-events-none translate-y-full opacity-0"
@@ -1602,7 +1602,7 @@ function TracksMenu({
         <Popover.Content
           sideOffset={8}
           align="end"
-          className="z-[2147483647] w-full max-w-[560px] overflow-hidden rounded-lg border border-white/10 bg-gradient-to-b from-[#171717]/95 to-transparent text-white shadow-2xl backdrop-blur-xl"
+          className="z-[2147483647] w-full max-w-[560px] overflow-hidden rounded-lg border border-white/10 bg-[#171717]/75 text-white shadow-2xl backdrop-blur-xl"
         >
           <div className="grid grid-cols-1 gap-4 divide-y divide-white/10 sm:grid-cols-2 sm:divide-y-0 sm:divide-x">
             {/* Audio */}
@@ -1783,7 +1783,7 @@ function QualityMenu({
         <Popover.Content
           sideOffset={8}
           align="end"
-          className="z-[2147483647] w-52 overflow-hidden rounded-lg border border-white/10 bg-gradient-to-b from-[#171717]/95 to-transparent text-white shadow-2xl backdrop-blur-xl"
+          className="z-[2147483647] w-52 overflow-hidden rounded-lg border border-white/10 bg-[#171717]/75 text-white shadow-2xl backdrop-blur-xl"
         >
           <div className="px-3 pt-3 pb-1.5 text-[11px] font-semibold uppercase text-white/60">
             Video Quality
@@ -1861,7 +1861,7 @@ function XRayPanel({
         open ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      <div className="pointer-events-auto flex h-full flex-col bg-gradient-to-b from-[#171717]/95 to-transparent text-white backdrop-blur-md">
+      <div className="pointer-events-auto flex h-full flex-col bg-[#171717]/75 text-white backdrop-blur-md">
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div className="flex items-baseline gap-2">
             <span className="text-xs font-bold tracking-[0.2em] text-red-500">

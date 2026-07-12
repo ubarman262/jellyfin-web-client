@@ -1,6 +1,36 @@
 import React, { useRef } from "react";
-import { useGenres } from "../../hooks/useMediaData";
 import { useNavigate } from "react-router-dom";
+
+const TARGET_GENRES = [
+  {
+    name: "Action",
+    image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    name: "Animation",
+    image: "https://images.unsplash.com/photo-1524253482453-3fed8d2fe12b?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    name: "Comedy",
+    image: "https://images.unsplash.com/photo-1527224538127-2104bb71c61e?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    name: "Crime",
+    image: "https://images.unsplash.com/photo-1550982560-eb557161bcfc?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    name: "Drama",
+    image: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    name: "Horror",
+    image: "https://images.unsplash.com/photo-1505635552518-3448ff116af3?auto=format&fit=crop&q=80&w=1000",
+  },
+  {
+    name: "Sci-Fi",
+    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1000",
+  }
+];
 
 const genreColors = [
   "bg-red-700/80",
@@ -10,13 +40,9 @@ const genreColors = [
   "bg-indigo-900/80",
   "bg-green-700/80",
   "bg-pink-700/80",
-  "bg-orange-700/80",
-  "bg-cyan-700/80",
-  "bg-teal-700/80",
 ];
 
 const GenreSection: React.FC = () => {
-  const { genres, isLoading } = useGenres();
   const navigate = useNavigate();
   const rowRef = useRef<HTMLDivElement>(null);
 
@@ -33,24 +59,6 @@ const GenreSection: React.FC = () => {
       behavior: "smooth",
     });
   };
-
-  if (isLoading) {
-    return (
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Movie Genres</h2>
-        <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide">
-          {Array.from({ length: 6 }).map(() => (
-            <div
-              key={`genre-skeleton-${crypto.randomUUID()}`}
-              className="rounded-lg w-56 h-32 bg-gray-800 animate-pulse flex-shrink-0"
-            ></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!genres.length) return null;
 
   return (
     <div className="mb-8">
@@ -84,20 +92,25 @@ const GenreSection: React.FC = () => {
         className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
         style={{ scrollBehavior: "smooth" }}
       >
-        {genres.map((genre, i) => (
+        {TARGET_GENRES.map((genre, i) => (
           <div
-            key={genre.Id}
-            className={`rounded-lg w-56 h-32 flex items-center justify-center cursor-pointer shadow-md flex-shrink-0 group relative ${genreColors[i % genreColors.length]}`}
-            onClick={() => navigate(`/search?q=${encodeURIComponent(genre.Name)}`)}
-            title={genre.Name}
+            key={genre.name}
+            className={`rounded-lg w-56 h-32 flex items-center justify-center cursor-pointer shadow-md flex-shrink-0 group relative overflow-hidden ${genreColors[i % genreColors.length]}`}
+            onClick={() => navigate(`/search?q=${encodeURIComponent(genre.name)}`)}
+            title={genre.name}
             tabIndex={0}
             role="button"
-            aria-label={`Browse ${genre.Name}`}
+            aria-label={`Browse ${genre.name}`}
           >
-            <span className="text-2xl font-bold text-white drop-shadow-lg z-10">
-              {genre.Name}
+            <img
+              src={genre.image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300"
+            />
+            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
+            <span className="text-2xl font-bold text-white drop-shadow-lg z-10 relative px-4 text-center">
+              {genre.name}
             </span>
-            <div className="absolute inset-0 rounded-lg group-hover:bg-black/20 transition" />
           </div>
         ))}
       </div>

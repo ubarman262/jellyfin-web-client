@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import PageTemplate from "../components/layout/PageTemplate";
+import StudiosSection from "../components/ui/StudiosSection";
 
 const HeroSection = React.lazy(
   () => import("../components/ui/Home/HeroSection"),
@@ -16,6 +17,9 @@ const LatestMoviesSection = React.lazy(
 const LatestShowsSection = React.lazy(
   () => import("../components/ui/Home/LatestShowsSection"),
 );
+// const GenreSection = React.lazy(
+//   () => import("../components/ui/GenreSection"),
+// );
 
 const HomePage: React.FC = () => {
   return (
@@ -38,6 +42,14 @@ const HomePage: React.FC = () => {
         >
           <ContinueWatchingSection />
         </Suspense>
+
+        {/* <Suspense
+          fallback={
+            <div className="w-full h-48 mt-6 bg-neutral-800 animate-pulse rounded-md"></div>
+          }
+        >
+          <GenreSection />
+        </Suspense> */}
 
         <Suspense
           fallback={
@@ -64,7 +76,7 @@ const HomePage: React.FC = () => {
         </Suspense>
 
         {/* Studios Section */}
-        {/* <StudiosSection /> */}
+        <StudiosSection />
       </div>
     </PageTemplate>
   );

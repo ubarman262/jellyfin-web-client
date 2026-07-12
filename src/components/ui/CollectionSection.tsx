@@ -62,13 +62,7 @@ const CollectionSection: React.FC<CollectionSectionProps> = ({
         let boxSetId = api.getMarlinResultId(collection);
         let boxSetTitle = api.getMarlinResultTitle(collection);
 
-        if (!boxSetId) {
-          const nativeBoxSet = await api.findBoxSetForItem(item);
-          if (nativeBoxSet) {
-            boxSetId = nativeBoxSet.Id;
-            boxSetTitle = nativeBoxSet.Name;
-          }
-        }
+
 
         if (!boxSetId) {
           setItems([]);
