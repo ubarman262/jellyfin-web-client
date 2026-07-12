@@ -73,6 +73,7 @@ const SearchPage: React.FC = () => {
               </div>
               <input
                 type="text"
+                autoFocus
                 placeholder="Search the cosmic catalog..."
                 value={searchQuery}
                 onChange={handleInputChange}
