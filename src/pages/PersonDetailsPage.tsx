@@ -1,6 +1,6 @@
-import { Calendar } from "lucide-react";
+import { ArrowLeft, Calendar } from "lucide-react";
 import React, { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import { useAuth } from "../context/AuthContext";
 import { MediaItem } from "../types/jellyfin";
@@ -47,6 +47,7 @@ const AppearsInSection = React.lazy(
 );
 
 const PersonDetailsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const personId = searchParams.get("personId") ?? "";
   const { api } = useAuth();
@@ -148,7 +149,14 @@ const PersonDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-900 text-white">
       <Navbar />
-      <div className="container mx-auto px-4 pt-20 pb-8">
+      <div className="px-14 pt-20 pb-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center text-gray-400 hover:text-white transition-colors mb-6"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Back
+        </button>
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start mb-8">
           <div>
             {personLoading ? (
