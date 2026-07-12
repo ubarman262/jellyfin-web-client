@@ -728,17 +728,28 @@ export function JellyfinPlayer({
     );
   }, [api, activeItemId, audioIndex, bitrate]);
 
-  const subtitleRequestUrl = useCallback(
-    (stream: MediaStream) => {
-      if (stream.DeliveryUrl) {
-        const url = new URL(stream.DeliveryUrl, `${baseUrl}/`);
-        url.searchParams.set("api_key", accessToken);
-        return url.toString();
-      }
-      return api?.getVTTStream(activeItemId, stream.Index) ?? "";
-    },
-    [api, activeItemId, baseUrl, accessToken],
-  );
+  const formatVttTime = useCallback((ticks: number): string => {
+    const msTotal = Math.floor(ticks / 10000);
+    const ms = msTotal % 1000;
+    const sTotal = Math.floor(msTotal / 1000);
+    const s = sTotal % 60;
+    const mTotal = Math.floor(sTotal / 60);
+    const m = mTotal % 60;
+    const h = Math.floor(mTotal / 60);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(ms).padStart(3, "0")}`;
+  }, []);
+
+  const trackEventsToVtt = useCallback((events: any[]): string => {
+    let vtt = "WEBVTT\n\n";
+    for (const event of events) {
+      if (!event) continue;
+      const start = formatVttTime(event.StartPositionTicks || 0);
+      const end = formatVttTime(event.EndPositionTicks || 0);
+      const text = event.Text || "";
+      vtt += `${start} --> ${end}\n${text}\n\n`;
+    }
+    return vtt;
+  }, [formatVttTime]);
 
   // Attach the HLS stream. Re-run when the audio selection (and therefore URL) changes.
   useEffect(() => {
@@ -822,7 +833,7 @@ export function JellyfinPlayer({
   // Fetch the selected subtitle as a blob URL so browser text tracks do not get
   // blocked by cross-origin <track> requests or missing auth headers.
   useEffect(() => {
-    if (!selectedSubtitle || !mediaSource) {
+    if (!selectedSubtitle || !mediaSource || !api) {
       setActiveSubtitleSrc(null);
       return;
     }
@@ -831,27 +842,39 @@ export function JellyfinPlayer({
     let objectUrl: string | null = null;
     setActiveSubtitleSrc(null);
 
-    fetch(subtitleRequestUrl(selectedSubtitle), {
-      headers: { Authorization: authHeader },
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Subtitle request failed (${res.status})`);
-        return await res.text();
-      })
-      .then((vtt) => {
+    const loadSubtitle = async () => {
+      try {
+        let vtt = "";
+        if (selectedSubtitle.DeliveryUrl) {
+          const url = new URL(selectedSubtitle.DeliveryUrl, `${baseUrl}/`);
+          url.searchParams.set("api_key", accessToken);
+          const res = await fetch(url.toString(), {
+            headers: { Authorization: authHeader },
+          });
+          if (!res.ok) throw new Error(`Subtitle request failed (${res.status})`);
+          vtt = await res.text();
+        } else {
+          // Use Jellyfin's Stream.js endpoint which returns TrackEvents
+          const events = await api.fetchSelectedSubtitle(activeItemId, selectedSubtitle.Index);
+          vtt = trackEventsToVtt(events);
+        }
+
         if (cancelled) return;
         objectUrl = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
         setActiveSubtitleSrc(objectUrl);
-      })
-      .catch(() => {
+      } catch (err) {
+        console.error("Failed to load subtitles:", err);
         if (!cancelled) setActiveSubtitleSrc(null);
-      });
+      }
+    };
+
+    void loadSubtitle();
 
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [authHeader, mediaSource, selectedSubtitle, subtitleRequestUrl]);
+  }, [api, activeItemId, baseUrl, accessToken, authHeader, mediaSource, selectedSubtitle, trackEventsToVtt]);
 
   // Toggle text-track visibility when the selected subtitle blob is ready.
   useEffect(() => {

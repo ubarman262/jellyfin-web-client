@@ -682,10 +682,10 @@ class JellyfinApi {
   async fetchSelectedSubtitle(
     itemId: string,
     subtitleStreamIndex: number,
-  ): Promise<[]> {
+  ): Promise<any[]> {
     const endpoint = `/Videos/${itemId}/${itemId}/Subtitles/${subtitleStreamIndex}/0/Stream.js`;
     const response = await this.makeRequest<{
-      TrackEvents: [];
+      TrackEvents: any[];
     }>("get", endpoint, undefined, {
       api_key: this.accessToken,
     });
