@@ -22,6 +22,7 @@ const ShowsPage: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   // Multi-select genre filter state
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedAlphabet, setSelectedAlphabet] = useState<string | null>(null);
   const [genreMenuOpen, setGenreMenuOpen] = useState(false);
   const genreMenuRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -79,15 +80,20 @@ const ShowsPage: React.FC = () => {
   // const overview = item?.Overview ?? "";
 
   // Fetch Series for current page/genre(s)
+  const isAlphabetFilterActive = selectedAlphabet !== null;
+  const fetchLimit = isAlphabetFilterActive ? 100 : (selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE);
+  const fetchStartIndex = isAlphabetFilterActive ? undefined : page * (selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE);
+
   const {
     items: fetchedItems,
     isLoading,
     totalItems,
   } = useMediaData("series", {
-    limit: selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE,
-    startIndex:
-      page * (selectedGenres.length > 0 ? FILTERED_PAGE_SIZE : PAGE_SIZE),
+    limit: fetchLimit,
+    startIndex: fetchStartIndex,
     genres: selectedGenres.length > 0 ? selectedGenres : undefined,
+    nameStartsWith: selectedAlphabet && selectedAlphabet !== '#' ? selectedAlphabet : undefined,
+    nameLessThan: selectedAlphabet === '#' ? 'A' : undefined,
   });
 
   // Reset items when genres change
@@ -95,7 +101,7 @@ const ShowsPage: React.FC = () => {
     setItems([]);
     setPage(0);
     setHasMore(true);
-  }, [selectedGenres]);
+  }, [selectedGenres, selectedAlphabet]);
 
   // Append new items when fetched, deduplicating by Id
   useEffect(() => {
@@ -217,6 +223,8 @@ const ShowsPage: React.FC = () => {
     };
   }, []);
 
+  const ALPHABETS = ['#', ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))];
+
   return (
     <PageTemplate isLoading={!api || !item}>
       {!api || !item ? null : (
@@ -325,55 +333,73 @@ const ShowsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="px-14">
-            {(() => {
-              const gridClasses =
-                "grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-6 gap-y-8";
+          <div className="pl-14 pr-8 flex">
+            <div className="flex-1 min-w-0">
+              {(() => {
+                const gridClasses =
+                  "grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-6 gap-y-8";
 
-              if (items.length === 0 && isLoading) {
-                return (
-                  <div className={gridClasses}>
-                    {Array.from({ length: PAGE_SIZE }).map((_, i) => {
-                      const skeletonKey = `skeleton-${page}-${i}`;
-                      return (
-                        <div
-                          key={skeletonKey}
-                          className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
-                        ></div>
-                      );
-                    })}
-                  </div>
-                );
-              } else if (items.length > 0) {
-                return (
-                  <>
+                if (items.length === 0 && isLoading) {
+                  return (
                     <div className={gridClasses}>
-                      {items.map((item) => (
-                        <MediaCard key={item.Id} item={item} fluid />
-                      ))}
+                      {Array.from({ length: PAGE_SIZE }).map((_, i) => {
+                        const skeletonKey = `skeleton-${page}-${i}`;
+                        return (
+                          <div
+                            key={skeletonKey}
+                            className="w-full aspect-[2/3] bg-gray-800 animate-pulse rounded-md"
+                          ></div>
+                        );
+                      })}
                     </div>
-                    {/* Loader for infinite scroll */}
-                    <div ref={loaderRef} />
-                    {isLoading && (
-                      <div className="flex justify-center mt-8">
-                        <div className="w-8 h-8 border-4 border-gray-700 border-t-white rounded-full animate-spin"></div>
+                  );
+                } else if (items.length > 0) {
+                  return (
+                    <>
+                      <div className={gridClasses}>
+                        {items.map((item) => (
+                          <MediaCard key={item.Id} item={item} fluid />
+                        ))}
                       </div>
-                    )}
-                    {!hasMore && !isLoading && items.length > 0 && (
-                      <div className="text-center py-8 text-gray-400">
-                        {endLine}
-                      </div>
-                    )}
-                  </>
-                );
-              } else {
-                return (
-                  <div className="text-center py-12 text-gray-400">
-                    No shows found.
-                  </div>
-                );
-              }
-            })()}
+                      {/* Loader for infinite scroll */}
+                      <div ref={loaderRef} />
+                      {isLoading && (
+                        <div className="flex justify-center mt-8">
+                          <div className="w-8 h-8 border-4 border-gray-700 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      {!hasMore && !isLoading && items.length > 0 && (
+                        <div className="text-center py-8 text-gray-400 w-full">
+                          {endLine}
+                        </div>
+                      )}
+                    </>
+                  );
+                } else {
+                  return (
+                    <div className="text-center py-12 text-gray-400">
+                      No shows found.
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+            
+            {/* Alphabet Filter */}
+            <div className="pl-8 w-4 sm:w-5 shrink-0 relative">
+              <div className="sticky top-28 flex flex-col items-center gap-[2px] text-[8px] sm:text-[10px] font-bold text-[hsla(0,0%,100%,.25)] pb-12">
+                {ALPHABETS.map((letter) => (
+                  <button
+                    key={letter}
+                    onClick={() => setSelectedAlphabet((prev) => prev === letter ? null : letter)}
+                    className={`hover:text-white transition-colors cursor-pointer text-center w-full aspect-square flex items-center justify-center rounded-sm ${selectedAlphabet === letter ? "text-white" : ""
+                      }`}
+                  >
+                    {letter}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </>
       )}

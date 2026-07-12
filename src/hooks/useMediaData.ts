@@ -10,6 +10,8 @@ export const useMediaData = (
     startIndex?: number;
     mediaType?: string;
     latest?: boolean;
+    nameStartsWith?: string;
+    nameLessThan?: string;
   },
 ) => {
   const { api, isAuthenticated } = useAuth();
@@ -27,6 +29,8 @@ export const useMediaData = (
     [options?.genres],
   );
   const latest = options?.latest ?? false;
+  const nameStartsWith = options?.nameStartsWith;
+  const nameLessThan = options?.nameLessThan;
 
   useEffect(() => {
     if (!api || !isAuthenticated) {
@@ -69,6 +73,8 @@ export const useMediaData = (
               limit,
               startIndex,
               latest,
+              nameStartsWith,
+              nameLessThan,
             );
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
@@ -80,6 +86,8 @@ export const useMediaData = (
               limit,
               startIndex,
               latest,
+              nameStartsWith,
+              nameLessThan,
             );
             setItems(result.Items);
             setTotalItems(result.TotalRecordCount);
@@ -113,7 +121,7 @@ export const useMediaData = (
     };
 
     fetchData();
-  }, [api, isAuthenticated, type, genresString, limit, startIndex, mediaType]);
+  }, [api, isAuthenticated, type, genresString, limit, startIndex, mediaType, latest, nameStartsWith, nameLessThan]);
 
   return { items, isLoading, error, totalItems };
 };

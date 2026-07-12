@@ -411,9 +411,11 @@ class JellyfinApi {
   async getMediaByType(
     mediaType: string,
     genres?: string,
-    limit: number = 20,
-    startIndex: number = 0,
+    limit?: number,
+    startIndex?: number,
     latest: boolean = false,
+    nameStartsWith?: string,
+    nameLessThan?: string,
   ): Promise<ItemsResponse> {
     let parentId = null;
     if (mediaType === "Movie") {
@@ -436,6 +438,8 @@ class JellyfinApi {
         Genres: genres,
         IncludeItemTypes: mediaType,
         ParentId: parentId,
+        NameStartsWith: nameStartsWith,
+        NameLessThan: nameLessThan,
       },
     );
   }
