@@ -17,10 +17,9 @@ import {
   SkipBack,
   SkipForward,
   Subtitles,
-  Users,
   Volume2,
   VolumeX,
-  X,
+  X
 } from "lucide-react";
 import {
   useCallback,
@@ -30,6 +29,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { useAuth } from "../../../context/AuthContext";
 import EpisodesList from "../EpisodesList";
 
 /**
@@ -326,6 +326,7 @@ export function JellyfinPlayer({
   enableResume = true,
   enableXRay = true,
 }: JellyfinPlayerProps) {
+  const { api } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const stableDeviceId = useMemo(() => deviceId ?? randomId(), [deviceId]);
@@ -465,7 +466,7 @@ export function JellyfinPlayer({
     useState<SubtitleStyleOption>("default");
   const [subtitleSize, setSubtitleSize] =
     useState<SubtitleSizeOption>("medium");
-  const [bitrate, setBitrate] = useState<number>(maxStreamingBitrate);
+  const [bitrate, setBitrate] = useState<number | undefined>(undefined);
   const [appliedAudioIndex, setAppliedAudioIndex] = useState<number | null>(
     null,
   );
@@ -719,54 +720,24 @@ export function JellyfinPlayer({
   // and attach a fresh PlaySessionId per audio selection so Jellyfin starts
   // a clean transcode for the requested AudioStreamIndex.
   const streamUrl = useMemo(() => {
-    if (!mediaSource) return null;
-    const url = new URL(`/Videos/${activeItemId}/master.m3u8`, `${baseUrl}/`);
-    const params = url.searchParams;
-    params.set("MediaSourceId", mediaSource.Id);
-    params.set("DeviceId", stableDeviceId);
-    params.set("api_key", accessToken);
-    // New PlaySessionId per audio selection — forces Jellyfin to spin up
-    // a fresh transcode with the requested AudioStreamIndex instead of
-    // returning a cached manifest with the previously selected track.
-    params.set(
-      "PlaySessionId",
-      `${playbackInfo!.PlaySessionId}-a${audioIndex ?? "x"}-b${bitrate}`,
+    if (!api || !activeItemId) return null;
+    return api.getPlaybackUrl(
+      activeItemId,
+      audioIndex ?? 0,
+      bitrate
     );
-    params.set("MaxStreamingBitrate", String(bitrate));
-    params.set("VideoBitrate", String(Math.max(64_000, bitrate - 192_000)));
-    params.set("AudioBitrate", "192000");
-    params.set("SubtitleStreamIndex", "-1");
-    params.set("EnableSubtitlesInManifest", "false");
-    params.set("VideoCodec", "h264");
-    params.set("AudioCodec", "aac");
-    params.set("Container", "ts");
-    params.set("SegmentContainer", "ts");
-    params.set("TranscodingMaxAudioChannels", "2");
-    params.set("RequireAvc", "true");
-    if (audioIndex != null) params.set("AudioStreamIndex", String(audioIndex));
-    return url.toString();
-  }, [
-    accessToken,
-    audioIndex,
-    baseUrl,
-    activeItemId,
-    bitrate,
-    mediaSource,
-    playbackInfo,
-    stableDeviceId,
-  ]);
+  }, [api, activeItemId, audioIndex, bitrate]);
 
   const subtitleRequestUrl = useCallback(
     (stream: MediaStream) => {
-      const url = new URL(
-        stream.DeliveryUrl ||
-          `/Videos/${activeItemId}/${mediaSource!.Id}/Subtitles/${stream.Index}/0/Stream.vtt`,
-        `${baseUrl}/`,
-      );
-      url.searchParams.set("api_key", accessToken);
-      return url.toString();
+      if (stream.DeliveryUrl) {
+        const url = new URL(stream.DeliveryUrl, `${baseUrl}/`);
+        url.searchParams.set("api_key", accessToken);
+        return url.toString();
+      }
+      return api?.getVTTStream(activeItemId, stream.Index) ?? "";
     },
-    [accessToken, baseUrl, activeItemId, mediaSource],
+    [api, activeItemId, baseUrl, accessToken],
   );
 
   // Attach the HLS stream. Re-run when the audio selection (and therefore URL) changes.
@@ -1434,6 +1405,25 @@ export function JellyfinPlayer({
                 </div>
               )}
 
+              {enableXRay &&
+                itemMeta &&
+                (itemMeta.People?.length || itemMeta.Overview) && (
+                  <button
+                    id="xray-toggle-btn"
+                    onClick={() => setShowXRay((v) => !v)}
+                    className={`ml-4 bg-black/60 hover:bg-black/80 text-white px-3 py-1.5 text-sm font-medium transition-all duration-200 border border-white/20 shadow-md rounded-md ${
+                      showXRay ? "bg-white/10 text-black" : ""
+                    }`}
+                    style={{
+                      fontSize: "0.875rem",
+                      minHeight: "32px",
+                      outline: "none",
+                    }}
+                  >
+                    X-Ray
+                  </button>
+                )}
+
               <div className="ml-auto flex items-center gap-1">
                 {/* Combined Audio + Subtitles menu */}
                 {(enableAudioTracks || enableSubtitles) &&
@@ -1456,12 +1446,6 @@ export function JellyfinPlayer({
                     />
                   )}
 
-                {enablePictureInPicture && (
-                  <IconBtn onClick={togglePip} label="Picture in picture">
-                    <PictureInPicture2 className={BOTTOM_CONTROL_ICON_CLASS} />
-                  </IconBtn>
-                )}
-
                 {enableEpisodes && seriesId && (
                   <IconBtn
                     onClick={() => setShowEpisodes((v) => !v)}
@@ -1471,16 +1455,11 @@ export function JellyfinPlayer({
                   </IconBtn>
                 )}
 
-                {enableXRay &&
-                  itemMeta &&
-                  (itemMeta.People?.length || itemMeta.Overview) && (
-                    <IconBtn
-                      onClick={() => setShowXRay((v) => !v)}
-                      label="X-Ray"
-                    >
-                      <Users className={BOTTOM_CONTROL_ICON_CLASS} />
-                    </IconBtn>
-                  )}
+                {enablePictureInPicture && (
+                  <IconBtn onClick={togglePip} label="Picture in picture">
+                    <PictureInPicture2 className={BOTTOM_CONTROL_ICON_CLASS} />
+                  </IconBtn>
+                )}
 
                 {/* Quality (gear) */}
                 {enableQualitySelector && (
@@ -1524,7 +1503,7 @@ export function JellyfinPlayer({
         {enableEpisodes && seriesId && episodesPanelMounted && (
           <div
             ref={episodesOverlayRef}
-            className={`fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] rounded-xl bg-[#171717]/95 border border-white/10 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
+            className={`fixed inset-x-0 bottom-0 z-40 w-full max-h-[80vh] rounded-t-xl bg-gradient-to-b from-[#171717]/95 to-transparent border-x border-t border-white/10 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
               episodesPanelVisible
                 ? "translate-y-0 opacity-100"
                 : "pointer-events-none translate-y-full opacity-0"
@@ -1623,7 +1602,7 @@ function TracksMenu({
         <Popover.Content
           sideOffset={8}
           align="end"
-          className="z-[2147483647] w-full max-w-[560px] overflow-hidden rounded-lg border border-white/10 bg-neutral-900/95 text-white shadow-2xl backdrop-blur-md"
+          className="z-[2147483647] w-full max-w-[560px] overflow-hidden rounded-lg border border-white/10 bg-gradient-to-b from-[#171717]/95 to-transparent text-white shadow-2xl backdrop-blur-xl"
         >
           <div className="grid grid-cols-1 gap-4 divide-y divide-white/10 sm:grid-cols-2 sm:divide-y-0 sm:divide-x">
             {/* Audio */}
@@ -1649,7 +1628,7 @@ function TracksMenu({
                       className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-1.5 text-left text-sm transition-colors ${
                         active
                           ? "bg-[hsl(0,73%,66%)] font-semibold text-white"
-                          : "text-white/90 "
+                          : "text-white/90 hover:bg-white/10"
                       }`}
                     >
                       <span className="truncate">{streamLabel(s)}</span>
@@ -1735,7 +1714,7 @@ function TracksMenu({
                   className={`block w-full rounded-md px-3 py-1.5 text-left text-sm ${
                     subtitleIndex == null
                       ? "font-semibold text-white"
-                      : "text-white/90 "
+                      : "text-white/90 hover:bg-white/10"
                   }`}
                 >
                   Off
@@ -1747,7 +1726,7 @@ function TracksMenu({
                       key={s.Index}
                       onClick={() => onSelectSubtitle(s.Index)}
                       className={`block w-full truncate rounded-md px-3 py-1.5 text-left text-sm ${
-                        active ? "font-semibold text-white" : "text-white/90 "
+                        active ? "font-semibold text-white" : "text-white/90 hover:bg-white/10"
                       }`}
                     >
                       {streamLabel(s)}
@@ -1763,7 +1742,8 @@ function TracksMenu({
   );
 }
 
-const QUALITY_PRESETS: { label: string; bitrate: number }[] = [
+const QUALITY_PRESETS: { label: string; bitrate: number | undefined }[] = [
+  { label: "Auto", bitrate: undefined },
   { label: "4K - 120 Mbps", bitrate: 120_000_000 },
   { label: "1080p - 40 Mbps", bitrate: 40_000_000 },
   { label: "1080p - 20 Mbps", bitrate: 20_000_000 },
@@ -1784,11 +1764,11 @@ function QualityMenu({
 }: {
   container: HTMLElement | null;
   iconClassName: string;
-  value: number;
+  value: number | undefined;
   maxBitrate: number;
-  onSelect: (b: number) => void;
+  onSelect: (b: number | undefined) => void;
 }) {
-  const options = QUALITY_PRESETS.filter((p) => p.bitrate <= maxBitrate);
+  const options = QUALITY_PRESETS.filter((p) => p.bitrate === undefined || p.bitrate <= maxBitrate);
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
@@ -1803,7 +1783,7 @@ function QualityMenu({
         <Popover.Content
           sideOffset={8}
           align="end"
-          className="z-[2147483647] w-52 overflow-hidden rounded-lg border border-white/10 bg-neutral-900/95 text-white shadow-2xl backdrop-blur-md"
+          className="z-[2147483647] w-52 overflow-hidden rounded-lg border border-white/10 bg-gradient-to-b from-[#171717]/95 to-transparent text-white shadow-2xl backdrop-blur-xl"
         >
           <div className="px-3 pt-3 pb-1.5 text-[11px] font-semibold uppercase text-white/60">
             Video Quality
@@ -1816,8 +1796,8 @@ function QualityMenu({
                 <button
                   key={p.bitrate}
                   onClick={() => onSelect(p.bitrate)}
-                  className={`flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-sm ${
-                    active ? "font-semibold text-white" : "text-white/90 "
+                  className={`flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-sm transition-colors ${
+                    active ? "font-semibold text-white" : "text-white/90 hover:bg-white/10"
                   }`}
                 >
                   <span>{p.label}</span>
@@ -1845,7 +1825,22 @@ function XRayPanel({
   accessToken: string;
   item: ItemResponse | null;
 }) {
-  const [tab, setTab] = useState<"cast" | "details">("cast");
+  const [tab, setTab] = useState<"details" | "cast">("details");
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!open || !panelRef.current) return;
+      const target = event.target as Element;
+      if (panelRef.current.contains(target) || target.closest("#xray-toggle-btn")) {
+        return;
+      }
+      onClose();
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open, onClose]);
+
   const people = item?.People ?? [];
   const cast = people.filter(
     (p) => p.Type === "Actor" || p.Type === "GuestStar",
@@ -1861,14 +1856,15 @@ function XRayPanel({
 
   return (
     <div
-      className={`pointer-events-none absolute inset-y-0 right-0 z-40 w-full max-w-md transition-transform duration-300 ${
-        open ? "translate-x-0" : "translate-x-full"
+      ref={panelRef}
+      className={`pointer-events-none absolute inset-y-0 left-0 z-40 w-full max-w-md transition-transform duration-300 ${
+        open ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      <div className="pointer-events-auto flex h-full flex-col bg-black/85 text-white backdrop-blur-md">
+      <div className="pointer-events-auto flex h-full flex-col bg-gradient-to-b from-[#171717]/95 to-transparent text-white backdrop-blur-md">
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
           <div className="flex items-baseline gap-2">
-            <span className="text-xs font-bold tracking-[0.2em] text-amber-300">
+            <span className="text-xs font-bold tracking-[0.2em] text-red-500">
               X-RAY
             </span>
             <span className="truncate text-sm font-medium text-white/80">
@@ -1885,7 +1881,7 @@ function XRayPanel({
         </div>
 
         <div className="flex gap-1 border-b border-white/10 px-3 pt-2 text-sm">
-          {(["cast", "details"] as const).map((t) => (
+          {(["details", "cast"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -1895,7 +1891,7 @@ function XRayPanel({
             >
               {t === "cast" ? "Cast & Crew" : "Details"}
               {tab === t && (
-                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-amber-300" />
+                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-red-500" />
               )}
             </button>
           ))}

@@ -58,6 +58,16 @@ html, body {
   scrollbar-width: none; /* Firefox */
 }
 
+/* Hide main window scrollbar so it doesn't take up space */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+html, body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Netflix-like custom scrollbar styles */
 ::-webkit-scrollbar {
   width: 10px;

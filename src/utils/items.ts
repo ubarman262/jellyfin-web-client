@@ -87,13 +87,21 @@ const fetchTrailerUrl = async (item: MediaItem, api: JellyfinApi | null) => {
 
   if (Array.isArray(item.RemoteTrailers) && item.RemoteTrailers.length > 0) {
     return await tryTrailers(item.RemoteTrailers);
-  } else if (api && item.SeriesId) {
-    const seriesItem = await api.getRemoteTrailers(item.SeriesId);
-    if (
-      Array.isArray(seriesItem.RemoteTrailers) &&
-      seriesItem.RemoteTrailers.length > 0
-    ) {
-      return await tryTrailers(seriesItem.RemoteTrailers);
+  } else if (api) {
+    // If it's an episode/season, fetch the series trailer. Otherwise, fetch the item's own trailers.
+    const targetId = item.SeriesId || item.Id;
+    if (targetId) {
+      try {
+        const fullItem = await api.getRemoteTrailers(targetId);
+        if (
+          Array.isArray(fullItem.RemoteTrailers) &&
+          fullItem.RemoteTrailers.length > 0
+        ) {
+          return await tryTrailers(fullItem.RemoteTrailers);
+        }
+      } catch (err) {
+        console.error("Failed to fetch remote trailers:", err);
+      }
     }
   }
   return null;

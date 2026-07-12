@@ -337,6 +337,7 @@ const MediaDetailsDrawer = () => {
       snapPoints={[1, 0]}
       initialSnap={0}
       disableDrag={false}
+      disableScrollLocking={true}
       tweenConfig={{ ease: "easeOut", duration: 0.3 }}
     >
       <Sheet.Container
@@ -347,9 +348,32 @@ const MediaDetailsDrawer = () => {
         }}
       >
         <Sheet.Content className="!rounded-t-xl">
-          {/* If not loaded, show nothing or a loading skeleton */}
+          {/* If not loaded, show a matching skeleton loader */}
           {!item || !api || !isCorrectItem ? (
-            <div style={{ minHeight: 400 }} />
+            <div className="w-full min-h-[80vh] rounded-t-xl bg-[#141414] overflow-hidden border-t border-l border-r border-white/10">
+              <div className="w-full aspect-[16/9] bg-[#222] animate-pulse relative">
+                <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10" />
+              </div>
+              <div className="p-6 md:p-8 flex flex-col gap-8">
+                <div className="flex gap-4">
+                  <div className="w-32 h-12 bg-white/10 rounded-full animate-pulse" />
+                  <div className="w-12 h-12 bg-white/10 rounded-full animate-pulse" />
+                  <div className="w-12 h-12 bg-white/10 rounded-full animate-pulse" />
+                  <div className="w-12 h-12 bg-white/10 rounded-full animate-pulse" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-16 h-5 bg-white/10 rounded animate-pulse" />
+                  <div className="w-24 h-5 bg-white/10 rounded animate-pulse" />
+                  <div className="w-12 h-5 bg-white/10 rounded animate-pulse" />
+                </div>
+                <div className="flex flex-col gap-3 mt-2">
+                  <div className="w-full h-4 bg-white/10 rounded animate-pulse" />
+                  <div className="w-[90%] h-4 bg-white/10 rounded animate-pulse" />
+                  <div className="w-[85%] h-4 bg-white/10 rounded animate-pulse" />
+                  <div className="w-[40%] h-4 bg-white/10 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
           ) : (
             <Sheet.Scroller
               draggableAt="top"

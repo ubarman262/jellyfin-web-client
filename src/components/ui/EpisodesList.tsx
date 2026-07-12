@@ -353,11 +353,10 @@ export default function EpisodesList({
                 ref={(el) => {
                   episodeRefs.current[ep.Id] = el;
                 }}
-                className="flex-shrink-0 w-60 rounded-xl hover:bg-[#232323] transition group p-2"
-                style={{ backgroundColor: "rgb(0 0 0 / 0%)" }}
+                className="flex-shrink-0 w-60 rounded-xl bg-white/5 hover:bg-[#232323] transition group p-2"
               >
                 {/* Thumbnail */}
-                <div className="relative w-full h-32 rounded overflow-hidden group mb-3">
+                <div className="relative w-full h-32 rounded-xl overflow-hidden group mb-3 border border-white/10">
                   <button
                     onClick={() => handlePlayEpisode(ep.Id)}
                     className="w-full h-full p-0 m-0 border-none bg-transparent relative cursor-pointer focus:outline-none"
@@ -680,7 +679,11 @@ export default function EpisodesList({
           <div className="relative" ref={dropdownRef}>
             {/* Custom dropdown */}
             <button
-              className="appearance-none bg-[#242424] text-white rounded px-4 py-2 pr-10 font-semibold border border-[#4d4d4d] transition-all outline-none cursor-pointer flex items-center min-w-[140px] shadow"
+              className={`appearance-none text-white rounded px-4 py-2 pr-10 font-semibold transition-all outline-none cursor-pointer flex items-center min-w-[140px] shadow ${
+                variant === "horizontal"
+                  ? "bg-white/5 border border-white/10 hover:bg-[#232323]"
+                  : "bg-[#242424] border border-[#4d4d4d]"
+              }`}
               type="button"
               aria-haspopup="listbox"
               aria-expanded={dropdownOpen}
@@ -704,7 +707,11 @@ export default function EpisodesList({
             </button>
             {dropdownOpen && (
               <div
-                className="absolute z-50 mt-2 left-0 w-full bg-[#242424] border border-[#4d4d4d] rounded shadow-lg overflow-hidden animate-fade-in scrollbar-hide"
+                className={`absolute z-50 mt-2 left-0 w-full rounded shadow-lg overflow-hidden animate-fade-in scrollbar-hide ${
+                  variant === "horizontal"
+                    ? "bg-white/5 backdrop-blur-xl border border-white/10"
+                    : "bg-[#242424] border border-[#4d4d4d]"
+                }`}
                 role="listbox"
                 tabIndex={-1}
                 style={{
@@ -721,6 +728,8 @@ export default function EpisodesList({
                     className={`px-4 py-2 cursor-pointer transition-all ${
                       season.Id === selectedSeasonId
                         ? "bg-[var(--accent-secondary)] text-white"
+                        : variant === "horizontal"
+                        ? "hover:bg-white/10 text-white"
                         : "hover:bg-[#424242] text-white"
                     } font-semibold`}
                     onClick={() => {
